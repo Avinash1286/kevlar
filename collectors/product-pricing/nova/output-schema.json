@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kevlar Nova collector output v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_url",
+    "captured_at",
+    "page_state",
+    "product",
+    "independent_sources",
+    "evidence"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "source_url": { "type": "string", "format": "uri" },
+    "captured_at": { "type": "string", "format": "date-time" },
+    "page_state": { "enum": ["ok", "blocked", "not_found", "unavailable"] },
+    "product": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "purchase_price",
+        "monthly_payment",
+        "availability"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "purchase_price": {
+          "type": "object",
+          "required": [
+            "amount",
+            "currency",
+            "raw_text",
+            "label",
+            "nearby_text"
+          ],
+          "properties": {
+            "amount": { "type": "number", "exclusiveMinimum": 0 },
+            "currency": { "const": "USD" },
+            "raw_text": { "type": "string" },
+            "label": { "type": "string" },
+            "nearby_text": { "type": "string" }
+          }
+        },
+        "monthly_payment": {
+          "type": "object",
+          "required": ["amount", "currency", "period", "raw_text"],
+          "properties": {
+            "amount": { "type": "number", "exclusiveMinimum": 0 },
+            "currency": { "const": "USD" },
+            "period": { "const": "month" },
+            "raw_text": { "type": "string" }
+          }
+        },
+        "availability": { "enum": ["in_stock", "out_of_stock", "unavailable"] }
+      }
+    },
+    "independent_sources": {
+      "type": "object",
+      "required": ["jsonld_price", "public_api_price"],
+      "properties": {
+        "jsonld_price": { "type": "number" },
+        "public_api_price": { "type": "number" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["page_heading", "purchase_context", "screenshot_ref"],
+      "properties": {
+        "page_heading": { "type": "string" },
+        "purchase_context": { "type": "string" },
+        "screenshot_ref": { "type": "string" }
+      }
+    }
+  }
+}

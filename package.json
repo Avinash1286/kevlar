@@ -1,0 +1,39 @@
+{
+  "name": "kevlar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Verified live-web intelligence and repair certification",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "baseline:run": "tsx scripts/run-baseline.ts",
+    "dev": "turbo run dev --parallel",
+    "dev:web": "pnpm --filter @kevlar/web dev",
+    "dev:fixture": "pnpm --filter @kevlar/fixture-lab dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck && tsc -p convex/tsconfig.json && tsc -p tsconfig.scripts.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "convex:dev": "convex dev",
+    "convex:deploy": "convex deploy"
+  },
+  "dependencies": {
+    "convex": "^1.27.3",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.18.1",
+    "eslint": "^9.35.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.5",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# builds
+.next/
+dist/
+coverage/
+playwright-report/
+test-results/
+.turbo/
+
+# local environments and credentials
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Convex generated and deployment state
+.convex/
+convex/_generated/
+
+# editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# evidence created by live runs
+collectors/**/create.log
+gauntlet/results/*.json
