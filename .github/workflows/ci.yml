@@ -1,9 +1,11 @@
-name: CI
+name: Manual verification
 
 on:
-  pull_request:
-  push:
-    branches: [main, "codex/**"]
+  # GitHub-hosted runners are intentionally not part of the active release
+  # path. Release candidates are verified locally, then deployed and checked
+  # through Vercel. Keep this workflow available for an operator to re-enable
+  # once hosted-runner billing is available again.
+  workflow_dispatch:
 
 permissions:
   contents: read
