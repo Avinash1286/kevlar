@@ -25,6 +25,7 @@ let purchase = $('[data-testid="purchase-price"]');
 let monthly = $('[data-testid="monthly-payment"]');
 let purchasePanel = purchase.closest("section");
 let api = parser.product_api || {};
+let screenshot = parser.page_screenshot || {};
 
 return {
   schema_version: "1.0",
@@ -60,6 +61,10 @@ return {
   evidence: {
     page_heading: $("h1").text_sane(),
     purchase_context: purchasePanel.text_sane(),
-    screenshot_ref: parser.page_screenshot,
+    screenshot_ref: String(
+      typeof screenshot === "string"
+        ? screenshot
+        : screenshot.id || screenshot.filename || "",
+    ),
   },
 };

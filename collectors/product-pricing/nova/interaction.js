@@ -17,5 +17,18 @@ if (el_exists('[data-page-state="blocked"]'))
 if (el_exists('[data-page-state="not-found"]'))
   dead_page("Fixture product not found");
 
+wait_for_parser_value("jsonld");
+wait_for_parser_value("product_api");
 tag_screenshot("page_screenshot", { filename: "nova_page", full_page: true });
-collect(parse());
+wait_for_parser_value("page_screenshot");
+
+let result = parse();
+collect({
+  schema_version: result.schema_version,
+  source_url: result.source_url,
+  captured_at: result.captured_at,
+  page_state: result.page_state,
+  product: result.product,
+  independent_sources: result.independent_sources,
+  evidence: result.evidence,
+});
