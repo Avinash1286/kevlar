@@ -57,7 +57,7 @@ export default async function Home() {
           <span>Kevlar</span>
         </a>
         <div className="phase-pill">
-          <span /> Gate H · Semantic CDC
+          <span /> Gate I · Evidence + Fleet Safety
         </div>
         <a className="repo-link" href="https://github.com/Avinash1286/kevlar">
           GitHub ↗
@@ -98,8 +98,14 @@ export default async function Home() {
           <Link className="repo-link" href="/conflicts">
             Conflict courtroom →
           </Link>
+          <Link className="repo-link" href="/evidence">
+            Evidence graph →
+          </Link>
+          <Link className="repo-link" href="/fleet/gauntlet">
+            Fleet Gauntlet →
+          </Link>
           <span className="quiet-label">
-            Week 8 of 12 · Semantic change and reconciliation
+            Week 9 of 12 · Evidence graph and canary repair
           </span>
         </div>
       </section>

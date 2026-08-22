@@ -84,6 +84,29 @@ import {
   semanticEventTypeValidator,
   sourceConflictStatusValidator,
 } from "./phase8Validators";
+import {
+  blastImpactKindValidator,
+  blastImpactStateValidator,
+  canaryStageValidator,
+  canaryStatusValidator,
+  canaryThresholdsValidator,
+  downstreamConsumerKindValidator,
+  downstreamConsumerStatusValidator,
+  evidenceArtifactKindValidator,
+  evidenceBundleStatusValidator,
+  extendedCertificatePayloadValidator,
+  extendedCertificateStatusValidator,
+  fleetCaseVisibilityValidator,
+  fleetExpectedRelationValidator,
+  gauntletRunStatusValidator,
+  mutationCategoryValidator,
+  provenanceNodeTypeValidator,
+  provenanceRelationshipValidator,
+  repairCandidateStatusValidator,
+  sourceArchetypeValidator,
+  tribunalContextItemKindValidator,
+  verificationOutcomeValidator,
+} from "./phase9Validators";
 
 const schema = defineSchema({
   fixtureStates: defineTable({
@@ -1511,6 +1534,371 @@ const schema = defineSchema({
     eventIds: v.array(v.id("changeEvents")),
     conflictIds: v.array(v.id("sourceConflicts")),
     blockedDecisionIds: v.array(v.id("releaseDecisions")),
+    createdAt: v.number(),
+  }).index("by_key", ["key"]),
+
+  provenanceNodes: defineTable({
+    projectId: v.id("projects"),
+    nodeType: provenanceNodeTypeValidator,
+    externalId: v.string(),
+    label: v.string(),
+    integrityDigest: v.optional(v.string()),
+    metadata: v.any(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_nodeType_and_externalId", ["nodeType", "externalId"])
+    .index("by_projectId_and_nodeType_and_createdAt", [
+      "projectId",
+      "nodeType",
+      "createdAt",
+    ]),
+
+  provenanceEdges: defineTable({
+    projectId: v.id("projects"),
+    fromNodeId: v.id("provenanceNodes"),
+    relationship: provenanceRelationshipValidator,
+    toNodeId: v.id("provenanceNodes"),
+    metadata: v.any(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_fromNodeId_and_createdAt", ["fromNodeId", "createdAt"])
+    .index("by_toNodeId_and_createdAt", ["toNodeId", "createdAt"])
+    .index("by_projectId_and_relationship_and_createdAt", [
+      "projectId",
+      "relationship",
+      "createdAt",
+    ]),
+
+  evidenceBundles: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.optional(v.id("incidents")),
+    eventId: v.optional(v.id("changeEvents")),
+    factVersionId: v.optional(v.id("factVersions")),
+    coreCertificateId: v.optional(v.id("certificates")),
+    bundleKey: v.string(),
+    status: evidenceBundleStatusValidator,
+    digest: v.string(),
+    manifestDigest: v.string(),
+    artifactCount: v.number(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+    sealedAt: v.optional(v.number()),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_bundleKey", ["bundleKey"])
+    .index("by_digest", ["digest"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_eventId", ["eventId"]),
+
+  evidenceBundleArtifacts: defineTable({
+    bundleId: v.id("evidenceBundles"),
+    kind: evidenceArtifactKindValidator,
+    evidenceId: v.optional(v.id("evidence")),
+    storageId: v.optional(v.id("_storage")),
+    reference: v.optional(v.string()),
+    contentDigest: v.string(),
+    retainedUntil: v.optional(v.number()),
+    metadata: v.any(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_bundleId_and_createdAt", ["bundleId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  downstreamConsumers: defineTable({
+    projectId: v.id("projects"),
+    name: v.string(),
+    kind: downstreamConsumerKindValidator,
+    predicate: v.string(),
+    status: downstreamConsumerStatusValidator,
+    operationKey: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_projectId_and_predicate_and_status", [
+      "projectId",
+      "predicate",
+      "status",
+    ]),
+
+  blastRadiusAssessments: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    sourceId: v.optional(v.id("sources")),
+    collectorBindingId: v.optional(v.id("collectorBindings")),
+    affectedFieldCount: v.number(),
+    affectedEntityCount: v.number(),
+    affectedFactCount: v.number(),
+    affectedEventCount: v.number(),
+    affectedSubscriberCount: v.number(),
+    affectedDownstreamCount: v.number(),
+    freshnessImpact: v.string(),
+    lastKnownGoodAvailable: v.boolean(),
+    alternateSourceCoverage: v.boolean(),
+    estimatedFalseEventBlastRadius: v.number(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"]),
+
+  blastRadiusImpacts: defineTable({
+    assessmentId: v.id("blastRadiusAssessments"),
+    projectId: v.id("projects"),
+    kind: blastImpactKindValidator,
+    targetId: v.string(),
+    label: v.string(),
+    state: blastImpactStateValidator,
+    details: v.any(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_assessmentId_and_kind", ["assessmentId", "kind"])
+    .index("by_operationKey", ["operationKey"]),
+
+  repairTribunalContexts: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    healAttemptId: v.id("healAttempts"),
+    blastRadiusAssessmentId: v.id("blastRadiusAssessments"),
+    sourceMappingCount: v.number(),
+    canonicalFieldCount: v.number(),
+    currentFactCount: v.number(),
+    openConflictCount: v.number(),
+    estimatedEventBlastRadius: v.number(),
+    independentSupportAvailable: v.boolean(),
+    identityChangeRisk: v.boolean(),
+    summary: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_healAttemptId", ["healAttemptId"]),
+
+  repairTribunalContextItems: defineTable({
+    contextId: v.id("repairTribunalContexts"),
+    kind: tribunalContextItemKindValidator,
+    targetId: v.string(),
+    label: v.string(),
+    details: v.any(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_contextId_and_kind", ["contextId", "kind"])
+    .index("by_operationKey", ["operationKey"]),
+
+  repairCandidateVersions: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    healAttemptId: v.id("healAttempts"),
+    collectorId: v.id("collectors"),
+    bindingId: v.optional(v.id("collectorBindings")),
+    candidateVersion: v.string(),
+    priorActiveVersion: v.optional(v.string()),
+    status: repairCandidateStatusValidator,
+    operationKey: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_collectorId_and_status", ["collectorId", "status"]),
+
+  repairCanaryRuns: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    healAttemptId: v.id("healAttempts"),
+    candidateVersionId: v.id("repairCandidateVersions"),
+    status: canaryStatusValidator,
+    currentStage: canaryStageValidator,
+    thresholds: canaryThresholdsValidator,
+    totalChecks: v.number(),
+    passedChecks: v.number(),
+    criticalFailures: v.number(),
+    falseEventCount: v.number(),
+    automaticStopReason: v.optional(v.string()),
+    operationKey: v.string(),
+    startedAt: v.number(),
+    updatedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_incidentId_and_startedAt", ["incidentId", "startedAt"])
+    .index("by_status_and_updatedAt", ["status", "updatedAt"]),
+
+  canaryStageResults: defineTable({
+    canaryRunId: v.id("repairCanaryRuns"),
+    stage: canaryStageValidator,
+    outcome: verificationOutcomeValidator,
+    totalCases: v.number(),
+    passedCases: v.number(),
+    criticalFailures: v.number(),
+    falseEventCount: v.number(),
+    extractionAssertionsPassed: v.boolean(),
+    eventAssertionsPassed: v.boolean(),
+    identityStable: v.boolean(),
+    schemaCompatible: v.boolean(),
+    mappingCompatible: v.boolean(),
+    evidenceDigest: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_canaryRunId_and_stage", ["canaryRunId", "stage"])
+    .index("by_operationKey", ["operationKey"]),
+
+  repairEventHolds: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    canaryRunId: v.id("repairCanaryRuns"),
+    eventId: v.id("changeEvents"),
+    reason: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_canaryRunId_and_createdAt", ["canaryRunId", "createdAt"])
+    .index("by_eventId", ["eventId"])
+    .index("by_operationKey", ["operationKey"]),
+
+  fleetGauntletSuites: defineTable({
+    projectId: v.id("projects"),
+    name: v.string(),
+    revision: v.string(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("active"),
+      v.literal("retired"),
+    ),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_projectId_and_status_and_createdAt", [
+      "projectId",
+      "status",
+      "createdAt",
+    ]),
+
+  fleetGauntletCases: defineTable({
+    suiteId: v.id("fleetGauntletSuites"),
+    caseId: v.string(),
+    name: v.string(),
+    archetype: sourceArchetypeValidator,
+    category: mutationCategoryValidator,
+    visibility: fleetCaseVisibilityValidator,
+    transformVersion: v.string(),
+    canonicalField: v.string(),
+    expectedRelation: fleetExpectedRelationValidator,
+    expectedEventTypes: v.array(v.string()),
+    forbiddenEventTypes: v.array(v.string()),
+    critical: v.boolean(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_suiteId_and_caseId", ["suiteId", "caseId"])
+    .index("by_suiteId_and_visibility", ["suiteId", "visibility"])
+    .index("by_operationKey", ["operationKey"]),
+
+  fleetGauntletRuns: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    healAttemptId: v.id("healAttempts"),
+    canaryRunId: v.id("repairCanaryRuns"),
+    suiteId: v.id("fleetGauntletSuites"),
+    status: gauntletRunStatusValidator,
+    totalCases: v.number(),
+    passedCases: v.number(),
+    heldOutTotal: v.number(),
+    heldOutPassed: v.number(),
+    criticalFailures: v.number(),
+    falseEventCount: v.number(),
+    operationKey: v.string(),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_incidentId_and_startedAt", ["incidentId", "startedAt"])
+    .index("by_canaryRunId", ["canaryRunId"]),
+
+  fleetGauntletResults: defineTable({
+    gauntletRunId: v.id("fleetGauntletRuns"),
+    caseId: v.id("fleetGauntletCases"),
+    outcome: verificationOutcomeValidator,
+    observedRelation: fleetExpectedRelationValidator,
+    extractedValueHash: v.optional(v.string()),
+    releasedValueHash: v.optional(v.string()),
+    emittedEventTypes: v.array(v.string()),
+    extractionAssertionPassed: v.boolean(),
+    eventAssertionPassed: v.boolean(),
+    falseHeal: v.boolean(),
+    falseEvent: v.boolean(),
+    detectionMs: v.number(),
+    recoveryMs: v.optional(v.number()),
+    evidenceDigest: v.string(),
+    reason: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_gauntletRunId_and_caseId", ["gauntletRunId", "caseId"])
+    .index("by_operationKey", ["operationKey"]),
+
+  fleetBenchmarkMetrics: defineTable({
+    projectId: v.id("projects"),
+    gauntletRunId: v.id("fleetGauntletRuns"),
+    silentCorruptionCatchRate: v.number(),
+    correctTriageRate: v.number(),
+    falseHealRate: v.number(),
+    heldOutRepairPassRate: v.number(),
+    entityResolutionPrecision: v.number(),
+    semanticEventPrecision: v.number(),
+    semanticEventRecall: v.number(),
+    falseEventCount: v.number(),
+    correctionClassificationAccuracy: v.number(),
+    timeToVerifiedRecoveryMs: v.number(),
+    lastKnownGoodAvailability: v.number(),
+    sourceFreshnessAfterIncident: v.number(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_gauntletRunId", ["gauntletRunId"])
+    .index("by_projectId_and_createdAt", ["projectId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  extendedRepairCertificates: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    healAttemptId: v.id("healAttempts"),
+    canaryRunId: v.id("repairCanaryRuns"),
+    gauntletRunId: v.id("fleetGauntletRuns"),
+    evidenceBundleId: v.id("evidenceBundles"),
+    coreCertificateId: v.optional(v.id("certificates")),
+    status: extendedCertificateStatusValidator,
+    payload: extendedCertificatePayloadValidator,
+    digest: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_digest", ["digest"]),
+
+  phase9Proofs: defineTable({
+    key: v.string(),
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    evidenceBundleId: v.id("evidenceBundles"),
+    rootNodeId: v.id("provenanceNodes"),
+    blastRadiusAssessmentId: v.id("blastRadiusAssessments"),
+    tribunalContextId: v.id("repairTribunalContexts"),
+    failedCanaryRunId: v.id("repairCanaryRuns"),
+    passedCanaryRunId: v.id("repairCanaryRuns"),
+    gauntletRunId: v.id("fleetGauntletRuns"),
+    extendedCertificateId: v.id("extendedRepairCertificates"),
     createdAt: v.number(),
   }).index("by_key", ["key"]),
 

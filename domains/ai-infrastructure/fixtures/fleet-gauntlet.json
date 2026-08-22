@@ -1,0 +1,17 @@
+{
+  "schema_version": "phase9.fleet-gauntlet.v1",
+  "required_mutation_kinds": ["structural", "semantic_decoy", "rendering", "identity", "unit"],
+  "activation_stages": ["trigger", "source_fixtures", "held_out", "live_subset", "shadow", "active"],
+  "automatic_stop": {
+    "critical_failures": 1,
+    "false_events": 1,
+    "withhold_affected_events": true,
+    "rollback_candidate": true
+  },
+  "regression_suite": {
+    "source_archetype": "product_pricing",
+    "fixture": "nova-headphones",
+    "expected_purchase_price_usd": 129,
+    "expected_business_events_for_layout_mutations": 0
+  }
+}

@@ -1194,6 +1194,108 @@ footer strong {
   }
 }
 
+/* Phase 9 — evidence graph, blast radius, and fleet canaries */
+.evidence-console { padding-bottom: 90px; }
+.evidence-root,
+.bundle-manifest {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr auto;
+  gap: 1px;
+  margin-top: 30px;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+.evidence-root > div,
+.bundle-manifest > div { display: grid; gap: 8px; padding: 20px; background: #f7f6ef; }
+.evidence-root span,
+.bundle-manifest span,
+.edge-ledger > span,
+.event-holds > span,
+.benchmark-strip > span { color: var(--muted); font: 650 0.61rem var(--font-mono), monospace; letter-spacing: 0.08em; }
+.evidence-root code,
+.bundle-manifest code { color: var(--green); font-size: 0.64rem; overflow-wrap: anywhere; }
+.evidence-root > a,
+.bundle-manifest > a { display: grid; place-items: center; padding: 20px; background: var(--dark); color: var(--acid); font: 650 0.66rem var(--font-mono), monospace; text-align: center; }
+
+.graph-ledger,
+.impact-ledger,
+.mutation-matrix { margin-top: 24px; border: 1px solid var(--line); background: #f7f6ef; }
+.graph-ledger > header,
+.graph-ledger > article { display: grid; grid-template-columns: 1.2fr 0.7fr 1.6fr; gap: 16px; padding: 14px 18px; border-bottom: 1px solid var(--line); align-items: center; }
+.graph-ledger > header,
+.impact-ledger > header,
+.mutation-matrix > header { color: var(--muted); font: 650 0.6rem var(--font-mono), monospace; letter-spacing: 0.08em; }
+.graph-ledger > article:last-child,
+.impact-ledger > article:last-child,
+.mutation-matrix > article:last-child { border-bottom: 0; }
+.graph-ledger code { color: var(--green); font-size: 0.63rem; overflow-wrap: anywhere; }
+.graph-ledger strong { font-size: 0.68rem; text-transform: uppercase; }
+
+.edge-ledger { margin-top: 22px; padding: 22px; background: var(--dark); color: white; }
+.edge-ledger article { display: grid; grid-template-columns: 1fr 0.7fr 1fr; gap: 16px; padding: 13px 0; border-bottom: 1px solid #3b3e37; font-size: 0.65rem; }
+.edge-ledger article:last-child { border-bottom: 0; }
+.edge-ledger strong { color: var(--acid); }
+.edge-ledger code { color: #aeb2a8; overflow-wrap: anywhere; }
+
+.artifact-grid,
+.canary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 26px; }
+.artifact-grid article,
+.canary-grid article { padding: 24px; border: 1px solid var(--line); background: #f7f6ef; }
+.artifact-grid header,
+.canary-grid header { display: flex; justify-content: space-between; gap: 15px; }
+.artifact-grid header span,
+.canary-grid header span { color: var(--green); font: 650 0.62rem var(--font-mono), monospace; text-transform: uppercase; }
+.artifact-grid article > code,
+.canary-grid header code { display: block; margin: 15px 0; color: var(--muted); font-size: 0.63rem; overflow-wrap: anywhere; }
+
+.impact-ledger > header,
+.impact-ledger > article { display: grid; grid-template-columns: 0.7fr 1.6fr 1fr; gap: 16px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.impact-ledger > article code { color: var(--green); overflow-wrap: anywhere; }
+.tribunal-context { margin-top: 22px; padding: 24px; background: var(--dark); color: white; }
+.tribunal-context > header { display: flex; justify-content: space-between; color: var(--acid); font: 650 0.66rem var(--font-mono), monospace; }
+.tribunal-context article { display: grid; grid-template-columns: 0.8fr 2fr 0.6fr; gap: 18px; align-items: center; padding: 14px 0; border-bottom: 1px solid #3b3e37; }
+.tribunal-context article p { color: #aeb2a8; }
+.tribunal-context article em { color: var(--acid); font-style: normal; text-transform: uppercase; }
+
+.stage-track { display: flex; flex-wrap: wrap; gap: 7px; margin: 18px 0; }
+.stage-track span { padding: 6px 8px; border: 1px solid var(--line); color: var(--muted); font: 0.59rem var(--font-mono), monospace; text-transform: uppercase; }
+.stage-track span.pass,
+.stage-track span.passed,
+.stage-track span.active { border-color: var(--green); color: var(--green); }
+.stage-track span.failed,
+.stage-track span.stopped { border-color: #9e3d35; color: #9e3d35; }
+.event-holds,
+.benchmark-strip { margin-top: 24px; padding: 24px; background: var(--dark); color: white; }
+.event-holds article { display: grid; grid-template-columns: 1fr 0.6fr 1.5fr; gap: 16px; padding: 13px 0; border-bottom: 1px solid #3b3e37; }
+.event-holds code { color: var(--acid); }
+
+.mutation-matrix > header,
+.mutation-matrix > article { display: grid; grid-template-columns: 1fr 1fr 0.8fr 0.8fr 0.55fr; gap: 15px; padding: 14px 18px; border-bottom: 1px solid var(--line); align-items: center; }
+.mutation-matrix article { font-size: 0.7rem; }
+.mutation-matrix article strong { color: var(--green); text-transform: uppercase; }
+.mutation-matrix article em { color: var(--muted); font-style: normal; }
+.mutation-matrix article b { text-transform: uppercase; }
+.benchmark-strip > div { display: grid; grid-template-columns: 1.3fr 0.5fr 1.8fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid #3b3e37; }
+.benchmark-strip b { color: var(--acid); }
+.benchmark-strip code { color: #aeb2a8; overflow-wrap: anywhere; }
+
+@media (max-width: 900px) {
+  .evidence-root,
+  .bundle-manifest,
+  .artifact-grid,
+  .canary-grid { grid-template-columns: 1fr; }
+  .graph-ledger > header,
+  .impact-ledger > header,
+  .mutation-matrix > header { display: none; }
+  .graph-ledger > article,
+  .impact-ledger > article,
+  .mutation-matrix > article,
+  .edge-ledger article,
+  .tribunal-context article,
+  .event-holds article,
+  .benchmark-strip > div { grid-template-columns: 1fr; }
+}
+
 /* Phase 8 — semantic CDC and reconciliation courtrooms */
 .cdc-console { padding-bottom: 90px; }
 

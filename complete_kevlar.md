@@ -6518,12 +6518,12 @@ Make collector repairs safe at fleet scale and make every fact or event explaina
 
 #### Exit gate
 
-- [ ] Every released event has a navigable evidence path.
-- [ ] Repair activation begins with a canary.
-- [ ] A trigger-page pass alone cannot activate a repair.
-- [ ] Held-out fleet tests run before full release.
-- [ ] A failed repair withholds affected events.
-- [ ] The product-pricing fixture still passes as a regression suite.
+- [x] Every released event has a navigable evidence path.
+- [x] Repair activation begins with a canary.
+- [x] A trigger-page pass alone cannot activate a repair.
+- [x] Held-out fleet tests run before full release.
+- [x] A failed repair withholds affected events.
+- [x] The product-pricing fixture still passes as a regression suite.
 
 ---
 

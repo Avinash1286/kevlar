@@ -26,7 +26,7 @@ export default async function EventsPage() {
           <span className="brand-mark">K</span><span>Kevlar</span>
         </Link>
         <nav className="fleet-nav">
-          <Link href="/events">Events</Link><Link href="/conflicts">Conflicts</Link><Link href="/history">Chronicle</Link><Link href="/entities">Entities</Link>
+          <Link href="/events">Events</Link><Link href="/conflicts">Conflicts</Link><Link href="/evidence">Evidence</Link><Link href="/fleet/gauntlet">Fleet Gauntlet</Link><Link href="/history">Chronicle</Link><Link href="/entities">Entities</Link>
         </nav>
       </header>
       <section className="gauntlet-heading">
