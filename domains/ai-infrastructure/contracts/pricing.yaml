@@ -1,0 +1,10 @@
+contract_id: ai_infrastructure.pricing
+version: 1.0.0
+critical_fields:
+  - records[].provider_model_id
+  - records[].input_price
+  - records[].output_price
+rules:
+  - prices must be positive USD values per one million tokens
+  - original value and unit must be retained
+  - official pricing source authority is required

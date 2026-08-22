@@ -32,6 +32,19 @@ import {
   tribunalCheckKindValidator,
   tribunalStatusValidator,
 } from "./phase4Validators";
+import {
+  aiInfrastructureObservationValidator,
+  aiInfrastructureViolationValidator,
+  bindingLifecycleValidator,
+  fleetOutcomeValidator,
+  leaseStatusValidator,
+  onboardingStatusValidator,
+  queueStateValidator,
+  sourceApprovalValidator,
+  sourceHealthStateValidator,
+  sourceLifecycleValidator,
+  sourceTypeValidator,
+} from "./phase5Validators";
 
 const schema = defineSchema({
   fixtureStates: defineTable({
@@ -579,6 +592,253 @@ const schema = defineSchema({
     .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
     .index("by_healAttemptId_and_createdAt", ["healAttemptId", "createdAt"])
     .index("by_operationKey", ["operationKey"]),
+
+  domainPacks: defineTable({
+    key: v.string(),
+    name: v.string(),
+    version: v.string(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("active"),
+      v.literal("paused"),
+      v.literal("retired"),
+    ),
+    coreRequired: v.literal(true),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_key", ["key"]),
+
+  sources: defineTable({
+    domainPackId: v.id("domainPacks"),
+    key: v.string(),
+    name: v.string(),
+    providerKey: v.string(),
+    sourceType: sourceTypeValidator,
+    official: v.boolean(),
+    visibility: v.union(
+      v.literal("public"),
+      v.literal("authenticated"),
+      v.literal("private"),
+    ),
+    approvalStatus: sourceApprovalValidator,
+    lifecycleStatus: sourceLifecycleValidator,
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_key", ["key"])
+    .index("by_domainPackId_and_lifecycleStatus", [
+      "domainPackId",
+      "lifecycleStatus",
+    ])
+    .index("by_approvalStatus_and_lifecycleStatus", [
+      "approvalStatus",
+      "lifecycleStatus",
+    ]),
+
+  sourceEndpoints: defineTable({
+    sourceId: v.id("sources"),
+    url: v.string(),
+    host: v.string(),
+    pathPrefix: v.string(),
+    public: v.boolean(),
+    approvalStatus: sourceApprovalValidator,
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_sourceId_and_url", ["sourceId", "url"])
+    .index("by_sourceId_and_approvalStatus", ["sourceId", "approvalStatus"])
+    .index("by_host_and_pathPrefix", ["host", "pathPrefix"]),
+
+  sourceReviews: defineTable({
+    sourceId: v.id("sources"),
+    decision: sourceApprovalValidator,
+    summary: v.string(),
+    reviewerId: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_sourceId_and_createdAt", ["sourceId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  sourceAuthorities: defineTable({
+    sourceId: v.id("sources"),
+    predicate: v.string(),
+    authority: v.union(
+      v.literal("authoritative"),
+      v.literal("supporting"),
+      v.literal("forbidden"),
+    ),
+    rationale: v.string(),
+    active: v.boolean(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_sourceId_and_predicate", ["sourceId", "predicate"])
+    .index("by_sourceId_and_active", ["sourceId", "active"])
+    .index("by_operationKey", ["operationKey"]),
+
+  sourceCertifications: defineTable({
+    sourceId: v.id("sources"),
+    endpointId: v.id("sourceEndpoints"),
+    collectorId: v.id("collectors"),
+    status: v.union(v.literal("certified"), v.literal("rejected")),
+    contractVersion: v.string(),
+    snapshotId: v.string(),
+    brightDataJobId: v.string(),
+    outputHash: v.string(),
+    evidenceHash: v.string(),
+    violations: v.array(aiInfrastructureViolationValidator),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_brightDataJobId", ["brightDataJobId"])
+    .index("by_sourceId_and_createdAt", ["sourceId", "createdAt"])
+    .index("by_sourceId_and_status", ["sourceId", "status"])
+    .index("by_collectorId_and_status", ["collectorId", "status"]),
+
+  collectorBindings: defineTable({
+    sourceId: v.optional(v.id("sources")),
+    endpointId: v.optional(v.id("sourceEndpoints")),
+    collectorId: v.id("collectors"),
+    bindingKind: v.union(v.literal("production"), v.literal("regression")),
+    lifecycleStatus: bindingLifecycleValidator,
+    coreGateStatus: v.union(
+      v.literal("pending"),
+      v.literal("certified"),
+      v.literal("regression_only"),
+    ),
+    sourceCertificationId: v.optional(v.id("sourceCertifications")),
+    bypassCore: v.literal(false),
+    operationKey: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_sourceId_and_lifecycleStatus", ["sourceId", "lifecycleStatus"])
+    .index("by_collectorId_and_bindingKind", ["collectorId", "bindingKind"])
+    .index("by_sourceId_and_collectorId", ["sourceId", "collectorId"])
+    .index("by_bindingKind_and_updatedAt", ["bindingKind", "updatedAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  schedulePolicies: defineTable({
+    bindingId: v.id("collectorBindings"),
+    intervalMs: v.number(),
+    jitterMs: v.number(),
+    maxConcurrency: v.number(),
+    dailyQuota: v.number(),
+    weight: v.number(),
+    baseBackoffMs: v.number(),
+    maxBackoffMs: v.number(),
+    failureThreshold: v.number(),
+    enabled: v.boolean(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_bindingId", ["bindingId"])
+    .index("by_operationKey", ["operationKey"]),
+
+  sourceOnboardingRuns: defineTable({
+    sourceId: v.id("sources"),
+    status: onboardingStatusValidator,
+    currentStep: v.string(),
+    operationKey: v.string(),
+    eventSequence: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_sourceId_and_createdAt", ["sourceId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  sourceOnboardingEvents: defineTable({
+    sourceId: v.id("sources"),
+    onboardingRunId: v.id("sourceOnboardingRuns"),
+    sequence: v.number(),
+    fromStatus: v.union(onboardingStatusValidator, v.null()),
+    toStatus: onboardingStatusValidator,
+    details: v.any(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_onboardingRunId_and_sequence", ["onboardingRunId", "sequence"])
+    .index("by_operationKey", ["operationKey"]),
+
+  sourceHealth: defineTable({
+    sourceId: v.id("sources"),
+    state: sourceHealthStateValidator,
+    consecutiveFailures: v.number(),
+    cooldownUntil: v.optional(v.number()),
+    quotaDate: v.string(),
+    quotaUsed: v.number(),
+    lastClaimedAt: v.optional(v.number()),
+    totalClaims: v.number(),
+    lastSuccessAt: v.optional(v.number()),
+    lastFailureAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    updatedAt: v.number(),
+  })
+    .index("by_sourceId", ["sourceId"])
+    .index("by_state_and_cooldownUntil", ["state", "cooldownUntil"]),
+
+  fleetQueueItems: defineTable({
+    sourceId: v.id("sources"),
+    bindingId: v.id("collectorBindings"),
+    schedulePolicyId: v.id("schedulePolicies"),
+    state: queueStateValidator,
+    dueAt: v.number(),
+    virtualFinish: v.number(),
+    attempt: v.number(),
+    currentLeaseId: v.optional(v.id("fleetLeases")),
+    lastOutcome: v.optional(fleetOutcomeValidator),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_state_and_dueAt", ["state", "dueAt"])
+    .index("by_sourceId_and_state_and_dueAt", ["sourceId", "state", "dueAt"])
+    .index("by_schedulePolicyId", ["schedulePolicyId"]),
+
+  fleetLeases: defineTable({
+    queueItemId: v.id("fleetQueueItems"),
+    sourceId: v.id("sources"),
+    bindingId: v.id("collectorBindings"),
+    leaseToken: v.string(),
+    workerId: v.string(),
+    status: leaseStatusValidator,
+    operationKey: v.string(),
+    outcomeOperationKey: v.optional(v.string()),
+    claimedAt: v.number(),
+    expiresAt: v.number(),
+    releasedAt: v.optional(v.number()),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_outcomeOperationKey", ["outcomeOperationKey"])
+    .index("by_bindingId_and_status", ["bindingId", "status"])
+    .index("by_status_and_expiresAt", ["status", "expiresAt"]),
+
+  aiInfrastructureObservations: defineTable({
+    sourceId: v.id("sources"),
+    bindingId: v.id("collectorBindings"),
+    runId: v.id("runs"),
+    sourceType: sourceTypeValidator,
+    sourceUrl: v.string(),
+    providerId: v.optional(v.string()),
+    providerName: v.optional(v.string()),
+    raw: v.any(),
+    normalized: v.optional(aiInfrastructureObservationValidator),
+    trust: v.union(v.literal("verified"), v.literal("quarantined")),
+    evidenceHash: v.string(),
+    violations: v.array(aiInfrastructureViolationValidator),
+    authorityPredicates: v.array(v.string()),
+    operationKey: v.string(),
+    capturedAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_runId", ["runId"])
+    .index("by_sourceId_and_capturedAt", ["sourceId", "capturedAt"])
+    .index("by_trust_and_createdAt", ["trust", "createdAt"]),
 
   auditEvents: defineTable({
     projectId: v.optional(v.id("projects")),

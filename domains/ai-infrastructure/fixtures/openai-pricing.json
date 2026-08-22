@@ -1,0 +1,36 @@
+{
+  "schema_version": "ai-infrastructure.source.v1",
+  "source_type": "pricing",
+  "source_url": "https://openai.com/api/pricing/",
+  "captured_at": "2026-08-22T08:00:00.000Z",
+  "provider": { "id": "openai", "name": "OpenAI" },
+  "records": [
+    {
+      "kind": "pricing",
+      "provider_model_id": "gpt-5.6-sol",
+      "display_name": "GPT-5.6 Sol",
+      "plan": "standard",
+      "input_price": {
+        "amount": 5,
+        "currency": "USD",
+        "denominator": "million_input_tokens",
+        "original": { "value": "$5.00", "unit": "1M tokens" }
+      },
+      "output_price": {
+        "amount": 30,
+        "currency": "USD",
+        "denominator": "million_output_tokens",
+        "original": { "value": "$30.00", "unit": "1M tokens" }
+      },
+      "region": null
+    }
+  ],
+  "evidence": {
+    "page_heading": "API Pricing",
+    "contexts": [
+      "GPT-5.6 Sol Input $5.00 / 1M tokens Output $30.00 / 1M tokens"
+    ],
+    "screenshot_ref": null,
+    "content_hash": "sha256:de93ead06a2c300f8a98811418a307a03770809c0f5464206a6a59dbbdeebff7"
+  }
+}

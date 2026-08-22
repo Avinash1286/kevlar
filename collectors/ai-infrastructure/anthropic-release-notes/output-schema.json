@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "source_url",
+    "source_type",
+    "captured_at",
+    "provider",
+    "records",
+    "evidence"
+  ],
+  "properties": {
+    "schema_version": { "const": "ai-infrastructure.source.v1" },
+    "source_url": { "type": "string", "format": "uri" },
+    "source_type": { "const": "changelog" },
+    "captured_at": { "type": "string", "format": "date-time" },
+    "provider": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": { "id": { "type": "string" }, "name": { "type": "string" } }
+    },
+    "records": { "type": "array", "minItems": 1, "maxItems": 200 },
+    "evidence": {
+      "type": "object",
+      "required": ["page_heading", "contexts", "content_hash"],
+      "properties": {
+        "page_heading": { "type": "string" },
+        "contexts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "screenshot_ref": { "type": ["string", "null"] },
+        "content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    }
+  }
+}

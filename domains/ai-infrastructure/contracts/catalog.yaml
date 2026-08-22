@@ -1,0 +1,10 @@
+contract_id: ai_infrastructure.catalog
+version: 1.0.0
+critical_fields:
+  - records[].provider_model_id
+  - records[].display_name
+  - records[].lifecycle_status
+rules:
+  - provider model IDs must be stable non-empty identifiers
+  - modalities and capability flags must be explicit
+  - official model-catalog authority is required

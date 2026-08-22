@@ -6346,12 +6346,12 @@ Move from one protected collector to a governed fleet without weakening the trus
 
 #### Exit gate
 
-- [ ] Every production source is approved and public.
-- [ ] Every source is attached to a custom Scraper Studio collector.
-- [ ] No collector bypasses semantic contracts.
-- [ ] Source authority is explicit.
-- [ ] Schedules and concurrency are persisted.
-- [ ] One failed source cannot starve the rest of the fleet.
+- [x] Every production source is approved and public.
+- [x] Every source is attached to a custom Scraper Studio collector.
+- [x] No collector bypasses semantic contracts.
+- [x] Source authority is explicit.
+- [x] Schedules and concurrency are persisted.
+- [x] One failed source cannot starve the rest of the fleet.
 
 ---
 

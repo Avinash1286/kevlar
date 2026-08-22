@@ -57,7 +57,7 @@ export default async function Home() {
           <span>Kevlar</span>
         </a>
         <div className="phase-pill">
-          <span /> Gate D · Certification
+          <span /> Gate E · Collector Mesh
         </div>
         <a className="repo-link" href="https://github.com/Avinash1286/kevlar">
           GitHub ↗
@@ -83,8 +83,11 @@ export default async function Home() {
           <a className="repo-link" href="/gauntlet">
             Inspect Gauntlet →
           </a>
+          <a className="repo-link" href="/sources">
+            Source catalog →
+          </a>
           <span className="quiet-label">
-            Week 4 of 12 · Repair certification firewall
+            Week 5 of 12 · Governed collector fleet
           </span>
         </div>
       </section>

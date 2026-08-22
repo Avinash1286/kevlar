@@ -1,0 +1,20 @@
+{
+  "source_key": "openai-pricing",
+  "name": "OpenAI API pricing",
+  "archetype": "pricing",
+  "provider": "openai",
+  "url": "https://openai.com/api/pricing/",
+  "public_data": true,
+  "approved_host": "openai.com",
+  "approved_path_prefix": "/api/pricing/",
+  "predicate_authority": [
+    "pricing_plan.price",
+    "pricing_plan.currency",
+    "pricing_plan.unit"
+  ],
+  "schedule": {
+    "cadence_minutes": 360,
+    "max_concurrency": 1,
+    "daily_quota": 12
+  }
+}

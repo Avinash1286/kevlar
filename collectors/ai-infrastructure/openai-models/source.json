@@ -1,0 +1,17 @@
+{
+  "source_key": "openai-models",
+  "name": "OpenAI model catalog",
+  "archetype": "catalog",
+  "provider": "openai",
+  "url": "https://platform.openai.com/docs/models",
+  "public_data": true,
+  "approved_host": "platform.openai.com",
+  "approved_path_prefix": "/docs/models",
+  "predicate_authority": [
+    "model.name",
+    "model.capability",
+    "model.endpoint",
+    "model.limit"
+  ],
+  "schedule": { "cadence_minutes": 720, "max_concurrency": 1, "daily_quota": 8 }
+}

@@ -1,6 +1,20 @@
 import { z } from "zod";
 
 const triggerResponseSchema = z.object({ collection_id: z.string().min(1) });
+const collectorResponseSchema = z
+  .object({
+    id: z.string().regex(/^c_[A-Za-z0-9_-]+$/),
+    name: z.string().min(1),
+    active: z.boolean().optional(),
+  })
+  .passthrough();
+const automationProgressSchema = z
+  .object({
+    status: z.string().optional(),
+    state: z.string().optional(),
+    error: z.unknown().optional(),
+  })
+  .passthrough();
 const pendingResponseSchema = z.object({ status: z.string().min(1) });
 const selfHealProgressSchema = z
   .object({
@@ -19,6 +33,112 @@ export type BrightDataRuntimeConfig = {
   baseUrl?: string;
 };
 
+export type BrightDataStudioAdminConfig = {
+  apiKey: string;
+  baseUrl?: string;
+};
+
+export type WebhookDelivery = {
+  type: "webhook";
+  endpoint: string;
+  flatten_csv: boolean;
+  delivery_type: "deliver_results";
+};
+
+/** Administrative client for creating governed custom Scraper Studio collectors. */
+export class BrightDataStudioAdmin {
+  readonly #apiKey: string;
+  readonly #baseUrl: string;
+
+  constructor(config: BrightDataStudioAdminConfig) {
+    if (!config.apiKey.trim()) {
+      throw new Error("Bright Data API key is required");
+    }
+    this.#apiKey = config.apiKey;
+    this.#baseUrl = config.baseUrl ?? "https://api.brightdata.com";
+  }
+
+  async createCollector(
+    input: { name: string; deliver: WebhookDelivery },
+    signal?: AbortSignal,
+  ) {
+    if (!input.name.trim()) throw new Error("Collector name is required");
+    const endpoint = new URL(input.deliver.endpoint);
+    if (endpoint.protocol !== "https:") {
+      throw new Error("Collector webhook delivery must use HTTPS");
+    }
+    const response = await fetch(`${this.#baseUrl}/dca/collector`, {
+      method: "POST",
+      headers: this.#jsonHeaders(),
+      body: JSON.stringify(input),
+      signal,
+    });
+    return collectorResponseSchema.parse(await readJson(response));
+  }
+
+  async automateTemplate(
+    collectorId: string,
+    input: { description: string; url: string },
+    signal?: AbortSignal,
+  ) {
+    assertCollectorId(collectorId);
+    if (!input.description.trim()) {
+      throw new Error("Automation description is required");
+    }
+    if (input.description.length > 500) {
+      throw new Error("Automation descriptions are limited to 500 chars");
+    }
+    new URL(input.url);
+    const response = await fetch(
+      `${this.#baseUrl}/dca/collectors/${encodeURIComponent(collectorId)}/automate_template`,
+      {
+        method: "POST",
+        headers: this.#jsonHeaders(),
+        body: JSON.stringify({
+          description: input.description,
+          urls: [input.url],
+        }),
+        signal,
+      },
+    );
+    return readJsonOrNull(response);
+  }
+
+  async pollAutomation(collectorId: string, signal?: AbortSignal) {
+    assertCollectorId(collectorId);
+    const response = await fetch(
+      `${this.#baseUrl}/dca/collectors/${encodeURIComponent(collectorId)}/automate_template/progress`,
+      { headers: this.#authorizationHeaders(), signal },
+    );
+    const raw = await readJson(response);
+    const payload = automationProgressSchema.parse(raw);
+    const status = String(payload.status ?? payload.state ?? "unknown");
+    const normalized = status.toLowerCase().replace(/[\s-]+/g, "_");
+    if (
+      ["done", "completed", "complete", "success", "succeeded"].includes(
+        normalized,
+      )
+    ) {
+      return { state: "completed" as const, status, raw };
+    }
+    if (["failed", "error", "cancelled", "canceled"].includes(normalized)) {
+      return { state: "failed" as const, status, raw };
+    }
+    return { state: "pending" as const, status, raw };
+  }
+
+  #authorizationHeaders() {
+    return { Authorization: `Bearer ${this.#apiKey}` };
+  }
+
+  #jsonHeaders() {
+    return {
+      ...this.#authorizationHeaders(),
+      "Content-Type": "application/json",
+    };
+  }
+}
+
 export class BrightDataRuntime {
   readonly #apiKey: string;
   readonly #collectorId: string;
@@ -27,9 +147,7 @@ export class BrightDataRuntime {
   constructor(config: BrightDataRuntimeConfig) {
     if (!config.apiKey.trim())
       throw new Error("Bright Data API key is required");
-    if (!/^c_[A-Za-z0-9_-]+$/.test(config.collectorId)) {
-      throw new Error("A valid custom Scraper Studio collector ID is required");
-    }
+    assertCollectorId(config.collectorId);
     this.#apiKey = config.apiKey;
     this.#collectorId = config.collectorId;
     this.#baseUrl = config.baseUrl ?? "https://api.brightdata.com";
@@ -40,11 +158,41 @@ export class BrightDataRuntime {
   }
 
   async triggerBatch(inputs: Record<string, unknown>[], signal?: AbortSignal) {
+    return this.#triggerBatch(inputs, undefined, signal);
+  }
+
+  async triggerDevelopment(
+    input: Record<string, unknown>,
+    signal?: AbortSignal,
+  ) {
+    return this.triggerBatchDevelopment([input], signal);
+  }
+
+  async triggerBatchDevelopment(
+    inputs: Record<string, unknown>[],
+    signal?: AbortSignal,
+  ) {
+    return this.#triggerBatch(inputs, "dev", signal);
+  }
+
+  async #triggerBatch(
+    inputs: Record<string, unknown>[],
+    version: "dev" | undefined,
+    signal?: AbortSignal,
+  ) {
     if (inputs.length === 0) {
       throw new Error("At least one collector input is required");
     }
+    const query = new URLSearchParams({
+      collector: this.#collectorId,
+      queue_next: "1",
+    });
+    if (version) {
+      query.set("version", version);
+      query.set("override_incompatible_schema", "1");
+    }
     const response = await fetch(
-      `${this.#baseUrl}/dca/trigger?collector=${encodeURIComponent(this.#collectorId)}&queue_next=1`,
+      `${this.#baseUrl}/dca/trigger?${query.toString()}`,
       {
         method: "POST",
         headers: {
@@ -64,7 +212,25 @@ export class BrightDataRuntime {
       `${this.#baseUrl}/dca/dataset?id=${encodeURIComponent(snapshotId)}`,
       { headers: { Authorization: `Bearer ${this.#apiKey}` }, signal },
     );
-    const payload = await readJson(response);
+    const payload = await readJsonOrNull(response);
+    if (payload === null) {
+      const logResponse = await fetch(
+        `${this.#baseUrl}/dca/log/${encodeURIComponent(snapshotId)}`,
+        { headers: { Authorization: `Bearer ${this.#apiKey}` }, signal },
+      );
+      if (logResponse.ok) {
+        const log = await readJsonOrNull(logResponse);
+        const status =
+          log && typeof log === "object" && "status" in log
+            ? String(log.status).toLowerCase()
+            : "collecting";
+        if (["done", "failed", "cancelled", "canceled"].includes(status)) {
+          return { state: "ready" as const, rows: [] };
+        }
+        return { state: "pending" as const, status };
+      }
+      return { state: "pending" as const, status: "collecting" };
+    }
     if (Array.isArray(payload))
       return { state: "ready" as const, rows: payload };
     const pending = pendingResponseSchema.safeParse(payload);
@@ -187,6 +353,12 @@ export class BrightDataRuntime {
   }
 }
 
+function assertCollectorId(collectorId: string) {
+  if (!/^c_[A-Za-z0-9_-]+$/.test(collectorId)) {
+    throw new Error("A valid custom Scraper Studio collector ID is required");
+  }
+}
+
 async function readJson(response: Response): Promise<unknown> {
   if (!response.ok) {
     const detail = (await response.text()).slice(0, 500);
@@ -225,6 +397,17 @@ async function readJsonOrNull(response: Response): Promise<unknown> {
   try {
     return JSON.parse(text) as unknown;
   } catch {
+    const lines = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (lines.length > 1) {
+      try {
+        return lines.map((line) => JSON.parse(line) as unknown);
+      } catch {
+        // Fall through to a bounded text diagnostic.
+      }
+    }
     return { text: text.slice(0, 500) };
   }
 }

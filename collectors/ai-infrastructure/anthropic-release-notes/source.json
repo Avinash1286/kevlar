@@ -1,0 +1,20 @@
+{
+  "source_key": "anthropic-release-notes",
+  "name": "Anthropic release notes",
+  "archetype": "changelog",
+  "provider": "anthropic",
+  "url": "https://docs.anthropic.com/en/release-notes/overview",
+  "public_data": true,
+  "approved_host": "docs.anthropic.com",
+  "approved_path_prefix": "/en/release-notes",
+  "predicate_authority": [
+    "deprecation_notice.status",
+    "deprecation_notice.effective_at",
+    "capability.status"
+  ],
+  "schedule": {
+    "cadence_minutes": 360,
+    "max_concurrency": 1,
+    "daily_quota": 12
+  }
+}

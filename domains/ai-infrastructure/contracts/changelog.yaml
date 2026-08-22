@@ -1,0 +1,11 @@
+contract_id: ai_infrastructure.changelog
+version: 1.0.0
+critical_fields:
+  - records[].notice_id
+  - records[].title
+  - records[].notice_type
+  - records[].summary
+rules:
+  - notices must retain affected model identifiers and source context
+  - unknown dates remain null rather than inferred
+  - official documentation or changelog authority is required

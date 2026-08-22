@@ -1,0 +1,32 @@
+schema_id: ai_infrastructure
+revision: 1
+status: active
+entities:
+  - provider
+  - model
+  - endpoint
+  - pricing_plan
+  - region
+  - capability
+  - limit
+  - deprecation_notice
+units:
+  currency: USD
+  token_price_denominators:
+    - million_input_tokens
+    - million_output_tokens
+  rate_limit_periods:
+    - minute
+    - day
+  rate_limit_dimensions:
+    - requests
+    - tokens
+source_observation:
+  schema_version: ai-infrastructure.source.v1
+  required:
+    - source_type
+    - source_url
+    - captured_at
+    - provider
+    - records
+    - evidence
