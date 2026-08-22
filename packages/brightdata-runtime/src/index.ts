@@ -50,9 +50,11 @@ export class BrightDataRuntime {
     const payload = await readJson(response);
     if (Array.isArray(payload))
       return { state: "ready" as const, rows: payload };
+    const pending = pendingResponseSchema.safeParse(payload);
+    if (!pending.success) return { state: "ready" as const, rows: [payload] };
     return {
       state: "pending" as const,
-      status: pendingResponseSchema.parse(payload).status,
+      status: pending.data.status,
     };
   }
 }
