@@ -19,6 +19,19 @@ import {
   workflowKindValidator,
   workflowStatusValidator,
 } from "./phase3Validators";
+import {
+  benchmarkBaselineValidator,
+  benchmarkStatusValidator,
+  certificatePayloadValidator,
+  certificateStatusValidator,
+  expectedRelationValidator,
+  healAttemptStatusValidator,
+  mutationCodeValidator,
+  mutationVisibilityValidator,
+  phase4EvidenceKindValidator,
+  tribunalCheckKindValidator,
+  tribunalStatusValidator,
+} from "./phase4Validators";
 
 const schema = defineSchema({
   fixtureStates: defineTable({
@@ -101,22 +114,18 @@ const schema = defineSchema({
 
   evidence: defineTable({
     projectId: v.id("projects"),
-    runId: v.id("runs"),
-    kind: v.union(
-      v.literal("html"),
-      v.literal("screenshot"),
-      v.literal("jsonld"),
-      v.literal("network_response"),
-      v.literal("visible_context"),
-    ),
+    runId: v.optional(v.id("runs")),
+    kind: phase4EvidenceKindValidator,
     sourceUrl: v.string(),
     storageId: v.optional(v.id("_storage")),
     contentHash: v.string(),
     metadata: v.any(),
+    phase4OperationKey: v.optional(v.string()),
     capturedAt: v.number(),
   })
     .index("by_run", ["runId"])
-    .index("by_project_captured", ["projectId", "capturedAt"]),
+    .index("by_project_captured", ["projectId", "capturedAt"])
+    .index("by_phase4OperationKey", ["phase4OperationKey"]),
 
   contracts: defineTable({
     projectId: v.id("projects"),
@@ -164,9 +173,12 @@ const schema = defineSchema({
     currency: v.string(),
     runId: v.id("runs"),
     proof: v.any(),
+    certificateId: v.optional(v.id("certificates")),
+    certifiedAt: v.optional(v.number()),
     updatedAt: v.number(),
   })
     .index("by_runId", ["runId"])
+    .index("by_certificateId", ["certificateId"])
     .index("by_projectId_and_entityId_and_fieldPath_and_updatedAt", [
       "projectId",
       "entityId",
@@ -389,6 +401,184 @@ const schema = defineSchema({
     .index("by_idempotencyKey", ["idempotencyKey"])
     .index("by_incidentId_and_requestedAt", ["incidentId", "requestedAt"])
     .index("by_status_and_requestedAt", ["status", "requestedAt"]),
+
+  healAttempts: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    collectorId: v.id("collectors"),
+    attempt: v.number(),
+    prompt: v.string(),
+    promptHash: v.string(),
+    status: healAttemptStatusValidator,
+    brightDataJobRef: v.optional(v.string()),
+    previewResult: v.optional(v.any()),
+    previewRunId: v.optional(v.id("runs")),
+    provider: v.optional(v.string()),
+    model: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_incidentId_and_attempt", ["incidentId", "attempt"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_status_and_updatedAt", ["status", "updatedAt"])
+    .index("by_brightDataJobRef", ["brightDataJobRef"]),
+
+  healAttemptEvents: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    healAttemptId: v.id("healAttempts"),
+    fromStatus: v.union(healAttemptStatusValidator, v.null()),
+    toStatus: healAttemptStatusValidator,
+    operationKey: v.string(),
+    requestHash: v.string(),
+    details: v.any(),
+    createdAt: v.number(),
+  })
+    .index("by_healAttemptId_and_createdAt", ["healAttemptId", "createdAt"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  repairDecisions: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    healAttemptId: v.id("healAttempts"),
+    decision: v.union(v.literal("approved"), v.literal("rejected")),
+    reason: v.string(),
+    actorId: v.string(),
+    operationKey: v.string(),
+    requestHash: v.string(),
+    providerApprovalRef: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_healAttemptId_and_createdAt", ["healAttemptId", "createdAt"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  tribunalChecks: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    healAttemptId: v.id("healAttempts"),
+    check: tribunalCheckKindValidator,
+    status: tribunalStatusValidator,
+    summary: v.string(),
+    details: v.any(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_healAttemptId_and_check", ["healAttemptId", "check"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  phase4EvidenceLinks: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    healAttemptId: v.optional(v.id("healAttempts")),
+    tribunalCheckId: v.optional(v.id("tribunalChecks")),
+    benchmarkRunId: v.optional(v.id("benchmarkRuns")),
+    certificateId: v.optional(v.id("certificates")),
+    evidenceId: v.id("evidence"),
+    relation: v.union(
+      v.literal("preview"),
+      v.literal("support"),
+      v.literal("selector"),
+      v.literal("human_review"),
+      v.literal("benchmark"),
+      v.literal("certificate"),
+    ),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_healAttemptId_and_createdAt", ["healAttemptId", "createdAt"])
+    .index("by_certificateId_and_createdAt", ["certificateId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  repairMutations: defineTable({
+    code: mutationCodeValidator,
+    name: v.string(),
+    visibility: mutationVisibilityValidator,
+    transform: v.string(),
+    expectedRelation: expectedRelationValidator,
+    criticalFields: v.array(v.string()),
+    promptVisible: v.boolean(),
+    enabled: v.boolean(),
+    catalogVersion: v.string(),
+    updatedAt: v.number(),
+  })
+    .index("by_code", ["code"])
+    .index("by_catalogVersion_and_code", ["catalogVersion", "code"])
+    .index("by_visibility_and_code", ["visibility", "code"]),
+
+  benchmarkRuns: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    healAttemptId: v.id("healAttempts"),
+    suiteRevision: v.string(),
+    baseline: benchmarkBaselineValidator,
+    status: benchmarkStatusValidator,
+    totalCases: v.number(),
+    passedCases: v.number(),
+    criticalFailures: v.number(),
+    falseHealCount: v.number(),
+    falseReleaseCount: v.number(),
+    lastKnownGoodPreserved: v.optional(v.boolean()),
+    operationKey: v.string(),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_startedAt", ["startedAt"])
+    .index("by_incidentId_and_startedAt", ["incidentId", "startedAt"])
+    .index("by_healAttemptId_and_startedAt", ["healAttemptId", "startedAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  benchmarkCaseResults: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    benchmarkRunId: v.id("benchmarkRuns"),
+    mutationId: v.id("repairMutations"),
+    caseId: mutationCodeValidator,
+    visibility: mutationVisibilityValidator,
+    expectedRelation: expectedRelationValidator,
+    observedRelation: v.optional(expectedRelationValidator),
+    outcome: v.union(v.literal("pass"), v.literal("fail")),
+    observedValue: v.union(v.number(), v.null()),
+    releasedValue: v.union(v.number(), v.null()),
+    detectionMs: v.number(),
+    recoveryMs: v.union(v.number(), v.null()),
+    falseHeal: v.boolean(),
+    falseRelease: v.boolean(),
+    critical: v.boolean(),
+    evidenceHash: v.string(),
+    reason: v.string(),
+    runId: v.optional(v.id("runs")),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_benchmarkRunId_and_caseId", ["benchmarkRunId", "caseId"])
+    .index("by_benchmarkRunId_and_createdAt", ["benchmarkRunId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  certificates: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    healAttemptId: v.id("healAttempts"),
+    benchmarkRunId: v.id("benchmarkRuns"),
+    collectorId: v.id("collectors"),
+    status: certificateStatusValidator,
+    payload: certificatePayloadValidator,
+    digest: v.string(),
+    publicSlug: v.string(),
+    releasedRunId: v.optional(v.id("runs")),
+    operationKey: v.string(),
+    requestHash: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_publicSlug", ["publicSlug"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_healAttemptId_and_createdAt", ["healAttemptId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
 
   auditEvents: defineTable({
     projectId: v.optional(v.id("projects")),

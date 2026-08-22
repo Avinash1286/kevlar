@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function FixtureIndex() {
   return (
     <main className="lab-index">
@@ -11,15 +13,18 @@ export default function FixtureIndex() {
         The lab hosts stable public URLs used to test collector behavior without
         hiding expected answers from the collector.
       </p>
-      <a href="/product-pricing/nova">
+      <Link href="/product-pricing/nova">
         Open Nova product fixture <span>→</span>
-      </a>
-      <a href="/negative-controls/soft-block">
+      </Link>
+      <Link href="/negative-controls/soft-block">
         Open N1 soft-block control <span>→</span>
-      </a>
-      <a href="/negative-controls/legitimate-empty">
+      </Link>
+      <Link href="/negative-controls/legitimate-empty">
         Open N2 legitimate-empty control <span>→</span>
-      </a>
+      </Link>
+      <Link href="/gauntlet/m1">
+        Open Core Gauntlet M1–H2 fixtures <span>→</span>
+      </Link>
     </main>
   );
 }

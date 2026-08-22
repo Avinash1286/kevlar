@@ -57,7 +57,7 @@ export default async function Home() {
           <span>Kevlar</span>
         </a>
         <div className="phase-pill">
-          <span /> Gate C · Reliability
+          <span /> Gate D · Certification
         </div>
         <a className="repo-link" href="https://github.com/Avinash1286/kevlar">
           GitHub ↗
@@ -80,8 +80,11 @@ export default async function Home() {
           <a className="primary-action" href="/feed">
             Open trust feed <span>→</span>
           </a>
+          <a className="repo-link" href="/gauntlet">
+            Inspect Gauntlet →
+          </a>
           <span className="quiet-label">
-            Week 3 of 12 · Durable incident workflows
+            Week 4 of 12 · Repair certification firewall
           </span>
         </div>
       </section>

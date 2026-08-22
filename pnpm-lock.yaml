@@ -94,6 +94,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@kevlar/certification':
+        specifier: workspace:*
+        version: link:../../packages/certification
       convex:
         specifier: ^1.44.0
         version: 1.44.0(react@19.2.8)
@@ -147,6 +150,25 @@ importers:
 
   packages/brightdata-runtime:
     dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  packages/certification:
+    dependencies:
+      '@kevlar/hashing':
+        specifier: workspace:*
+        version: link:../hashing
+      '@kevlar/semantic-contracts':
+        specifier: workspace:*
+        version: link:../semantic-contracts
+      '@kevlar/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
       zod:
         specifier: 'catalog:'
         version: 4.4.3

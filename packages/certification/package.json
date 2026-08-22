@@ -1,0 +1,21 @@
+{
+  "name": "@kevlar/certification",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kevlar/hashing": "workspace:*",
+    "@kevlar/semantic-contracts": "workspace:*",
+    "@kevlar/shared-types": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

@@ -21,6 +21,25 @@ describe("product price semantic contract", () => {
     expect(decision.violations).toEqual([]);
   });
 
+  it("accepts an equivalent pay-in-full label when one-time evidence remains", () => {
+    const candidate = {
+      ...novaBaseline,
+      product: {
+        ...novaBaseline.product,
+        purchase_price: {
+          ...novaBaseline.product.purchase_price,
+          label: "Pay in full",
+          nearby_text: "Pay in full $129.00 USD one-time Buy now",
+        },
+      },
+    };
+
+    expect(
+      verifyProductPrice({ raw: candidate, previousVerifiedValue: 129 })
+        .decision,
+    ).toBe("verified");
+  });
+
   it("quarantines the valid-but-wrong financing value", () => {
     const decision = verifyProductPrice({
       raw: novaSemanticSwap,

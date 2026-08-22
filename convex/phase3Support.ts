@@ -40,6 +40,28 @@ export const ensureScenarioRun = internalMutation({
     }
     const source = await ctx.db.get("runs", args.sourceRunId);
     if (!source) throw new Error("Source run not found");
+    const sourceRows =
+      args.scenario === "semantic_swap"
+        ? await ctx.db
+            .query("rows")
+            .withIndex("by_run", (q) => q.eq("runId", source._id))
+            .take(100)
+        : [];
+    const sourceEvidence =
+      args.scenario === "semantic_swap"
+        ? await ctx.db
+            .query("evidence")
+            .withIndex("by_run", (q) => q.eq("runId", source._id))
+            .take(50)
+        : [];
+    if (args.scenario === "semantic_swap") {
+      if (!source.outputHash || sourceRows.length === 0)
+        throw new Error(
+          "Semantic-swap scenarios require source output and row evidence",
+        );
+      if (source.rowCount !== undefined && source.rowCount > sourceRows.length)
+        throw new Error("Source run exceeds the bounded scenario clone limit");
+    }
     const now = Date.now();
     const runId = await ctx.db.insert("runs", {
       projectId: source.projectId,
@@ -50,9 +72,32 @@ export const ensureScenarioRun = internalMutation({
       brightDataJobId,
       startedAt: now,
       completedAt: now,
-      outputHash: `phase3-control:${args.scenarioKey}`,
-      rowCount: 0,
+      outputHash:
+        args.scenario === "semantic_swap"
+          ? source.outputHash
+          : `phase3-control:${args.scenarioKey}`,
+      rowCount: sourceRows.length,
     });
+    for (const row of sourceRows)
+      await ctx.db.insert("rows", {
+        runId,
+        entityId: row.entityId,
+        rawPayload: row.rawPayload,
+        normalizedPayload: row.normalizedPayload,
+        fieldTrust: row.fieldTrust,
+        recordHash: row.recordHash,
+      });
+    for (const evidence of sourceEvidence)
+      await ctx.db.insert("evidence", {
+        projectId: source.projectId,
+        runId,
+        kind: evidence.kind,
+        sourceUrl: evidence.sourceUrl,
+        ...(evidence.storageId ? { storageId: evidence.storageId } : {}),
+        contentHash: evidence.contentHash,
+        metadata: evidence.metadata,
+        capturedAt: evidence.capturedAt,
+      });
     await ctx.db.insert("auditEvents", {
       projectId: source.projectId,
       actorType: "system",
@@ -63,6 +108,9 @@ export const ensureScenarioRun = internalMutation({
         scenario: args.scenario,
         scenarioKey: args.scenarioKey,
         sourceRunId: source._id,
+        sourceOutputHash: source.outputHash ?? null,
+        clonedRows: sourceRows.length,
+        clonedEvidence: sourceEvidence.length,
         synthetic: true,
       },
       createdAt: now,

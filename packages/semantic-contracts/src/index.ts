@@ -162,7 +162,10 @@ export function verifyProductPrice(input: {
     normalized.monthlyPayment,
   );
 
-  if (missingPositive.length > 0 || forbidden.length > 0 || equalsMonthly) {
+  const hasPositiveContext =
+    missingPositive.length < productPriceContract.positiveContext.length;
+
+  if (!hasPositiveContext || forbidden.length > 0 || equalsMonthly) {
     violations.push(
       violation(
         "semantic_swap",

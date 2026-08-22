@@ -440,3 +440,53 @@ a {
     border-bottom: 0;
   }
 }
+
+.gauntlet-fixture,
+.g-x90 {
+  width: min(880px, calc(100% - 32px));
+  margin: 32px auto;
+  padding: 28px;
+  border: 1px solid #2a3444;
+  background: #111822;
+  color: #edf3fb;
+}
+
+.gauntlet-fixture > header,
+.g-x90 > header,
+.gauntlet-fixture > footer,
+.g-x90 > footer {
+  display: flex;
+  justify-content: space-between;
+  color: #91a2b9;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+}
+
+.gauntlet-fixture article,
+.g-x90 article {
+  display: grid;
+  gap: 18px;
+  padding: 56px 0;
+}
+
+.gauntlet-purchase,
+.g-x91,
+.gauntlet-financing {
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid #35445a;
+}
+
+.gauntlet-purchase strong,
+.g-x91 strong {
+  display: block;
+  color: #7df1b2;
+  font-size: 2rem;
+}
+
+.gauntlet-financing.decoy {
+  border-color: #d8a046;
+  background: #332713;
+  transform: scale(1.02);
+}

@@ -1,4 +1,4 @@
-.PHONY: install dev test check build
+.PHONY: install dev test check build demo-reset
 
 install:
 	pnpm install
@@ -16,3 +16,6 @@ check:
 
 build:
 	pnpm build
+
+demo-reset:
+	pnpm demo:reset

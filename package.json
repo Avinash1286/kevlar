@@ -12,6 +12,8 @@
     "baseline:run": "tsx --env-file=.env.local scripts/run-baseline.ts",
     "semantic-swap:run": "tsx --env-file=.env.local scripts/run-semantic-swap.ts",
     "phase3:run": "tsx --env-file=.env.local scripts/run-phase3-reliability.ts",
+    "phase4:run": "tsx --env-file=.env.local scripts/run-phase4-core.ts",
+    "demo:reset": "tsx --env-file=.env.local scripts/demo-reset.ts",
     "dev": "turbo run dev --parallel",
     "dev:web": "pnpm --filter @kevlar/web dev",
     "dev:fixture": "pnpm --filter @kevlar/fixture-lab dev",
