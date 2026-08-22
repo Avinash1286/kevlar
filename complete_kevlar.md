@@ -2835,7 +2835,7 @@ type SourceDefinition = {
 
 Before activation:
 
-- [ ] Publicly reachable without authentication.
+- [x] Publicly reachable without authentication.
 - [x] No personal or restricted information is required.
 - [x] Host and paths are allowlisted.
 - [x] Collection frequency is reasonable.
@@ -6152,14 +6152,14 @@ Create the complete project skeleton and prove that a custom Bright Data Scraper
 
 #### Exit gate
 
-- [ ] The fixture is publicly reachable.
-- [ ] Bright Data runs a custom collector, not a library scraper.
-- [ ] Structured extraction occurs in Scraper Studio.
-- [ ] Raw output reaches Convex.
-- [ ] Evidence references are persisted.
-- [ ] Collector ID and schemas are documented.
-- [ ] The application can reproduce the baseline from a clean clone.
-- [ ] No credential appears in Git history.
+- [x] The fixture is publicly reachable.
+- [x] Bright Data runs a custom collector, not a library scraper.
+- [x] Structured extraction occurs in Scraper Studio.
+- [x] Raw output reaches Convex.
+- [x] Evidence references are persisted.
+- [x] Collector ID and schemas are documented.
+- [x] The application can reproduce the baseline from a clean clone.
+- [x] No credential appears in Git history.
 
 ---
 
@@ -6202,13 +6202,13 @@ Create the valid-but-wrong failure and prove that deterministic semantic verific
 
 #### Exit gate
 
-- [ ] The same URL changes without changing the underlying one-time price.
-- [ ] The baseline collector version returns valid but wrong JSON.
-- [ ] A critical semantic contract catches the mistake.
-- [ ] No AI call is needed for the core decision.
-- [ ] The false alert is blocked.
-- [ ] The previous verified value remains available and visibly stale.
-- [ ] All core contract tests pass.
+- [x] The same URL changes without changing the underlying one-time price.
+- [x] The baseline collector version returns valid but wrong JSON.
+- [x] A critical semantic contract catches the mistake.
+- [x] No AI call is needed for the core decision.
+- [x] The false alert is blocked.
+- [x] The previous verified value remains available and visibly stale.
+- [x] All core contract tests pass.
 
 ---
 
@@ -6247,13 +6247,13 @@ Make failures recoverable, persistent, idempotent, and correctly classified befo
 
 #### Exit gate
 
-- [ ] `semantic_swap` recommends `heal`.
-- [ ] transport failure recommends `retry`.
-- [ ] soft block recommends `quarantine`, not heal.
-- [ ] legitimate empty recommends `do_not_heal`.
-- [ ] all-provider failure reaches human review.
-- [ ] duplicate actions do not produce duplicate external calls.
-- [ ] every state transition is audited.
+- [x] `semantic_swap` recommends `heal`.
+- [x] transport failure recommends `retry`.
+- [x] soft block recommends `quarantine`, not heal.
+- [x] legitimate empty recommends `do_not_heal`.
+- [x] all-provider failure reaches human review.
+- [x] duplicate actions do not produce duplicate external calls.
+- [x] every state transition is audited.
 
 ---
 
@@ -6299,15 +6299,15 @@ Complete Kevlar Core end to end.
 
 #### Exit gate — Kevlar Core complete
 
-- [ ] Triggering failure is fixed.
-- [ ] Four visible cases pass.
-- [ ] Two held-out cases pass.
-- [ ] Two negative controls receive the correct no-heal behavior.
-- [ ] No critical field is promoted before certification.
-- [ ] Last-known-good remains active during failure.
-- [ ] Same Collector ID is documented before and after repair.
-- [ ] Certificate is generated from measured results.
-- [ ] The full flow works from `make demo-reset`.
+- [x] Triggering failure is fixed.
+- [x] Four visible cases pass.
+- [x] Two held-out cases pass.
+- [x] Two negative controls receive the correct no-heal behavior.
+- [x] No critical field is promoted before certification.
+- [x] Last-known-good remains active during failure.
+- [x] Same Collector ID is documented before and after repair.
+- [x] Certificate is generated from measured results.
+- [x] The full flow works from `make demo-reset`.
 
 ---
 
@@ -8044,129 +8044,129 @@ Each ADR includes context, decision, alternatives, consequences, and reversal co
 
 #### Core foundation
 
-- [ ] The product-price fixture and complete repair workflow function from a clean reset.
-- [ ] Incident and certificate pages are accessible.
-- [ ] Core trust-kernel tests pass.
-- [ ] Verified price output is produced through the product-pricing domain abstraction.
-- [ ] A release rollback tag and procedure exist.
+- [x] The product-price fixture and complete repair workflow function from a clean reset.
+- [x] Incident and certificate pages are accessible.
+- [x] Core trust-kernel tests pass.
+- [x] Verified price output is produced through the product-pricing domain abstraction.
+- [x] A release rollback tag and procedure exist.
 
 #### Bright Data centrality
 
 - [x] Every production source uses a documented custom Scraper Studio collector.
-- [ ] Structured extraction occurs inside Scraper Studio.
+- [x] Structured extraction occurs inside Scraper Studio.
 - [x] Collector IDs are stored and visible.
 - [ ] At least one new vertical collector completes a real Bright Data self-heal.
-- [ ] Same-ID repair is demonstrated where supported by the workflow.
-- [ ] Bright Data preview, approval, and version evidence are preserved.
-- [ ] Removing Bright Data would remove the collection and repair runtime, not merely an optional integration.
+- [x] Same-ID repair is demonstrated where supported by the workflow.
+- [x] Bright Data preview, approval, and version evidence are preserved.
+- [x] Removing Bright Data would remove the collection and repair runtime, not merely an optional integration.
 
 #### Collector Mesh
 
 - [ ] At least 6 production-quality custom collectors are active.
 - [x] At least 3 source archetypes are represented.
 - [ ] Source policies and owners are documented.
-- [ ] Schedules, budgets, pause, run-now, and replay work.
-- [ ] Collector fleet health is visible.
+- [x] Schedules, budgets, pause, run-now, and replay work.
+- [x] Collector fleet health is visible.
 
 #### Canonical intelligence
 
-- [ ] AI infrastructure schema revision 1 is active.
-- [ ] Mappings are versioned and deterministic.
-- [ ] Every canonical field preserves source provenance.
-- [ ] Unit normalization tests pass.
-- [ ] Mapping shadow and activation workflows work.
+- [x] AI infrastructure schema revision 1 is active.
+- [x] Mappings are versioned and deterministic.
+- [x] Every canonical field preserves source provenance.
+- [x] Unit normalization tests pass.
+- [x] Mapping shadow and activation workflows work.
 
 #### Identity
 
-- [ ] Providers, models, and versions have stable canonical IDs.
-- [ ] External IDs and aliases are preserved.
-- [ ] Ambiguous matches enter review.
-- [ ] Merge and split are audited and reversible.
-- [ ] Entity-resolution benchmark is committed.
+- [x] Providers, models, and versions have stable canonical IDs.
+- [x] External IDs and aliases are preserved.
+- [x] Ambiguous matches enter review.
+- [x] Merge and split are audited and reversible.
+- [x] Entity-resolution benchmark is committed.
 
 #### Facts and history
 
-- [ ] Verified observations are immutable.
-- [ ] Current facts are derived from append-only fact versions.
-- [ ] Valid time and transaction time are supported.
-- [ ] Real changes and corrections are represented differently.
-- [ ] Historical queries work.
-- [ ] Last-known-good and staleness are visible.
+- [x] Verified observations are immutable.
+- [x] Current facts are derived from append-only fact versions.
+- [x] Valid time and transaction time are supported.
+- [x] Real changes and corrections are represented differently.
+- [x] Historical queries work.
+- [x] Last-known-good and staleness are visible.
 
 #### Semantic CDC
 
-- [ ] Presentation-only changes do not emit business events.
-- [ ] Real fact changes emit deterministic events.
-- [ ] Duplicate runs do not duplicate events.
-- [ ] Corrections and retractions work.
-- [ ] Event precision and recall are measured on the benchmark.
-- [ ] Every event links to evidence and release policy.
+- [x] Presentation-only changes do not emit business events.
+- [x] Real fact changes emit deterministic events.
+- [x] Duplicate runs do not duplicate events.
+- [x] Corrections and retractions work.
+- [x] Event precision and recall are measured on the benchmark.
+- [x] Every event links to evidence and release policy.
 
 #### Cross-source reconciliation
 
-- [ ] Predicate-specific source authority works.
-- [ ] Conflicts are explicit.
-- [ ] Unsupported new values can be withheld.
-- [ ] Last-known-good continuity works during conflicts.
-- [ ] Conflict resolution updates history and events correctly.
+- [x] Predicate-specific source authority works.
+- [x] Conflicts are explicit.
+- [x] Unsupported new values can be withheld.
+- [x] Last-known-good continuity works during conflicts.
+- [x] Conflict resolution updates history and events correctly.
 
 #### Repair certification
 
-- [ ] Blast radius is calculated.
-- [ ] Mapping and identity checks are part of the Tribunal.
-- [ ] Repaired collectors run canary and held-out suites.
-- [ ] False semantic events block certification.
-- [ ] Extended Repair Certificates are generated from real results.
-- [ ] Failed repair candidates cannot release data.
+- [x] Blast radius is calculated.
+- [x] Mapping and identity checks are part of the Tribunal.
+- [x] Repaired collectors run canary and held-out suites.
+- [x] False semantic events block certification.
+- [x] Extended Repair Certificates are generated from real results.
+- [x] Failed repair candidates cannot release data.
 
 #### Developer platform
 
-- [ ] API v1 exposes entities, facts, history, events, evidence, certificates, and source health.
-- [ ] API keys are hashed and scoped.
-- [ ] Cursor pagination and standard errors work.
-- [ ] Webhooks are HMAC-signed.
-- [ ] Retry, dead-letter, and replay work.
-- [ ] TypeScript SDK is published or locally installable.
-- [ ] Read-only MCP tools work.
-- [ ] Trust metadata is included in API, SDK, and MCP results.
+- [x] API v1 exposes entities, facts, history, events, evidence, certificates, and source health.
+- [x] API keys are hashed and scoped.
+- [x] Cursor pagination and standard errors work.
+- [x] Webhooks are HMAC-signed.
+- [x] Retry, dead-letter, and replay work.
+- [x] TypeScript SDK is published or locally installable.
+- [x] Read-only MCP tools work.
+- [x] Trust metadata is included in API, SDK, and MCP results.
 
 #### Downstream integration
 
-- [ ] The AI router receives at least one verified event.
-- [ ] The router verifies the webhook signature.
-- [ ] The router deduplicates event IDs.
-- [ ] A critical configuration change enters review or canary rather than immediate unsafe activation.
-- [ ] Quarantined data never updates router configuration.
+- [x] The AI router receives at least one verified event.
+- [x] The router verifies the webhook signature.
+- [x] The router deduplicates event IDs.
+- [x] A critical configuration change enters review or canary rather than immediate unsafe activation.
+- [x] Quarantined data never updates router configuration.
 
 #### Security
 
-- [ ] Source allowlists and SSRF protections pass.
-- [ ] Prompt-injection tests pass.
-- [ ] Cross-project authorization tests pass.
-- [ ] API key revocation works.
-- [ ] Webhook replay and tampering tests pass.
-- [ ] Secrets are absent from Git history and client bundles.
-- [ ] High-impact actions are audited.
+- [x] Source allowlists and SSRF protections pass.
+- [x] Prompt-injection tests pass.
+- [x] Cross-project authorization tests pass.
+- [x] API key revocation works.
+- [x] Webhook replay and tampering tests pass.
+- [x] Secrets are absent from Git history and client bundles.
+- [x] High-impact actions are audited.
 
 #### Operations
 
-- [ ] Collector, trust, intelligence, and delivery dashboards exist.
-- [ ] Runbooks exist.
-- [ ] Replay mode works and is clearly labelled.
-- [ ] Critical alerts are configured.
-- [ ] Evidence export and backup procedures work.
-- [ ] Usage and cost units are visible.
+- [x] Collector, trust, intelligence, and delivery dashboards exist.
+- [x] Runbooks exist.
+- [x] Replay mode works and is clearly labelled.
+- [x] Critical alerts are configured.
+- [x] Evidence export and backup procedures work.
+- [x] Usage and cost units are visible.
 
 #### Presentation
 
-- [ ] Demo shows the Kevlar Core flow briefly.
-- [ ] Demo shows a multi-source canonical entity.
-- [ ] Demo distinguishes page drift from fact change.
-- [ ] Demo shows real self-healing and certification.
-- [ ] Demo shows bitemporal history and evidence.
-- [ ] Demo shows API, webhook, SDK, or MCP consumption.
-- [ ] Demo shows the AI router integration.
-- [ ] Demo ends with measured results.
+- [x] Demo shows the Kevlar Core flow briefly.
+- [x] Demo shows a multi-source canonical entity.
+- [x] Demo distinguishes page drift from fact change.
+- [x] Demo shows real self-healing and certification.
+- [x] Demo shows bitemporal history and evidence.
+- [x] Demo shows API, webhook, SDK, or MCP consumption.
+- [x] Demo shows the AI router integration.
+- [x] Demo ends with measured results.
 
 ---
 
@@ -8555,7 +8555,7 @@ Do not use as the core implementation:
 - [x] AI coding tool use is disclosed.
 - [ ] Team can explain the collector and all major subsystems.
 - [x] Third-party dependencies and assets are attributed.
-- [ ] Secrets are absent from Git history.
+- [x] Secrets are absent from Git history.
 - [ ] Team ownership is agreed internally.
 - [ ] Submission is filed before the deadline.
 - [ ] Conduct and communication remain respectful.
