@@ -10,7 +10,7 @@ wait_any([
   '[data-page-state="not-found"]',
   '[data-page-state="blocked"]',
 ]);
-wait_page_idle({ idle_timeout: 800 });
+wait_page_idle();
 
 if (el_exists('[data-page-state="blocked"]'))
   blocked("Fixture soft-block case");
