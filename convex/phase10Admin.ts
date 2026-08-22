@@ -13,6 +13,7 @@ import {
   requirePhase10IngestKey,
   sha256,
 } from "./phase10Support";
+import { requireProjectRole } from "./phase11Auth";
 
 const persistApiKeyRef = makeFunctionReference<"mutation">("phase10AdminSupport:persistApiKey");
 const persistWebhookEndpointRef = makeFunctionReference<"mutation">("phase10AdminSupport:persistWebhookEndpoint");
@@ -22,7 +23,6 @@ const persistContractRef = makeFunctionReference<"mutation">("phase10AdminSuppor
 
 export const createApiKey = action({
   args: {
-    ingestKey: v.string(),
     projectId: v.id("projects"),
     name: v.string(),
     rawKey: v.string(),
@@ -32,7 +32,8 @@ export const createApiKey = action({
   },
   returns: schema.doc("apiKeys"),
   handler: async (ctx, args) => {
-    requirePhase10IngestKey(args.ingestKey);
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
     assertPhase10Text(args.rawKey, "rawKey", 500);
     const secretHash = await sha256(args.rawKey);
     const prefix = args.rawKey.slice(0, Math.min(12, args.rawKey.length));
@@ -154,6 +155,7 @@ export const revokeApiKey = mutation({
     requirePhase10IngestKey(args.ingestKey);
     const key = await ctx.db.get("apiKeys", args.apiKeyId);
     if (!key) throw new Error("API key not found");
+    await requireProjectRole(ctx, key.projectId, ["owner", "admin"]);
     if (key.status === "active") {
       const now = Date.now();
       await ctx.db.patch("apiKeys", key._id, { status: "revoked", revokedAt: now });

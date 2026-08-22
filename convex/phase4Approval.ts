@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { performIncidentTransition } from "./incidentStateMachine";
 import { assertOperationText, requirePhase4IngestKey } from "./phase4Auth";
+import { requireProjectRole } from "./phase11Auth";
 
 export const decide = mutation({
   args: {
@@ -9,7 +10,6 @@ export const decide = mutation({
     healAttemptId: v.id("healAttempts"),
     decision: v.union(v.literal("approved"), v.literal("rejected")),
     reason: v.string(),
-    actorId: v.string(),
     providerApprovalRef: v.optional(v.string()),
     operationKey: v.string(),
     requestHash: v.string(),
@@ -26,8 +26,14 @@ export const decide = mutation({
     assertOperationText(args.requestHash, "requestHash");
     if (args.reason.length === 0 || args.reason.length > 1_000)
       throw new Error("Decision reason must contain 1-1000 characters");
-    if (args.actorId.length === 0 || args.actorId.length > 240)
-      throw new Error("actorId must contain 1-240 characters");
+    const attempt = await ctx.db.get("healAttempts", args.healAttemptId);
+    if (!attempt) throw new Error("Heal attempt not found");
+    const auth = await requireProjectRole(ctx, attempt.projectId, [
+      "owner",
+      "admin",
+      "reviewer",
+    ]);
+    const actorId = String(auth.user._id);
 
     const byOperation = await ctx.db
       .query("repairDecisions")
@@ -60,8 +66,7 @@ export const decide = mutation({
         authorizeProviderApproval: false,
       };
 
-    const attempt = await ctx.db.get("healAttempts", args.healAttemptId);
-    if (!attempt || attempt.status !== "preview_ready")
+    if (attempt.status !== "preview_ready")
       throw new Error("Only a preview-ready heal attempt can be decided");
     const incident = await ctx.db.get("incidents", attempt.incidentId);
     if (!incident) throw new Error("Incident not found");
@@ -96,7 +101,7 @@ export const decide = mutation({
         check: "human_review",
         status: args.decision === "approved" ? "pass" : "fail",
         summary: `Human ${args.decision} the repair candidate.`,
-        details: { actorId: args.actorId, reason: args.reason },
+        details: { actorId, reason: args.reason },
         operationKey: `${args.operationKey}:human-review`,
         createdAt: now,
         updatedAt: now,
@@ -106,7 +111,7 @@ export const decide = mutation({
       await ctx.db.patch("tribunalChecks", humanCheck._id, {
         status: args.decision === "approved" ? "pass" : "fail",
         summary: `Human ${args.decision} the repair candidate.`,
-        details: { actorId: args.actorId, reason: args.reason },
+        details: { actorId, reason: args.reason },
         operationKey: `${args.operationKey}:human-review`,
         updatedAt: now,
       });
@@ -118,7 +123,7 @@ export const decide = mutation({
       healAttemptId: attempt._id,
       decision: args.decision,
       reason: args.reason,
-      actorId: args.actorId,
+      actorId,
       operationKey: args.operationKey,
       requestHash: args.requestHash,
       ...(args.providerApprovalRef
@@ -139,7 +144,7 @@ export const decide = mutation({
       toStatus: args.decision,
       operationKey: args.operationKey,
       requestHash: args.requestHash,
-      details: { repairDecisionId, actorId: args.actorId },
+      details: { repairDecisionId, actorId },
       createdAt: now,
     });
 
@@ -150,7 +155,7 @@ export const decide = mutation({
         toState: "awaiting_human",
         reason: "Repair preview entered explicit human review",
         actorType: "user",
-        actorId: args.actorId,
+        actorId,
         idempotencyKey: `${args.operationKey}:awaiting-human`,
         requestHash: args.requestHash,
         details: { healAttemptId: attempt._id },
@@ -165,7 +170,7 @@ export const decide = mutation({
       toState: args.decision === "approved" ? "approved" : "quarantined",
       reason: `Human ${args.decision} repair candidate`,
       actorType: "user",
-      actorId: args.actorId,
+      actorId,
       idempotencyKey: `${args.operationKey}:decision`,
       requestHash: args.requestHash,
       details: { healAttemptId: attempt._id, repairDecisionId },
@@ -174,7 +179,7 @@ export const decide = mutation({
     await ctx.db.insert("auditEvents", {
       projectId: attempt.projectId,
       actorType: "user",
-      actorId: args.actorId,
+      actorId,
       action: `repair.${args.decision}`,
       targetType: "heal_attempt",
       targetId: String(attempt._id),

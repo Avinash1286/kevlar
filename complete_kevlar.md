@@ -6604,12 +6604,12 @@ Complete the operator experience and prove one real downstream system can consum
 
 #### Exit gate
 
-- [ ] Unauthorized users cannot approve or merge.
-- [ ] Tenant-scoped queries cannot cross organizations.
-- [ ] Prompt injection in webpage content cannot change system instructions.
-- [ ] Secrets are redacted from logs and evidence.
-- [ ] AI router consumes a verified event without trusting raw page output.
-- [ ] Operational alerts fire for critical tested failures.
+- [x] Unauthorized users cannot approve or merge.
+- [x] Tenant-scoped queries cannot cross organizations.
+- [x] Prompt injection in webpage content cannot change system instructions.
+- [x] Secrets are redacted from logs and evidence.
+- [x] AI router consumes a verified event without trusting raw page output.
+- [x] Operational alerts fire for critical tested failures.
 
 ---
 

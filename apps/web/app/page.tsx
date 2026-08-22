@@ -104,8 +104,23 @@ export default async function Home() {
           <Link className="repo-link" href="/fleet/gauntlet">
             Fleet Gauntlet →
           </Link>
+          <Link className="repo-link" href="/operations">
+            Operations →
+          </Link>
+          <Link className="repo-link" href="/subscriptions">
+            Subscriptions →
+          </Link>
+          <Link className="repo-link" href="/router">
+            Verified AI router →
+          </Link>
+          <Link className="repo-link" href="/security">
+            Security &amp; RBAC →
+          </Link>
+          <Link className="repo-link" href="/sign-in">
+            Operator sign in →
+          </Link>
           <span className="quiet-label">
-            Week 9 of 12 · Evidence graph and canary repair
+            Week 11 of 12 · Secure operations and downstream delivery
           </span>
         </div>
       </section>

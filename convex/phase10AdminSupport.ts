@@ -12,6 +12,7 @@ import {
   assertPhase10Text,
   assertSha256,
 } from "./phase10Support";
+import { requireProjectRole } from "./phase11Auth";
 
 export const persistApiKey = internalMutation({
   args: {
@@ -25,6 +26,7 @@ export const persistApiKey = internalMutation({
   },
   returns: schema.doc("apiKeys"),
   handler: async (ctx, args) => {
+    await requireProjectRole(ctx, args.projectId, ["owner", "admin"]);
     assertPhase10Text(args.name, "name", 120);
     assertPhase10Text(args.prefix, "prefix", 24);
     assertPhase10Text(args.operationKey, "operationKey", 250);
@@ -81,6 +83,7 @@ export const persistWebhookEndpoint = internalMutation({
     secretVersion: schema.doc("webhookSecretVersions"),
   }),
   handler: async (ctx, args) => {
+    await requireProjectRole(ctx, args.projectId, ["owner", "admin"]);
     assertPhase10Text(args.name, "name", 120);
     assertHttpsUrl(args.url);
     assertSha256(args.secretHash, "secretHash");
@@ -147,13 +150,14 @@ export const persistSecretRotation = internalMutation({
   returns: schema.doc("webhookSecretVersions"),
   handler: async (ctx, args) => {
     assertSha256(args.secretHash, "secretHash");
+    const endpoint = await ctx.db.get("webhookEndpoints", args.endpointId);
+    if (!endpoint) throw new Error("Webhook endpoint not found");
+    await requireProjectRole(ctx, endpoint.projectId, ["owner", "admin"]);
     const duplicate = await ctx.db
       .query("webhookSecretVersions")
       .withIndex("by_operationKey", (q) => q.eq("operationKey", args.operationKey))
       .unique();
     if (duplicate) return duplicate;
-    const endpoint = await ctx.db.get("webhookEndpoints", args.endpointId);
-    if (!endpoint) throw new Error("Webhook endpoint not found");
     const current = endpoint.activeSecretVersionId
       ? await ctx.db.get("webhookSecretVersions", endpoint.activeSecretVersionId)
       : null;
@@ -202,6 +206,7 @@ export const persistSubscription = internalMutation({
   },
   returns: schema.doc("filteredSubscriptions"),
   handler: async (ctx, args) => {
+    await requireProjectRole(ctx, args.projectId, ["owner", "admin"]);
     const duplicate = await ctx.db
       .query("filteredSubscriptions")
       .withIndex("by_operationKey", (q) => q.eq("operationKey", args.operationKey))

@@ -7,6 +7,7 @@ import {
   onboardingStatusValidator,
   sourceApprovalValidator,
 } from "./phase5Validators";
+import { requireAnyAdministrativeRole } from "./phase11Auth";
 
 const sourceSpecs = [
   {
@@ -323,7 +324,6 @@ export const upsertApproval = mutation({
     sourceId: v.id("sources"),
     endpointId: v.id("sourceEndpoints"),
     decision: sourceApprovalValidator,
-    reviewerId: v.string(),
     summary: v.string(),
     operationKey: v.string(),
   },
@@ -333,8 +333,9 @@ export const upsertApproval = mutation({
   }),
   handler: async (ctx, args) => {
     requirePhase5IngestKey(args.ingestKey);
+    const auth = await requireAnyAdministrativeRole(ctx);
+    const reviewerId = String(auth.user._id);
     assertPhase5Text(args.operationKey, "operationKey", 240);
-    assertPhase5Text(args.reviewerId, "reviewerId", 240);
     assertPhase5Text(args.summary, "summary", 1_000);
     const prior = await ctx.db
       .query("sourceReviews")
@@ -374,7 +375,7 @@ export const upsertApproval = mutation({
       sourceId: source._id,
       decision: args.decision,
       summary: args.summary,
-      reviewerId: args.reviewerId,
+      reviewerId,
       operationKey: args.operationKey,
       createdAt: now,
     });
@@ -389,7 +390,7 @@ export const upsertApproval = mutation({
     });
     await ctx.db.insert("auditEvents", {
       actorType: "user",
-      actorId: args.reviewerId,
+      actorId: reviewerId,
       action: `phase5.source_${args.decision}`,
       targetType: "source",
       targetId: String(source._id),

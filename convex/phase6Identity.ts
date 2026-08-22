@@ -6,6 +6,7 @@ import {
   identityReviewDecisionValidator,
 } from "./phase6Validators";
 import { assertPhase6Text, normalizeIdentity } from "./phase6Support";
+import { requireProjectRole } from "./phase11Auth";
 
 export const addAlias = mutation({
   args: {
@@ -74,7 +75,6 @@ export const reviewCandidate = mutation({
   }),
   handler: async (ctx, args) => {
     requirePhase5IngestKey(args.ingestKey);
-    assertPhase6Text(args.actor, "actor", 240);
     assertPhase6Text(args.reason, "reason", 1_000);
     assertPhase6Text(args.operationKey, "operationKey", 240);
     const prior = await ctx.db
@@ -155,7 +155,6 @@ export const mergeEntities = mutation({
     sourceEntityId: v.id("canonicalEntities"),
     targetEntityId: v.id("canonicalEntities"),
     reason: v.string(),
-    actor: v.string(),
     evidenceRefs: v.array(v.id("evidence")),
     operationKey: v.string(),
   },
@@ -166,19 +165,11 @@ export const mergeEntities = mutation({
   handler: async (ctx, args) => {
     requirePhase5IngestKey(args.ingestKey);
     assertPhase6Text(args.reason, "reason", 1_000);
-    assertPhase6Text(args.actor, "actor", 240);
     assertPhase6Text(args.operationKey, "operationKey", 240);
     if (args.sourceEntityId === args.targetEntityId)
       throw new Error("An entity cannot merge into itself");
     if (args.evidenceRefs.length > 20)
       throw new Error("Merge supports at most 20 evidence refs");
-    const prior = await ctx.db
-      .query("canonicalEntityOperations")
-      .withIndex("by_operationKey", (q) =>
-        q.eq("operationKey", args.operationKey),
-      )
-      .unique();
-    if (prior) return { entityOperationId: prior._id, duplicate: true };
     const [source, target] = await Promise.all([
       ctx.db.get("canonicalEntities", args.sourceEntityId),
       ctx.db.get("canonicalEntities", args.targetEntityId),
@@ -192,6 +183,22 @@ export const mergeEntities = mutation({
       target.status !== "active"
     )
       throw new Error("Merge requires active same-project, same-type entities");
+    const auth = await requireProjectRole(ctx, source.projectId, [
+      "owner",
+      "admin",
+      "reviewer",
+    ]);
+    const prior = await ctx.db
+      .query("canonicalEntityOperations")
+      .withIndex("by_operationKey", (q) =>
+        q.eq("operationKey", args.operationKey),
+      )
+      .unique();
+    if (prior) {
+      if (prior.projectId !== source.projectId)
+        throw new Error("operationKey belongs to another project");
+      return { entityOperationId: prior._id, duplicate: true };
+    }
     const now = Date.now();
     const entityOperationId = await ctx.db.insert("canonicalEntityOperations", {
       projectId: source.projectId,
@@ -199,7 +206,7 @@ export const mergeEntities = mutation({
       sourceEntityIds: [source._id],
       targetEntityIds: [target._id],
       reason: args.reason,
-      actor: args.actor,
+      actor: String(auth.user._id),
       evidenceRefs: args.evidenceRefs,
       operationKey: args.operationKey,
       createdAt: now,

@@ -30,13 +30,16 @@
     "convex:deploy": "convex deploy"
   },
   "dependencies": {
+    "@convex-dev/auth": "0.0.95",
     "@convex-dev/workflow": "^0.4.6",
     "convex": "^1.27.3",
+    "jose": "^6.1.0",
     "zod": "^4.1.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
     "@types/node": "^22.18.1",
+    "convex-test": "0.0.56",
     "eslint": "^9.35.0",
     "prettier": "^3.6.2",
     "tsx": "^4.20.5",

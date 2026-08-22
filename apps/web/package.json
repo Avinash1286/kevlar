@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@convex-dev/auth": "0.0.95",
     "@kevlar/api-contracts": "workspace:*",
     "@kevlar/certification": "workspace:*",
     "@kevlar/mcp-server": "workspace:*",

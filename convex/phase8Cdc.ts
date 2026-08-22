@@ -6,6 +6,7 @@ import { requirePhase5IngestKey } from "./phase5Auth";
 import { assertPhase6Text, stableHash } from "./phase6Support";
 import { deterministicEventId, valuesEquivalent } from "./phase8Support";
 import { removalEvidenceValidator } from "./phase8Validators";
+import { requireProjectRole } from "./phase11Auth";
 
 const intentValidator = v.union(
   v.literal("auto"),
@@ -863,6 +864,11 @@ export const resolveConflict = mutation({
     assertPhase6Text(args.reason, "reason", 1_000);
     const conflict = await ctx.db.get("sourceConflicts", args.conflictId);
     if (!conflict) throw new Error("Conflict does not exist");
+    await requireProjectRole(ctx, conflict.projectId, [
+      "owner",
+      "admin",
+      "reviewer",
+    ]);
     if (conflict.status !== "open") return { conflict, duplicate: true };
     const releasedFact = args.releasedFactVersionId
       ? await ctx.db.get("factVersions", args.releasedFactVersionId)

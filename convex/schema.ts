@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { vWorkflowId } from "@convex-dev/workflow";
+import { authTables } from "@convex-dev/auth/server";
 import {
   actorTypeValidator,
   circuitStateValidator,
@@ -122,8 +123,21 @@ import {
   webhookEndpointStatusValidator,
   webhookSecretStatusValidator,
 } from "./phase10Validators";
+import {
+  alertSeverityValidator,
+  alertStatusValidator,
+  backupStatusValidator,
+  chaosKindValidator,
+  chaosOutcomeValidator,
+  membershipStatusValidator,
+  organizationRoleValidator,
+  routerStatusValidator,
+  secretStatusValidator,
+  securityDecisionValidator,
+} from "./phase11Validators";
 
 const schema = defineSchema({
+  ...authTables,
   fixtureStates: defineTable({
     key: v.string(),
     version: v.union(v.literal("v1"), v.literal("v2")),
@@ -2083,6 +2097,218 @@ const schema = defineSchema({
     replayDeliveryId: v.id("webhookDeliveries"),
     contractIds: v.array(v.id("apiContracts")),
     releasedFactVersionId: v.id("factVersions"),
+    createdAt: v.number(),
+  }).index("by_key", ["key"]),
+
+  authUsers: defineTable({
+    authUserId: v.optional(v.id("users")),
+    tokenIdentifier: v.string(),
+    subject: v.string(),
+    displayName: v.string(),
+    email: v.optional(v.string()),
+    authMethod: v.union(v.literal("passkey"), v.literal("password")),
+    status: v.union(v.literal("active"), v.literal("disabled")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_authUserId", ["authUserId"])
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_subject", ["subject"]),
+
+  organizations: defineTable({
+    slug: v.string(),
+    name: v.string(),
+    status: v.union(v.literal("active"), v.literal("suspended")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_slug", ["slug"]),
+
+  organizationMemberships: defineTable({
+    organizationId: v.id("organizations"),
+    userId: v.id("authUsers"),
+    role: organizationRoleValidator,
+    status: membershipStatusValidator,
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organizationId_and_userId", ["organizationId", "userId"])
+    .index("by_userId_and_status", ["userId", "status"]),
+
+  projectTenancies: defineTable({
+    projectId: v.id("projects"),
+    organizationId: v.id("organizations"),
+    createdAt: v.number(),
+  })
+    .index("by_projectId", ["projectId"])
+    .index("by_organizationId_and_projectId", ["organizationId", "projectId"]),
+
+  securityAuditEvents: defineTable({
+    organizationId: v.optional(v.id("organizations")),
+    projectId: v.optional(v.id("projects")),
+    actorUserId: v.optional(v.id("authUsers")),
+    action: v.string(),
+    targetType: v.string(),
+    targetId: v.string(),
+    decision: securityDecisionValidator,
+    reason: v.string(),
+    redactedPayload: v.any(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_organizationId_and_createdAt", ["organizationId", "createdAt"])
+    .index("by_projectId_and_createdAt", ["projectId", "createdAt"]),
+
+  secretReferences: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    provider: v.string(),
+    secretRef: v.string(),
+    version: v.number(),
+    status: secretStatusValidator,
+    rotatedAt: v.optional(v.number()),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_organizationId_and_status", ["organizationId", "status"])
+    .index("by_operationKey", ["operationKey"]),
+
+  secretRedactionEvents: defineTable({
+    organizationId: v.id("organizations"),
+    projectId: v.optional(v.id("projects")),
+    sourceType: v.string(),
+    sourceId: v.string(),
+    detectedKinds: v.array(v.string()),
+    redactedHash: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_organizationId_and_createdAt", ["organizationId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  operationsAlerts: defineTable({
+    organizationId: v.id("organizations"),
+    projectId: v.optional(v.id("projects")),
+    kind: v.string(),
+    severity: alertSeverityValidator,
+    status: alertStatusValidator,
+    summary: v.string(),
+    runbookKey: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+    resolvedAt: v.optional(v.number()),
+  })
+    .index("by_organizationId_and_status_and_createdAt", ["organizationId", "status", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  operationsRunbooks: defineTable({
+    key: v.string(),
+    title: v.string(),
+    revision: v.number(),
+    steps: v.array(v.string()),
+    status: v.union(v.literal("active"), v.literal("retired")),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_key_and_revision", ["key", "revision"])
+    .index("by_operationKey", ["operationKey"]),
+
+  backupExportRecords: defineTable({
+    organizationId: v.id("organizations"),
+    projectId: v.id("projects"),
+    kind: v.union(v.literal("backup"), v.literal("export")),
+    status: backupStatusValidator,
+    snapshotRef: v.optional(v.string()),
+    digest: v.optional(v.string()),
+    requestedAt: v.number(),
+    completedAt: v.optional(v.number()),
+    operationKey: v.string(),
+  })
+    .index("by_projectId_and_requestedAt", ["projectId", "requestedAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  operationsCostSnapshots: defineTable({
+    organizationId: v.id("organizations"),
+    projectId: v.id("projects"),
+    period: v.string(),
+    apiRequests: v.number(),
+    webhookAttempts: v.number(),
+    collectorRuns: v.number(),
+    aiCalls: v.number(),
+    estimatedUsd: v.number(),
+    operationKey: v.string(),
+    capturedAt: v.number(),
+  })
+    .index("by_projectId_and_capturedAt", ["projectId", "capturedAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  operationsFreshnessSnapshots: defineTable({
+    organizationId: v.id("organizations"),
+    projectId: v.id("projects"),
+    releasedFacts: v.number(),
+    freshFacts: v.number(),
+    staleFacts: v.number(),
+    compliancePercent: v.number(),
+    operationKey: v.string(),
+    capturedAt: v.number(),
+  })
+    .index("by_projectId_and_capturedAt", ["projectId", "capturedAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  aiRouterIngestions: defineTable({
+    organizationId: v.id("organizations"),
+    projectId: v.id("projects"),
+    eventId: v.id("changeEvents"),
+    status: routerStatusValidator,
+    verifiedEventHash: v.string(),
+    evidenceRefs: v.array(v.id("evidence")),
+    rawPageAccepted: v.literal(false),
+    promptInjectionBlocked: v.boolean(),
+    proposedChange: v.any(),
+    approvedByUserId: v.optional(v.id("authUsers")),
+    approvedAt: v.optional(v.number()),
+    consumedAt: v.optional(v.number()),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_eventId", ["eventId"])
+    .index("by_projectId_and_status_and_createdAt", ["projectId", "status", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  chaosRuns: defineTable({
+    organizationId: v.id("organizations"),
+    projectId: v.id("projects"),
+    status: v.union(v.literal("running"), v.literal("passed"), v.literal("failed")),
+    operationKey: v.string(),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  }).index("by_operationKey", ["operationKey"]),
+
+  chaosCaseResults: defineTable({
+    chaosRunId: v.id("chaosRuns"),
+    kind: chaosKindValidator,
+    outcome: chaosOutcomeValidator,
+    contained: v.boolean(),
+    alertId: v.id("operationsAlerts"),
+    details: v.any(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_chaosRunId_and_kind", ["chaosRunId", "kind"])
+    .index("by_operationKey", ["operationKey"]),
+
+  phase11Proofs: defineTable({
+    key: v.string(),
+    primaryOrganizationId: v.id("organizations"),
+    foreignOrganizationId: v.id("organizations"),
+    primaryUserId: v.id("authUsers"),
+    foreignUserId: v.id("authUsers"),
+    projectId: v.id("projects"),
+    routerIngestionId: v.id("aiRouterIngestions"),
+    promptInjectionIngestionId: v.id("aiRouterIngestions"),
+    chaosRunId: v.id("chaosRuns"),
+    unauthorizedApprovalDenied: v.boolean(),
+    crossTenantReadDenied: v.boolean(),
     createdAt: v.number(),
   }).index("by_key", ["key"]),
 

@@ -1,5 +1,6 @@
 import { sha256 } from "../../hashing/src/index";
 import { z } from "zod";
+import { verifyWebhook } from "@kevlar/api-contracts";
 
 export const aiTaskSchema = z.enum([
   "incident.classify_residue",
@@ -413,5 +414,61 @@ export class SequentialAiRouter {
       runtime.circuit.state = "open";
       runtime.circuit.openedAt = now;
     }
+  }
+}
+
+export const verifiedRouterEventSchema = z.object({
+  id: z.string().min(1),
+  event_type: z.enum(["model.added", "model.deprecated", "ai_model.price.changed"]),
+  entity_id: z.string().min(1),
+  state: z.literal("released"),
+  evidence_refs: z.array(z.string().min(1)).min(1),
+  certificate_ref: z.string().nullable(),
+  observed_at: z.number(),
+  before: z.unknown().optional(),
+  after: z.unknown().optional(),
+});
+export type VerifiedRouterEvent = z.infer<typeof verifiedRouterEventSchema>;
+
+export type RouterChangeProposal = {
+  id: string;
+  eventId: string;
+  entityId: string;
+  action: "add_candidate" | "deprecate_candidate" | "update_price_metadata";
+  state: "awaiting_review" | "approved" | "rejected" | "applied";
+  evidenceRefs: string[];
+  review?: { kind: "human" | "policy"; reviewer: string; reason: string };
+};
+
+export class VerifiedEventRouterConsumer {
+  readonly #events = new Set<string>();
+  readonly #proposals = new Map<string, RouterChangeProposal>();
+
+  consume(raw: unknown) {
+    const event = verifiedRouterEventSchema.parse(raw);
+    const existing = [...this.#proposals.values()].find((item) => item.eventId === event.id);
+    if (this.#events.has(event.id) && existing) return { proposal: existing, duplicate: true };
+    const action = event.event_type === "model.added" ? "add_candidate" as const : event.event_type === "model.deprecated" ? "deprecate_candidate" as const : "update_price_metadata" as const;
+    const proposal: RouterChangeProposal = { id: `router_change:${event.id}`, eventId: event.id, entityId: event.entity_id, action, state: "awaiting_review", evidenceRefs: [...event.evidence_refs] };
+    this.#events.add(event.id); this.#proposals.set(proposal.id, proposal);
+    return { proposal, duplicate: false };
+  }
+
+  consumeSignedWebhook(input: { rawBody: string; signature: string; secret: string; now?: number }) {
+    if (!verifyWebhook({ payload: input.rawBody, signature: input.signature, secret: input.secret, now: input.now })) throw new Error("Invalid or expired Kevlar webhook signature.");
+    return this.consume(JSON.parse(input.rawBody));
+  }
+
+  review(id: string, decision: { approved: boolean; kind: "human" | "policy"; reviewer: string; reason: string }) {
+    const proposal = this.#proposals.get(id); if (!proposal) throw new Error("Router proposal not found.");
+    if (proposal.state !== "awaiting_review") throw new Error("Router proposal was already reviewed.");
+    const reviewed: RouterChangeProposal = { ...proposal, state: decision.approved ? "approved" : "rejected", review: { kind: decision.kind, reviewer: decision.reviewer, reason: decision.reason } };
+    this.#proposals.set(id, reviewed); return reviewed;
+  }
+
+  apply(id: string) {
+    const proposal = this.#proposals.get(id); if (!proposal) throw new Error("Router proposal not found.");
+    if (proposal.state !== "approved" || !proposal.review) throw new Error("Human or policy approval is required before router changes.");
+    const applied = { ...proposal, state: "applied" as const }; this.#proposals.set(id, applied); return applied;
   }
 }
