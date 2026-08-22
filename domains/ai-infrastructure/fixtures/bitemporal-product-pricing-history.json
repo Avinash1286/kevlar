@@ -1,0 +1,21 @@
+{
+  "fixture_id": "nova-product-price-correction-history",
+  "entity_key": "product:nova-headphones",
+  "predicate": "offer.price.amount",
+  "versions": [
+    {
+      "value": 12.9,
+      "valid_from": "2026-08-20T00:00:00.000Z",
+      "transaction_from": "2026-08-20T01:00:00.000Z",
+      "classification": "initial_mistaken_belief"
+    },
+    {
+      "value": 129,
+      "valid_from": "2026-08-20T00:00:00.000Z",
+      "transaction_from": "2026-08-20T02:00:00.000Z",
+      "classification": "correction"
+    }
+  ],
+  "expected_business_events": [],
+  "expected_correction_events": ["fact.corrected"]
+}

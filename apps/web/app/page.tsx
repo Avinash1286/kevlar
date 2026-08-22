@@ -57,7 +57,7 @@ export default async function Home() {
           <span>Kevlar</span>
         </a>
         <div className="phase-pill">
-          <span /> Gate F · Canonical Mapping
+          <span /> Gate G · Bitemporal Chronicle
         </div>
         <a className="repo-link" href="https://github.com/Avinash1286/kevlar">
           GitHub ↗
@@ -89,8 +89,11 @@ export default async function Home() {
           <a className="repo-link" href="/mappings">
             Mapping registry →
           </a>
+          <a className="repo-link" href="/history">
+            Fact chronicle →
+          </a>
           <span className="quiet-label">
-            Week 6 of 12 · Canonical identity graph
+            Week 7 of 12 · Bitemporal fact history
           </span>
         </div>
       </section>

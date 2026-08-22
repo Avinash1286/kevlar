@@ -1,0 +1,19 @@
+{
+  "fixture_id": "openai-gpt-4o-status-history",
+  "entity_key": "openai:gpt-4o",
+  "predicate": "model.status",
+  "versions": [
+    {
+      "value": "active",
+      "valid_from": "2026-08-20T00:00:00.000Z",
+      "transaction_from": "2026-08-20T01:00:00.000Z",
+      "classification": "initial"
+    },
+    {
+      "value": "deprecated",
+      "valid_from": "2026-08-25T00:00:00.000Z",
+      "transaction_from": "2026-08-25T00:05:00.000Z",
+      "classification": "real_change"
+    }
+  ]
+}

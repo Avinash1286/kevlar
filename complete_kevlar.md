@@ -6433,11 +6433,11 @@ Create immutable canonical observations and a historically correct fact store.
 
 #### Exit gate
 
-- [ ] Current facts can be regenerated from fact versions.
-- [ ] Corrections do not erase earlier observations.
-- [ ] Valid time and observation time are separately queryable.
-- [ ] Stale last-known-good facts are labelled.
-- [ ] Every current fact traces to a verified observation.
+- [x] Current facts can be regenerated from fact versions.
+- [x] Corrections do not erase earlier observations.
+- [x] Valid time and observation time are separately queryable.
+- [x] Stale last-known-good facts are labelled.
+- [x] Every current fact traces to a verified observation.
 - [ ] A corrected extraction is not misreported as a real provider change.
 
 ---

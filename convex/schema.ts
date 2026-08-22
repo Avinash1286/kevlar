@@ -63,6 +63,16 @@ import {
   mappingLifecycleValidator,
   schemaCompatibilityValidator,
 } from "./phase6Validators";
+import {
+  currentFactServingLabelValidator,
+  currentFactStateValidator,
+  factChangeKindValidator,
+  factFreshnessPolicyStatusValidator,
+  factReleaseOutcomeValidator,
+  factValidTimeSourceValidator,
+  factVersionRelationKindValidator,
+  factVersionStateValidator,
+} from "./phase7Validators";
 
 const schema = defineSchema({
   fixtureStates: defineTable({
@@ -1188,6 +1198,134 @@ const schema = defineSchema({
     resolvedEntityId: v.id("canonicalEntities"),
     ambiguousCandidateIds: v.array(v.id("identityCandidates")),
     entityOperationIds: v.array(v.id("canonicalEntityOperations")),
+    createdAt: v.number(),
+  }).index("by_key", ["key"]),
+
+  factFreshnessPolicies: defineTable({
+    projectId: v.id("projects"),
+    entityType: v.optional(v.string()),
+    predicate: v.string(),
+    maxAgeMs: v.number(),
+    allowLastKnownGood: v.boolean(),
+    status: factFreshnessPolicyStatusValidator,
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_projectId_and_predicate_and_status", [
+      "projectId",
+      "predicate",
+      "status",
+    ])
+    .index("by_operationKey", ["operationKey"]),
+
+  factReleaseDecisions: defineTable({
+    projectId: v.id("projects"),
+    entityId: v.id("canonicalEntities"),
+    predicate: v.string(),
+    policyId: v.id("factFreshnessPolicies"),
+    candidateObservationIds: v.array(v.id("canonicalObservations")),
+    previousFactVersionId: v.optional(v.id("factVersions")),
+    outcome: factReleaseOutcomeValidator,
+    reasonCodes: v.array(v.string()),
+    details: v.any(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_entityId_and_predicate_and_createdAt", [
+      "entityId",
+      "predicate",
+      "createdAt",
+    ])
+    .index("by_operationKey", ["operationKey"]),
+
+  factVersions: defineTable({
+    projectId: v.id("projects"),
+    entityId: v.id("canonicalEntities"),
+    predicate: v.string(),
+    value: v.any(),
+    valueHash: v.string(),
+    unit: v.optional(v.string()),
+    validFrom: v.optional(v.number()),
+    validTo: v.optional(v.number()),
+    validTimeSource: factValidTimeSourceValidator,
+    transactionFrom: v.number(),
+    state: factVersionStateValidator,
+    changeKind: factChangeKindValidator,
+    releaseDecisionId: v.id("factReleaseDecisions"),
+    sourceObservationIds: v.array(v.id("canonicalObservations")),
+    evidenceRefs: v.array(v.id("evidence")),
+    mappingRevisionId: v.id("canonicalMappingRevisions"),
+    collectorBindingId: v.id("collectorBindings"),
+    runId: v.optional(v.id("runs")),
+    certificateId: v.optional(v.id("certificates")),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_entityId_and_transactionFrom", ["entityId", "transactionFrom"])
+    .index("by_entityId_and_predicate_and_transactionFrom", [
+      "entityId",
+      "predicate",
+      "transactionFrom",
+    ])
+    .index("by_projectId_and_predicate_and_transactionFrom", [
+      "projectId",
+      "predicate",
+      "transactionFrom",
+    ])
+    .index("by_state_and_transactionFrom", ["state", "transactionFrom"])
+    .index("by_operationKey", ["operationKey"]),
+
+  factVersionRelations: defineTable({
+    projectId: v.id("projects"),
+    entityId: v.id("canonicalEntities"),
+    predicate: v.string(),
+    fromFactVersionId: v.id("factVersions"),
+    toFactVersionId: v.id("factVersions"),
+    kind: factVersionRelationKindValidator,
+    reason: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_fromFactVersionId_and_createdAt", [
+      "fromFactVersionId",
+      "createdAt",
+    ])
+    .index("by_toFactVersionId_and_createdAt", ["toFactVersionId", "createdAt"])
+    .index("by_entityId_and_predicate_and_createdAt", [
+      "entityId",
+      "predicate",
+      "createdAt",
+    ])
+    .index("by_operationKey", ["operationKey"]),
+
+  currentFacts: defineTable({
+    projectId: v.id("projects"),
+    entityId: v.id("canonicalEntities"),
+    predicate: v.string(),
+    factVersionId: v.id("factVersions"),
+    releaseDecisionId: v.id("factReleaseDecisions"),
+    policyId: v.id("factFreshnessPolicies"),
+    valueHash: v.string(),
+    state: currentFactStateValidator,
+    servingLabel: currentFactServingLabelValidator,
+    lastVerifiedAt: v.number(),
+    freshnessDeadline: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_entityId", ["entityId"])
+    .index("by_entityId_and_predicate", ["entityId", "predicate"])
+    .index("by_projectId_and_predicate", ["projectId", "predicate"])
+    .index("by_freshnessDeadline", ["freshnessDeadline"]),
+
+  phase7Proofs: defineTable({
+    key: v.string(),
+    projectId: v.id("projects"),
+    aiModelEntityId: v.id("canonicalEntities"),
+    productEntityId: v.id("canonicalEntities"),
+    policyIds: v.array(v.id("factFreshnessPolicies")),
+    factVersionIds: v.array(v.id("factVersions")),
+    relationIds: v.array(v.id("factVersionRelations")),
+    currentFactIds: v.array(v.id("currentFacts")),
     createdAt: v.number(),
   }).index("by_key", ["key"]),
 

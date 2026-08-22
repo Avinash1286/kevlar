@@ -6,6 +6,7 @@ export * from "../schema/registry";
 export * from "../mappings/engine";
 export * from "../mappings/specs";
 export * from "../identity/index";
+export * from "../history/index";
 export * from "./units";
 
 export const AI_INFRASTRUCTURE_SCHEMA_REVISION = 1 as const;
