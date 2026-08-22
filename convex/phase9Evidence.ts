@@ -249,6 +249,7 @@ export const sealBundle = mutation({
       artifactIds.push(
         await ctx.db.insert("evidenceBundleArtifacts", {
           bundleId,
+          projectId: args.projectId,
           kind: input.kind,
           ...(input.evidenceId ? { evidenceId: input.evidenceId } : {}),
           ...(input.storageId ? { storageId: input.storageId } : {}),

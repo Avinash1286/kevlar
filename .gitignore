@@ -15,9 +15,9 @@ test-results/
 .env.*.local
 !.env.example
 
-# Convex generated and deployment state
+# Convex local deployment state. Commit convex/_generated so clean clones can
+# typecheck without deployment credentials.
 .convex/
-convex/_generated/
 
 # editors and operating systems
 .idea/

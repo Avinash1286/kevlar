@@ -135,6 +135,17 @@ import {
   secretStatusValidator,
   securityDecisionValidator,
 } from "./phase11Validators";
+import {
+  backupManifestCountsValidator,
+  projectDeletionStageValidator,
+  projectDeletionStateValidator,
+  restoreManifestStatusValidator,
+  retentionActionValidator,
+  retentionKindValidator,
+  retentionPolicyStatusValidator,
+  retentionRunStatusValidator,
+  retentionScopeValidator,
+} from "./phase12Validators";
 
 const schema = defineSchema({
   ...authTables,
@@ -155,6 +166,8 @@ const schema = defineSchema({
     ),
     createdAt: v.number(),
     updatedAt: v.number(),
+    deletionState: v.optional(projectDeletionStateValidator),
+    deletedAt: v.optional(v.number()),
   }).index("by_slug", ["slug"]),
 
   collectors: defineTable({
@@ -201,10 +214,16 @@ const schema = defineSchema({
     completedAt: v.optional(v.number()),
     outputHash: v.optional(v.string()),
     rowCount: v.optional(v.number()),
+    payloadDeletionCompletedAt: v.optional(v.number()),
   })
     .index("by_project_started", ["projectId", "startedAt"])
     .index("by_collector_started", ["collectorId", "startedAt"])
     .index("by_mode_and_startedAt", ["mode", "startedAt"])
+    .index("by_projectId_and_payloadDeletionCompletedAt_and_startedAt", [
+      "projectId",
+      "payloadDeletionCompletedAt",
+      "startedAt",
+    ])
     .index("by_bright_data_job", ["brightDataJobId"]),
 
   rows: defineTable({
@@ -214,7 +233,10 @@ const schema = defineSchema({
     normalizedPayload: v.any(),
     fieldTrust: v.any(),
     recordHash: v.string(),
-  }).index("by_run", ["runId"]),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_run", ["runId"])
+    .index("by_runId_and_deletedAt", ["runId", "deletedAt"]),
 
   evidence: defineTable({
     projectId: v.id("projects"),
@@ -226,9 +248,23 @@ const schema = defineSchema({
     metadata: v.any(),
     phase4OperationKey: v.optional(v.string()),
     capturedAt: v.number(),
+    retentionProcessedAt: v.optional(v.number()),
+    retentionPolicyId: v.optional(v.id("evidenceRetentionPolicies")),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_run", ["runId"])
     .index("by_project_captured", ["projectId", "capturedAt"])
+    .index("by_projectId_and_kind_and_retentionProcessedAt_and_capturedAt", [
+      "projectId",
+      "kind",
+      "retentionProcessedAt",
+      "capturedAt",
+    ])
+    .index("by_projectId_and_deletedAt_and_capturedAt", [
+      "projectId",
+      "deletedAt",
+      "capturedAt",
+    ])
     .index("by_phase4OperationKey", ["phase4OperationKey"]),
 
   contracts: defineTable({
@@ -597,6 +633,7 @@ const schema = defineSchema({
     .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
     .index("by_healAttemptId_and_createdAt", ["healAttemptId", "createdAt"])
     .index("by_certificateId_and_createdAt", ["certificateId", "createdAt"])
+    .index("by_evidenceId", ["evidenceId"])
     .index("by_operationKey", ["operationKey"]),
 
   repairMutations: defineTable({
@@ -680,6 +717,7 @@ const schema = defineSchema({
     createdAt: v.number(),
   })
     .index("by_publicSlug", ["publicSlug"])
+    .index("by_projectId_and_createdAt", ["projectId", "createdAt"])
     .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
     .index("by_healAttemptId_and_createdAt", ["healAttemptId", "createdAt"])
     .index("by_operationKey", ["operationKey"]),
@@ -1162,9 +1200,15 @@ const schema = defineSchema({
     }),
     mappingRevisionId: v.id("canonicalMappingRevisions"),
     createdAt: v.number(),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_observationId", ["observationId"])
     .index("by_projectId_and_canonicalPath", ["projectId", "canonicalPath"])
+    .index("by_projectId_and_deletedAt_and_createdAt", [
+      "projectId",
+      "deletedAt",
+      "createdAt",
+    ])
     .index("by_normalizedValueHash", ["normalizedValueHash"]),
 
   identityCandidates: defineTable({
@@ -1460,6 +1504,7 @@ const schema = defineSchema({
       "createdAt",
     ])
     .index("by_policyId_and_createdAt", ["policyId", "createdAt"])
+    .index("by_projectId_and_createdAt", ["projectId", "createdAt"])
     .index("by_operationKey", ["operationKey"]),
 
   sourceConflicts: defineTable({
@@ -1616,15 +1661,23 @@ const schema = defineSchema({
     operationKey: v.string(),
     createdAt: v.number(),
     sealedAt: v.optional(v.number()),
+    artifactBackfillAt: v.optional(v.number()),
   })
     .index("by_operationKey", ["operationKey"])
     .index("by_bundleKey", ["bundleKey"])
     .index("by_digest", ["digest"])
+    .index("by_projectId_and_createdAt", ["projectId", "createdAt"])
+    .index("by_projectId_and_artifactBackfillAt_and_createdAt", [
+      "projectId",
+      "artifactBackfillAt",
+      "createdAt",
+    ])
     .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
     .index("by_eventId", ["eventId"]),
 
   evidenceBundleArtifacts: defineTable({
     bundleId: v.id("evidenceBundles"),
+    projectId: v.optional(v.id("projects")),
     kind: evidenceArtifactKindValidator,
     evidenceId: v.optional(v.id("evidence")),
     storageId: v.optional(v.id("_storage")),
@@ -1634,8 +1687,23 @@ const schema = defineSchema({
     metadata: v.any(),
     operationKey: v.string(),
     createdAt: v.number(),
+    retentionProcessedAt: v.optional(v.number()),
+    retentionPolicyId: v.optional(v.id("evidenceRetentionPolicies")),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_bundleId_and_createdAt", ["bundleId", "createdAt"])
+    .index("by_evidenceId", ["evidenceId"])
+    .index("by_projectId_and_kind_and_retentionProcessedAt_and_createdAt", [
+      "projectId",
+      "kind",
+      "retentionProcessedAt",
+      "createdAt",
+    ])
+    .index("by_projectId_and_deletedAt_and_createdAt", [
+      "projectId",
+      "deletedAt",
+      "createdAt",
+    ])
     .index("by_operationKey", ["operationKey"]),
 
   downstreamConsumers: defineTable({
@@ -1943,11 +2011,17 @@ const schema = defineSchema({
     createdAt: v.number(),
     lastUsedAt: v.optional(v.number()),
     revokedAt: v.optional(v.number()),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_secretHash", ["secretHash"])
     .index("by_projectId_and_status_and_createdAt", [
       "projectId",
       "status",
+      "createdAt",
+    ])
+    .index("by_projectId_and_deletedAt_and_createdAt", [
+      "projectId",
+      "deletedAt",
       "createdAt",
     ])
     .index("by_operationKey", ["operationKey"]),
@@ -2011,10 +2085,16 @@ const schema = defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
     rotatedAt: v.optional(v.number()),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_projectId_and_status_and_createdAt", [
       "projectId",
       "status",
+      "createdAt",
+    ])
+    .index("by_projectId_and_deletedAt_and_createdAt", [
+      "projectId",
+      "deletedAt",
       "createdAt",
     ])
     .index("by_operationKey", ["operationKey"]),
@@ -2029,8 +2109,14 @@ const schema = defineSchema({
     operationKey: v.string(),
     createdAt: v.number(),
     retiredAt: v.optional(v.number()),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_endpointId_and_version", ["endpointId", "version"])
+    .index("by_endpointId_and_deletedAt_and_version", [
+      "endpointId",
+      "deletedAt",
+      "version",
+    ])
     .index("by_operationKey", ["operationKey"]),
 
   webhookDeliveries: defineTable({
@@ -2050,10 +2136,16 @@ const schema = defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
     completedAt: v.optional(v.number()),
+    payloadDeletedAt: v.optional(v.number()),
   })
     .index("by_idempotencyKey", ["idempotencyKey"])
     .index("by_status_and_nextAttemptAt", ["status", "nextAttemptAt"])
     .index("by_subscriptionId_and_createdAt", ["subscriptionId", "createdAt"])
+    .index("by_projectId_and_payloadDeletedAt_and_createdAt", [
+      "projectId",
+      "payloadDeletedAt",
+      "createdAt",
+    ])
     .index("by_eventExternalId", ["eventExternalId"]),
 
   webhookDeliveryAttempts: defineTable({
@@ -2309,6 +2401,110 @@ const schema = defineSchema({
     chaosRunId: v.id("chaosRuns"),
     unauthorizedApprovalDenied: v.boolean(),
     crossTenantReadDenied: v.boolean(),
+    createdAt: v.number(),
+  }).index("by_key", ["key"]),
+
+  evidenceRetentionPolicies: defineTable({
+    projectId: v.id("projects"),
+    scope: retentionScopeValidator,
+    kind: retentionKindValidator,
+    retentionDays: v.number(),
+    action: retentionActionValidator,
+    preserveCertified: v.boolean(),
+    status: retentionPolicyStatusValidator,
+    createdByUserId: v.id("authUsers"),
+    operationKey: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_projectId_and_scope_and_kind", ["projectId", "scope", "kind"])
+    .index("by_projectId_and_status", ["projectId", "status"])
+    .index("by_operationKey", ["operationKey"]),
+
+  evidenceRetentionRuns: defineTable({
+    projectId: v.id("projects"),
+    policyId: v.id("evidenceRetentionPolicies"),
+    cutoffAt: v.number(),
+    status: retentionRunStatusValidator,
+    scanned: v.number(),
+    eligible: v.number(),
+    redacted: v.number(),
+    storageDeleted: v.number(),
+    preserved: v.number(),
+    hasMore: v.boolean(),
+    operationKey: v.string(),
+    executedByUserId: v.id("authUsers"),
+    createdAt: v.number(),
+    completedAt: v.number(),
+  })
+    .index("by_policyId_and_createdAt", ["policyId", "createdAt"])
+    .index("by_projectId_and_createdAt", ["projectId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  projectDeletionTombstones: defineTable({
+    organizationId: v.id("organizations"),
+    projectId: v.id("projects"),
+    projectSlug: v.string(),
+    backupRestoreManifestId: v.id("backupRestoreManifests"),
+    state: projectDeletionStateValidator,
+    stage: projectDeletionStageValidator,
+    reason: v.string(),
+    requestedByUserId: v.id("authUsers"),
+    evidenceRedacted: v.number(),
+    rowsRedacted: v.number(),
+    observationFieldsRedacted: v.number(),
+    deliveriesRedacted: v.number(),
+    credentialsRevoked: v.number(),
+    retainedAuditDigest: v.optional(v.string()),
+    operationKey: v.string(),
+    requestedAt: v.number(),
+    updatedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_projectId", ["projectId"])
+    .index("by_organizationId_and_requestedAt", ["organizationId", "requestedAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  backupRestoreManifests: defineTable({
+    organizationId: v.id("organizations"),
+    projectId: v.id("projects"),
+    backupExportRecordId: v.id("backupExportRecords"),
+    snapshotRef: v.string(),
+    sourceDeployment: v.string(),
+    restoreTarget: v.string(),
+    counts: backupManifestCountsValidator,
+    expectedDigest: v.string(),
+    actualDigest: v.optional(v.string()),
+    verificationOperationKey: v.optional(v.string()),
+    status: restoreManifestStatusValidator,
+    coreCertificateId: v.optional(v.id("certificates")),
+    multiSourceDecisionId: v.optional(v.id("releaseDecisions")),
+    releasedEventId: v.optional(v.id("changeEvents")),
+    operationKey: v.string(),
+    capturedAt: v.number(),
+    verifiedAt: v.optional(v.number()),
+  })
+    .index("by_projectId_and_capturedAt", ["projectId", "capturedAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  phase12Proofs: defineTable({
+    key: v.string(),
+    projectId: v.id("projects"),
+    disposableProjectId: v.id("projects"),
+    retentionPolicyId: v.id("evidenceRetentionPolicies"),
+    retentionRunId: v.id("evidenceRetentionRuns"),
+    deletionTombstoneId: v.id("projectDeletionTombstones"),
+    restoreManifestId: v.id("backupRestoreManifests"),
+    coreCertificateId: v.id("certificates"),
+    factVersionId: v.id("factVersions"),
+    releasedEventId: v.id("changeEvents"),
+    multiSourceDecisionId: v.id("releaseDecisions"),
+    retentionVerified: v.boolean(),
+    deletionVerified: v.boolean(),
+    restoreVerified: v.boolean(),
+    coreCertificationQueryable: v.boolean(),
+    multiSourceFactsQueryable: v.boolean(),
+    releasedEventsQueryable: v.boolean(),
     createdAt: v.number(),
   }).index("by_key", ["key"]),
 

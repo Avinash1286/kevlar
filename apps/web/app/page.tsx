@@ -57,7 +57,7 @@ export default async function Home() {
           <span>Kevlar</span>
         </a>
         <div className="phase-pill">
-          <span /> Gate I · Evidence + Fleet Safety
+          <span /> v1.0.0 · Release verified
         </div>
         <a className="repo-link" href="https://github.com/Avinash1286/kevlar">
           GitHub ↗
@@ -119,8 +119,11 @@ export default async function Home() {
           <Link className="repo-link" href="/sign-in">
             Operator sign in →
           </Link>
+          <Link className="repo-link" href="/release">
+            v1.0.0 evidence →
+          </Link>
           <span className="quiet-label">
-            Week 11 of 12 · Secure operations and downstream delivery
+            Week 12 of 12 · Complete measured release
           </span>
         </div>
       </section>

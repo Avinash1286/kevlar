@@ -1,0 +1,13 @@
+{
+  "schema_version": "kevlar.router-event.v1",
+  "event_id": "evt_fde9bb3ea366663a",
+  "event_type": "fact_corrected",
+  "state": "released",
+  "evidence_refs": ["phase8-evidence-proof"],
+  "raw_page_accepted": false,
+  "proposal": {
+    "action": "review_model_route",
+    "status": "consumed",
+    "human_or_policy_review_required": true
+  }
+}

@@ -34,6 +34,9 @@ export const evidenceGraph = query({
         .order("desc")
         .first();
     if (!root) return { root: null, nodes: [], edges: [], truncated: false };
+    const rootProject = await ctx.db.get("projects", root.projectId);
+    if (rootProject?.deletionState === "deleted")
+      return { root: null, nodes: [], edges: [], truncated: false };
     if (args.projectId && root.projectId !== args.projectId)
       throw new Error("Root node belongs to another project");
     const nodeIds = new Set<Id<"provenanceNodes">>([root._id]);
@@ -105,6 +108,8 @@ export const evidenceBundle = query({
           .withIndex("by_digest", (q) => q.eq("digest", args.digest!))
           .unique();
     if (!bundle) return null;
+    const bundleProject = await ctx.db.get("projects", bundle.projectId);
+    if (bundleProject?.deletionState === "deleted") return null;
     const artifacts = await ctx.db
       .query("evidenceBundleArtifacts")
       .withIndex("by_bundleId_and_createdAt", (q) =>

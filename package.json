@@ -1,6 +1,6 @@
 {
   "name": "kevlar",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Verified live-web intelligence and repair certification",
   "packageManager": "pnpm@10.33.0",
@@ -17,6 +17,10 @@
     "phase5:verify": "tsx --env-file=.env.local scripts/verify-phase5-collector.ts",
     "phase5:run": "tsx --env-file=.env.local scripts/run-phase5-fleet.ts",
     "demo:reset": "tsx --env-file=.env.local scripts/demo-reset.ts",
+    "release:benchmark": "tsx --env-file=.env.local scripts/run-release-benchmark.ts",
+    "release:e2e": "tsx --env-file=.env.local scripts/run-release-e2e.ts",
+    "release:load": "tsx scripts/run-release-load.ts",
+    "release:demo": "tsx scripts/record-release-demos.ts",
     "dev": "turbo run dev --parallel",
     "dev:web": "pnpm --filter @kevlar/web dev",
     "dev:fixture": "pnpm --filter @kevlar/fixture-lab dev",

@@ -103,6 +103,8 @@ export const certificateBySlug = query({
       .withIndex("by_publicSlug", (q) => q.eq("publicSlug", args.publicSlug))
       .unique();
     if (!certificate) return null;
+    const certificateProject = await ctx.db.get("projects", certificate.projectId);
+    if (certificateProject?.deletionState === "deleted") return null;
     const [
       incident,
       collector,

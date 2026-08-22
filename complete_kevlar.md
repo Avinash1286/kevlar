@@ -6650,16 +6650,16 @@ Turn the system into a reproducible, explainable, and releasable product.
 
 #### Exit gate — complete Kevlar
 
-- [ ] All critical tests pass.
-- [ ] No benchmark placeholder remains.
-- [ ] Every public claim is supported by measured output.
-- [ ] Core repair certification still works from reset.
-- [ ] Multi-source facts and events are queryable.
-- [ ] API, webhook, SDK, and MCP examples work.
-- [ ] AI-router integration works.
-- [ ] Security review and secret scan pass.
-- [ ] Documentation explains limitations honestly.
-- [ ] Production can be restored from documented backups.
+- [x] All critical tests pass.
+- [x] No benchmark placeholder remains.
+- [x] Every public claim is supported by measured output.
+- [x] Core repair certification still works from reset.
+- [x] Multi-source facts and events are queryable.
+- [x] API, webhook, SDK, and MCP examples work.
+- [x] AI-router integration works.
+- [x] Security review and secret scan pass.
+- [x] Documentation explains limitations honestly.
+- [x] Production can be restored from documented backups.
 
 ---
 

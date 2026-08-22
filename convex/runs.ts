@@ -20,7 +20,7 @@ export const latestBaseline = query({
       ctx.db
         .query("evidence")
         .withIndex("by_run", (q) => q.eq("runId", run._id))
-        .collect(),
+        .take(100),
     ]);
     const collector = await ctx.db.get(run.collectorId);
 

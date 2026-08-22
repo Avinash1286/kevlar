@@ -1,0 +1,25 @@
+{
+  "api_version": "v1",
+  "data": [
+    {
+      "id": "th799p2kykx7b8yk59yc6dd7ps8czn7g",
+      "entity_id": "qs75qg4wak0n0csmz1yqbepx0h8cycre",
+      "predicate": "model.input_price_usd_per_million_tokens",
+      "value": 5,
+      "value_hash": "fnv1a64:af63a84c86019430",
+      "valid_from": 1787378511485,
+      "transaction_from": 1787378513485,
+      "trust": {
+        "state": "released",
+        "freshness": "fresh",
+        "source_ids": ["s57etfs9d5rbd2pkabbwbmykss8czpcr"],
+        "supporting_source_count": 1,
+        "evidence_refs": ["jd7fpjp6amxxfxd584meek0h098czeye"],
+        "certificate_ref": null,
+        "observed_at": 1787378511485
+      }
+    }
+  ],
+  "pagination": { "next_cursor": null, "limit": 25 },
+  "request_id": "sample-redacted"
+}
