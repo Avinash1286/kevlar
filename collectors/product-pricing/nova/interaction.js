@@ -17,5 +17,5 @@ if (el_exists('[data-page-state="blocked"]'))
 if (el_exists('[data-page-state="not-found"]'))
   dead_page("Fixture product not found");
 
-tag_screenshot("page_screenshot", { filename: "nova-page", full_page: true });
+tag_screenshot("page_screenshot", { filename: "nova_page", full_page: true });
 collect(parse());
