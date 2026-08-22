@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "source_url",
+    "source_type",
+    "captured_at",
+    "provider",
+    "records",
+    "evidence"
+  ],
+  "properties": {
+    "schema_version": { "const": "ai-infrastructure.source.v1" },
+    "source_url": { "type": "string", "format": "uri" },
+    "source_type": { "const": "pricing" },
+    "captured_at": { "type": "string", "format": "date-time" },
+    "provider": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "const": "anthropic" },
+        "name": { "const": "Anthropic" }
+      },
+      "additionalProperties": false
+    },
+    "records": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "provider_model_id",
+          "display_name",
+          "plan",
+          "input_price",
+          "output_price",
+          "region"
+        ],
+        "properties": {
+          "kind": { "const": "pricing" },
+          "provider_model_id": { "type": "string", "minLength": 1 },
+          "display_name": { "type": "string", "minLength": 1 },
+          "plan": { "type": "string", "minLength": 1 },
+          "input_price": { "$ref": "#/$defs/inputPrice" },
+          "output_price": { "$ref": "#/$defs/outputPrice" },
+          "region": { "type": ["string", "null"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "evidence": { "$ref": "#/$defs/evidence" }
+  },
+  "$defs": {
+    "money": {
+      "type": "object",
+      "required": ["amount", "currency", "denominator", "original"],
+      "properties": {
+        "amount": { "type": "number", "exclusiveMinimum": 0 },
+        "currency": { "const": "USD" },
+        "denominator": { "type": "string" },
+        "original": {
+          "type": "object",
+          "required": ["value", "unit"],
+          "properties": {
+            "value": { "type": "string", "minLength": 1 },
+            "unit": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "inputPrice": {
+      "allOf": [
+        { "$ref": "#/$defs/money" },
+        {
+          "properties": {
+            "denominator": { "const": "million_input_tokens" }
+          }
+        }
+      ]
+    },
+    "outputPrice": {
+      "allOf": [
+        { "$ref": "#/$defs/money" },
+        {
+          "properties": {
+            "denominator": { "const": "million_output_tokens" }
+          }
+        }
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "page_heading",
+        "contexts",
+        "screenshot_ref",
+        "content_hash"
+      ],
+      "properties": {
+        "page_heading": { "type": "string", "minLength": 1 },
+        "contexts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "screenshot_ref": { "type": ["string", "null"] },
+        "content_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

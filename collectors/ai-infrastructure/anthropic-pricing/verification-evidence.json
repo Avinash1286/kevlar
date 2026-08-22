@@ -1,0 +1,12 @@
+{
+  "checked_at": "2026-08-22T13:15:00.000Z",
+  "bright_data_active": true,
+  "last_run_at": "2026-08-22T13:10:55.742Z",
+  "development_snapshot_id": "j_mt4eceaf15w2vwuqzr",
+  "returned_rows": 1,
+  "kevlar_core_certified": false,
+  "blocking_violations": ["schema_invalid"],
+  "self_heal_job_id": "ia_mt4ehqaijimxfu89l",
+  "self_heal_decision": "rejected",
+  "reason": "The generated preview retained the original source/model_pricing wrapper and truncated evidence hash instead of the repository output contract."
+}

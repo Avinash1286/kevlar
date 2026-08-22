@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fixture from "../../domains/ai-infrastructure/fixtures/openai-pricing.json";
+import anthropicModelsFixture from "../../collectors/ai-infrastructure/anthropic-models/samples/contract-fixture.json";
+import anthropicPricingFixture from "../../collectors/ai-infrastructure/anthropic-pricing/samples/contract-fixture.json";
 import {
   AI_INFRASTRUCTURE_SCHEMA_REVISION,
   canonicalEntityTypeSchema,
@@ -30,6 +32,15 @@ describe("AI infrastructure domain pack", () => {
     expect(result.decision).toBe("verified");
     expect(result.normalized?.records).toHaveLength(1);
     expect(result.evidenceHash).toMatch(/^sha256:/);
+  });
+
+  it("verifies governed Anthropic pricing and catalog contract fixtures", () => {
+    expect(
+      verifyAiInfrastructureObservation(anthropicPricingFixture).decision,
+    ).toBe("verified");
+    expect(
+      verifyAiInfrastructureObservation(anthropicModelsFixture).decision,
+    ).toBe("verified");
   });
 
   it("quarantines a valid payload from an unapproved host", () => {

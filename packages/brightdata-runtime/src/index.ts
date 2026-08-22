@@ -8,6 +8,22 @@ const collectorResponseSchema = z
     active: z.boolean().optional(),
   })
   .passthrough();
+const collectorListResponseSchema = z.object({
+  total: z.number().int().nonnegative(),
+  offset: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  data: z.array(
+    z
+      .object({
+        id: z.string().regex(/^c_[A-Za-z0-9_-]+$/),
+        name: z.string().min(1),
+        active: z.boolean(),
+        last_run: z.string().optional(),
+        output_schema: z.unknown().optional(),
+      })
+      .passthrough(),
+  ),
+});
 const automationProgressSchema = z
   .object({
     status: z.string().optional(),
@@ -74,6 +90,14 @@ export class BrightDataStudioAdmin {
       signal,
     });
     return collectorResponseSchema.parse(await readJson(response));
+  }
+
+  async listCollectors(signal?: AbortSignal) {
+    const response = await fetch(`${this.#baseUrl}/dca/collectors_list`, {
+      headers: this.#authorizationHeaders(),
+      signal,
+    });
+    return collectorListResponseSchema.parse(await readJson(response));
   }
 
   async automateTemplate(

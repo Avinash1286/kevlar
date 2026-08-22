@@ -142,10 +142,18 @@ export const OFFICIAL_SOURCE_POLICIES = {
   pricing: [
     { host: "openai.com", pathPrefix: "/api/pricing" },
     { host: "docs.anthropic.com", pathPrefix: "/en/docs/about-claude/pricing" },
+    {
+      host: "platform.claude.com",
+      pathPrefix: "/docs/en/about-claude/pricing",
+    },
   ],
   catalog: [
     { host: "platform.openai.com", pathPrefix: "/docs/models" },
     { host: "docs.anthropic.com", pathPrefix: "/en/docs/about-claude/models" },
+    {
+      host: "platform.claude.com",
+      pathPrefix: "/docs/en/about-claude/models",
+    },
   ],
   documentation: [
     { host: "platform.openai.com", pathPrefix: "/docs" },

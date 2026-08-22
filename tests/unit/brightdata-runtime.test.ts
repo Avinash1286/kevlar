@@ -233,6 +233,39 @@ describe("BrightDataStudioAdmin", () => {
     );
   });
 
+  it("lists collector lifecycle state without exposing account secrets", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          total: 1,
+          offset: 0,
+          limit: 50,
+          data: [
+            {
+              id: "c_pricing",
+              name: "Kevlar pricing",
+              active: false,
+              output_schema: { type: "object" },
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(admin.listCollectors()).resolves.toMatchObject({
+      total: 1,
+      data: [{ id: "c_pricing", active: false }],
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://brightdata.test/dca/collectors_list",
+      expect.objectContaining({
+        headers: { Authorization: "Bearer test-api-key" },
+      }),
+    );
+  });
+
   it("starts and polls the documented AI automation flow", async () => {
     const fetchMock = vi
       .fn()

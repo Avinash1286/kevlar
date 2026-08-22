@@ -1,0 +1,34 @@
+{
+  "schema_version": "ai-infrastructure.source.v1",
+  "source_type": "pricing",
+  "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+  "captured_at": "2026-08-22T12:00:00.000Z",
+  "provider": { "id": "anthropic", "name": "Anthropic" },
+  "records": [
+    {
+      "kind": "pricing",
+      "provider_model_id": "claude-opus-5",
+      "display_name": "Claude Opus 5",
+      "plan": "standard",
+      "input_price": {
+        "amount": 5,
+        "currency": "USD",
+        "denominator": "million_input_tokens",
+        "original": { "value": "$5", "unit": "MTok" }
+      },
+      "output_price": {
+        "amount": 25,
+        "currency": "USD",
+        "denominator": "million_output_tokens",
+        "original": { "value": "$25", "unit": "MTok" }
+      },
+      "region": null
+    }
+  ],
+  "evidence": {
+    "page_heading": "Pricing",
+    "contexts": ["Claude Opus 5 Input $5 / MTok Output $25 / MTok"],
+    "screenshot_ref": null,
+    "content_hash": "sha256:cf7dd68668c3450784485cd2a31e76a7858fa843993f09e172c203e91f5f7ad4"
+  }
+}

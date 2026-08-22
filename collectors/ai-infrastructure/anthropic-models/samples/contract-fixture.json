@@ -1,0 +1,33 @@
+{
+  "schema_version": "ai-infrastructure.source.v1",
+  "source_type": "catalog",
+  "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+  "captured_at": "2026-08-22T12:00:00.000Z",
+  "provider": { "id": "anthropic", "name": "Anthropic" },
+  "records": [
+    {
+      "kind": "model",
+      "provider_model_id": "claude-opus-5",
+      "display_name": "Claude Opus 5",
+      "family": "claude-opus",
+      "lifecycle_status": "active",
+      "modalities": ["text", "image"],
+      "context_window_tokens": 1000000,
+      "max_output_tokens": 128000,
+      "capabilities": {
+        "tools": true,
+        "structured_output": true,
+        "vision": true,
+        "audio": false
+      }
+    }
+  ],
+  "evidence": {
+    "page_heading": "Models overview",
+    "contexts": [
+      "Claude Opus 5 claude-opus-5 1M token context window 128k maximum output"
+    ],
+    "screenshot_ref": null,
+    "content_hash": "sha256:1c6219f02bdd15d2ee28ff49954a2fe054a664cf90a6a0aeebea8a8387a15942"
+  }
+}

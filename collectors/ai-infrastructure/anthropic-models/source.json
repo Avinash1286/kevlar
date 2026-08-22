@@ -1,0 +1,21 @@
+{
+  "source_key": "anthropic-models",
+  "name": "Anthropic model catalog",
+  "archetype": "catalog",
+  "provider": "anthropic",
+  "url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+  "public_data": true,
+  "approved_host": "platform.claude.com",
+  "approved_path_prefix": "/docs/en/about-claude/models",
+  "predicate_authority": [
+    "model.name",
+    "model.capability",
+    "model.endpoint",
+    "model.limit"
+  ],
+  "schedule": {
+    "cadence_minutes": 720,
+    "max_concurrency": 1,
+    "daily_quota": 8
+  }
+}

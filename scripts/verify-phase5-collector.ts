@@ -6,6 +6,10 @@ const sources = {
   "openai-models": "https://platform.openai.com/docs/models",
   "anthropic-release-notes":
     "https://docs.anthropic.com/en/release-notes/overview",
+  "anthropic-pricing":
+    "https://platform.claude.com/docs/en/about-claude/pricing",
+  "anthropic-models":
+    "https://platform.claude.com/docs/en/about-claude/models/overview",
 } as const;
 
 type SourceKey = keyof typeof sources;

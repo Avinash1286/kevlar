@@ -21,6 +21,18 @@ const sourceSpecs = {
     intervalMs: 6 * 60 * 60_000,
     dailyQuota: 12,
   },
+  "anthropic-pricing": {
+    collectorId: "c_mt4e7tgw1i46wxboqa",
+    url: "https://platform.claude.com/docs/en/about-claude/pricing",
+    intervalMs: 6 * 60 * 60_000,
+    dailyQuota: 12,
+  },
+  "anthropic-models": {
+    collectorId: "c_mt4e811ufis8kdvlt",
+    url: "https://platform.claude.com/docs/en/about-claude/models/overview",
+    intervalMs: 12 * 60 * 60_000,
+    dailyQuota: 8,
+  },
 } as const;
 
 type SourceKey = keyof typeof sourceSpecs;
