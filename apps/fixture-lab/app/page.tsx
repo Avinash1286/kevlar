@@ -14,6 +14,12 @@ export default function FixtureIndex() {
       <a href="/product-pricing/nova">
         Open Nova product fixture <span>→</span>
       </a>
+      <a href="/negative-controls/soft-block">
+        Open N1 soft-block control <span>→</span>
+      </a>
+      <a href="/negative-controls/legitimate-empty">
+        Open N2 legitimate-empty control <span>→</span>
+      </a>
     </main>
   );
 }

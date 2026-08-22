@@ -57,7 +57,7 @@ export default async function Home() {
           <span>Kevlar</span>
         </a>
         <div className="phase-pill">
-          <span /> Gate B · Semantic trust
+          <span /> Gate C · Reliability
         </div>
         <a className="repo-link" href="https://github.com/Avinash1286/kevlar">
           GitHub ↗
@@ -81,7 +81,7 @@ export default async function Home() {
             Open trust feed <span>→</span>
           </a>
           <span className="quiet-label">
-            Week 2 of 12 · Semantic release gate
+            Week 3 of 12 · Durable incident workflows
           </span>
         </div>
       </section>

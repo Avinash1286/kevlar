@@ -1,7 +1,26 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { vWorkflowId } from "@convex-dev/workflow";
+import {
+  actorTypeValidator,
+  circuitStateValidator,
+  confidenceSourceValidator,
+  humanReviewReasonValidator,
+  humanReviewStatusValidator,
+  idempotencyScopeValidator,
+  idempotencyStatusValidator,
+  incidentStateValidator,
+  modelCallStatusValidator,
+  modelOutputValidator,
+  modelTaskValidator,
+  triageActionValidator,
+  triageClassificationValidator,
+  workflowEventTypeValidator,
+  workflowKindValidator,
+  workflowStatusValidator,
+} from "./phase3Validators";
 
-export default defineSchema({
+const schema = defineSchema({
   fixtureStates: defineTable({
     key: v.string(),
     version: v.union(v.literal("v1"), v.literal("v2")),
@@ -172,6 +191,205 @@ export default defineSchema({
     .index("by_runId", ["runId"])
     .index("by_projectId_and_createdAt", ["projectId", "createdAt"]),
 
+  incidents: defineTable({
+    projectId: v.id("projects"),
+    failingRunId: v.id("runs"),
+    collectorId: v.id("collectors"),
+    state: incidentStateValidator,
+    classification: v.optional(triageClassificationValidator),
+    recommendedAction: v.optional(triageActionValidator),
+    failureSummary: v.string(),
+    currentWorkflowStep: v.optional(v.string()),
+    reviewReason: v.optional(v.string()),
+    transitionSequence: v.number(),
+    openedAt: v.number(),
+    updatedAt: v.number(),
+    resolvedAt: v.optional(v.number()),
+  })
+    .index("by_failingRunId", ["failingRunId"])
+    .index("by_projectId_and_openedAt", ["projectId", "openedAt"])
+    .index("by_collectorId_and_openedAt", ["collectorId", "openedAt"])
+    .index("by_state_and_updatedAt", ["state", "updatedAt"]),
+
+  incidentTransitions: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    sequence: v.number(),
+    fromState: v.union(incidentStateValidator, v.null()),
+    toState: incidentStateValidator,
+    reason: v.string(),
+    actorType: actorTypeValidator,
+    actorId: v.optional(v.string()),
+    idempotencyKey: v.string(),
+    details: v.any(),
+    createdAt: v.number(),
+  })
+    .index("by_incidentId_and_sequence", ["incidentId", "sequence"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_idempotencyKey", ["idempotencyKey"]),
+
+  triageRecords: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    runId: v.id("runs"),
+    classification: triageClassificationValidator,
+    recommendedAction: triageActionValidator,
+    confidenceSource: confidenceSourceValidator,
+    signals: v.array(v.string()),
+    repeatedFetchRequired: v.boolean(),
+    algorithmVersion: v.string(),
+    idempotencyKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_runId", ["runId"])
+    .index("by_idempotencyKey", ["idempotencyKey"]),
+
+  incidentEvidenceLinks: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    runId: v.id("runs"),
+    kind: v.union(v.literal("triggering"), v.literal("repeated_fetch")),
+    domFingerprint: v.optional(v.string()),
+    note: v.string(),
+    idempotencyKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_idempotencyKey", ["idempotencyKey"]),
+
+  workflowRuns: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    kind: workflowKindValidator,
+    status: workflowStatusValidator,
+    currentStep: v.string(),
+    attempt: v.number(),
+    maxAttempts: v.number(),
+    baseRetryDelayMs: v.number(),
+    maxRetryDelayMs: v.number(),
+    deadlineAt: v.number(),
+    nextResumeAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    durableWorkflowId: v.optional(vWorkflowId),
+    idempotencyKey: v.string(),
+    eventSequence: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_idempotencyKey", ["idempotencyKey"])
+    .index("by_durableWorkflowId", ["durableWorkflowId"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_status_and_nextResumeAt", ["status", "nextResumeAt"])
+    .index("by_status_and_updatedAt", ["status", "updatedAt"]),
+
+  workflowEvents: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    workflowRunId: v.id("workflowRuns"),
+    sequence: v.number(),
+    eventType: workflowEventTypeValidator,
+    step: v.string(),
+    fromStatus: v.union(workflowStatusValidator, v.null()),
+    toStatus: workflowStatusValidator,
+    details: v.any(),
+    createdAt: v.number(),
+  })
+    .index("by_workflowRunId_and_sequence", ["workflowRunId", "sequence"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"]),
+
+  idempotencyRecords: defineTable({
+    projectId: v.optional(v.id("projects")),
+    incidentId: v.optional(v.id("incidents")),
+    operationKey: v.string(),
+    scope: idempotencyScopeValidator,
+    status: idempotencyStatusValidator,
+    requestHash: v.string(),
+    result: v.optional(v.any()),
+    externalCallRef: v.optional(v.string()),
+    attempts: v.number(),
+    expiresAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_incidentId_and_createdAt", ["incidentId", "createdAt"])
+    .index("by_status_and_updatedAt", ["status", "updatedAt"]),
+
+  modelCalls: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.optional(v.id("incidents")),
+    workflowRunId: v.optional(v.id("workflowRuns")),
+    task: modelTaskValidator,
+    provider: v.string(),
+    model: v.string(),
+    fallbackIndex: v.number(),
+    status: modelCallStatusValidator,
+    latencyMs: v.optional(v.number()),
+    inputHash: v.string(),
+    cacheKey: v.string(),
+    outputSchemaValid: v.optional(v.boolean()),
+    output: v.optional(modelOutputValidator),
+    errorCode: v.optional(v.string()),
+    costUnits: v.number(),
+    modelRegistryRevision: v.string(),
+    promptTemplateRevision: v.string(),
+    promptIsolationApplied: v.boolean(),
+    affectedProductionConfig: v.boolean(),
+    operationKey: v.string(),
+    cachedFromCallId: v.optional(v.id("modelCalls")),
+    humanDecision: v.optional(v.string()),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_task_and_cacheKey_and_completedAt", [
+      "task",
+      "cacheKey",
+      "completedAt",
+    ])
+    .index("by_incidentId_and_startedAt", ["incidentId", "startedAt"])
+    .index("by_provider_and_startedAt", ["provider", "startedAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  modelProviderBudgets: defineTable({
+    provider: v.string(),
+    budgetDate: v.string(),
+    dailyLimitUnits: v.number(),
+    reservedDemoUnits: v.number(),
+    usedUnits: v.number(),
+    updatedAt: v.number(),
+  }).index("by_provider_and_budgetDate", ["provider", "budgetDate"]),
+
+  modelProviderCircuits: defineTable({
+    provider: v.string(),
+    state: circuitStateValidator,
+    consecutiveFailures: v.number(),
+    openedAt: v.optional(v.number()),
+    cooldownUntil: v.optional(v.number()),
+    probeInFlight: v.boolean(),
+    failureThreshold: v.number(),
+    cooldownMs: v.number(),
+    lastFailureCode: v.optional(v.string()),
+    updatedAt: v.number(),
+  }).index("by_provider", ["provider"]),
+
+  humanReviews: defineTable({
+    projectId: v.id("projects"),
+    incidentId: v.id("incidents"),
+    workflowRunId: v.optional(v.id("workflowRuns")),
+    reason: humanReviewReasonValidator,
+    status: humanReviewStatusValidator,
+    summary: v.string(),
+    idempotencyKey: v.string(),
+    requestedAt: v.number(),
+    resolvedAt: v.optional(v.number()),
+    resolutionNote: v.optional(v.string()),
+  })
+    .index("by_idempotencyKey", ["idempotencyKey"])
+    .index("by_incidentId_and_requestedAt", ["incidentId", "requestedAt"])
+    .index("by_status_and_requestedAt", ["status", "requestedAt"]),
+
   auditEvents: defineTable({
     projectId: v.optional(v.id("projects")),
     actorType: v.union(
@@ -189,3 +407,5 @@ export default defineSchema({
     .index("by_project_created", ["projectId", "createdAt"])
     .index("by_target", ["targetType", "targetId"]),
 });
+
+export default schema;

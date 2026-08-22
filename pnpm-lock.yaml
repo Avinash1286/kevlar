@@ -17,6 +17,9 @@ importers:
 
   .:
     dependencies:
+      '@convex-dev/workflow':
+        specifier: ^0.4.6
+        version: 0.4.6(@convex-dev/workpool@0.4.10(convex-helpers@0.1.123(convex@1.44.0(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.4.3))(convex@1.44.0(react@19.2.8))(react@19.2.8))(convex-helpers@0.1.123(convex@1.44.0(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.4.3))(convex@1.44.0(react@19.2.8))
       convex:
         specifier: ^1.27.3
         version: 1.44.0(react@19.2.8)
@@ -81,7 +84,7 @@ importers:
         version: 9.39.5(jiti@2.7.0)
       eslint-config-next:
         specifier: 16.3.2
-        version: 16.3.2(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+        version: 16.3.2(@typescript-eslint/parser@8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
       tailwindcss:
         specifier: ^4
         version: 4.3.3
@@ -121,12 +124,25 @@ importers:
         version: 9.39.5(jiti@2.7.0)
       eslint-config-next:
         specifier: 16.3.2
-        version: 16.3.2(@typescript-eslint/parser@8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+        version: 16.3.2(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
       tailwindcss:
         specifier: ^4
         version: 4.3.3
       typescript:
         specifier: ^5.9.2
+        version: 5.9.3
+
+  packages/ai-router:
+    dependencies:
+      '@kevlar/hashing':
+        specifier: workspace:*
+        version: link:../hashing
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
         version: 5.9.3
 
   packages/brightdata-runtime:
@@ -172,6 +188,16 @@ importers:
         version: 5.9.3
 
   packages/test-fixtures:
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  packages/triage:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
     devDependencies:
       typescript:
         specifier: 'catalog:'
@@ -249,6 +275,25 @@ packages:
   '@babel/types@7.29.8':
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
+
+  '@convex-dev/batch-worker@0.2.1':
+    resolution: {integrity: sha512-QEDW6XmT+SmBJAmNqyl0QAEmJ4yMKJAIoJ+LntsA8KY5gYP+UhSFvTEMCvo177RZxOR/cfkZ3R+4S/UBaj/JnQ==}
+    peerDependencies:
+      convex: ^1.36.1
+      react: ^18.3.1 || ^19.0.0
+
+  '@convex-dev/workflow@0.4.6':
+    resolution: {integrity: sha512-SxKVwJ2Ab5/rqjHIIZRfHQcsDe9d9of/61CAPdeO3yIbH+MFliH6PLRCVMIyj2Xk3RC3qzdvb7qxT6Zds9bhKw==}
+    peerDependencies:
+      '@convex-dev/workpool': ^0.4.4
+      convex: ^1.36.1
+      convex-helpers: ^0.1.99
+
+  '@convex-dev/workpool@0.4.10':
+    resolution: {integrity: sha512-wJTSZ3vmGIfR1enEzttlDq6YtXr/hmJr8DO3sa2v861WHOL1zyyXfWuvrHQiDuOOVryQJujqKc8VcH1IJ4um5g==}
+    peerDependencies:
+      convex: ^1.36.1
+      convex-helpers: ^0.1.94
 
   '@emnapi/core@1.10.0':
     resolution: {integrity: sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw==}
@@ -1478,6 +1523,9 @@ packages:
   ast-types-flow@0.0.8:
     resolution: {integrity: sha512-OH/2E5Fg20h2aPrbe+QL8JZQFko0YZaF+j4mnQ7BGhfavO7OpSLa8a0y9sBwomHdSbkhTS8TQNayBfnW5DwbvQ==}
 
+  async-channel@0.2.0:
+    resolution: {integrity: sha512-BJyjI/sfKlyijaBt2hbOSxT28xGNtLR0QLzAKO1Hlnv5BULY7sAoYoTPW3lfr1ZIC7y+FxabxO9T8GXpyoofGg==}
+
   async-function@1.0.0:
     resolution: {integrity: sha512-hsU18Ae8CDTR6Kgu9DYf0EbCr/a5iGL0rytQDobUcdpYOKokk8LEjVphnXkDkgpi0wYVsqrXuP0bZxJaTqdgoA==}
     engines: {node: '>= 0.4'}
@@ -1572,6 +1620,28 @@ packages:
 
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
+
+  convex-helpers@0.1.123:
+    resolution: {integrity: sha512-E9W4tscZy6ZtNnwPDdL5UhMc7Rj9aUYlzjdYiKsfVIAwdarABWqvPB8+St3Q6IwS83r+QIGSO1lTidTamDdyPQ==}
+    hasBin: true
+    peerDependencies:
+      '@standard-schema/spec': ^1.0.0
+      convex: ^1.43.0
+      hono: ^4.0.5
+      react: ^17.0.2 || ^18.0.0 || ^19.0.0
+      typescript: ^5.5 || ^6.0.0 || ^7.0.0
+      zod: ^3.25.0 || ^4.0.0
+    peerDependenciesMeta:
+      '@standard-schema/spec':
+        optional: true
+      hono:
+        optional: true
+      react:
+        optional: true
+      typescript:
+        optional: true
+      zod:
+        optional: true
 
   convex@1.44.0:
     resolution: {integrity: sha512-84bBa1ufSX4qohXdycXuQl2c2kAmfVpTCpypcmIgxpS5rUBgv5qjhArYugTkJVbljMs5SH2mW30bjJo+SQwe1w==}
@@ -3007,6 +3077,26 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
+  '@convex-dev/batch-worker@0.2.1(convex@1.44.0(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      convex: 1.44.0(react@19.2.8)
+      react: 19.2.8
+
+  '@convex-dev/workflow@0.4.6(@convex-dev/workpool@0.4.10(convex-helpers@0.1.123(convex@1.44.0(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.4.3))(convex@1.44.0(react@19.2.8))(react@19.2.8))(convex-helpers@0.1.123(convex@1.44.0(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.4.3))(convex@1.44.0(react@19.2.8))':
+    dependencies:
+      '@convex-dev/workpool': 0.4.10(convex-helpers@0.1.123(convex@1.44.0(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.4.3))(convex@1.44.0(react@19.2.8))(react@19.2.8)
+      async-channel: 0.2.0
+      convex: 1.44.0(react@19.2.8)
+      convex-helpers: 0.1.123(convex@1.44.0(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.4.3)
+
+  '@convex-dev/workpool@0.4.10(convex-helpers@0.1.123(convex@1.44.0(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.4.3))(convex@1.44.0(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@convex-dev/batch-worker': 0.2.1(convex@1.44.0(react@19.2.8))(react@19.2.8)
+      convex: 1.44.0(react@19.2.8)
+      convex-helpers: 0.1.123(convex@1.44.0(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.4.3)
+    transitivePeerDependencies:
+      - react
+
   '@emnapi/core@1.10.0':
     dependencies:
       '@emnapi/wasi-threads': 1.2.1
@@ -3935,6 +4025,8 @@ snapshots:
 
   ast-types-flow@0.0.8: {}
 
+  async-channel@0.2.0: {}
+
   async-function@1.0.0: {}
 
   available-typed-arrays@1.0.7:
@@ -4021,6 +4113,14 @@ snapshots:
   concat-map@0.0.1: {}
 
   convert-source-map@2.0.0: {}
+
+  convex-helpers@0.1.123(convex@1.44.0(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.4.3):
+    dependencies:
+      convex: 1.44.0(react@19.2.8)
+    optionalDependencies:
+      react: 19.2.8
+      typescript: 5.9.3
+      zod: 4.4.3
 
   convex@1.44.0(react@19.2.8):
     dependencies:
