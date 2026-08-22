@@ -7,25 +7,9 @@ function amount(text) {
   return match ? Number(match[0]) : null;
 }
 
-function jsonLdOfferPrice(value) {
-  let node = value;
-  if (typeof node === "string") {
-    try {
-      node = JSON.parse(node);
-    } catch (_) {
-      return null;
-    }
-  }
-  if (Array.isArray(node))
-    node = node.find((item) => item && item.offers) || node[0];
-  return node && node.offers ? Number(node.offers.price) : null;
-}
-
 let purchase = $('[data-testid="purchase-price"]');
 let monthly = $('[data-testid="monthly-payment"]');
 let purchasePanel = purchase.closest("section");
-let api = parser.product_api || {};
-let screenshot = parser.page_screenshot || {};
 
 return {
   schema_version: "1.0",
@@ -53,18 +37,12 @@ return {
       : "unavailable",
   },
   independent_sources: {
-    jsonld_price: jsonLdOfferPrice(parser.jsonld),
-    public_api_price: api.purchase_price
-      ? Number(api.purchase_price.amount)
-      : null,
+    jsonld_price: null,
+    public_api_price: null,
   },
   evidence: {
     page_heading: $("h1").text_sane(),
     purchase_context: purchasePanel.text_sane(),
-    screenshot_ref: String(
-      typeof screenshot === "string"
-        ? screenshot
-        : screenshot.id || screenshot.filename || "",
-    ),
+    screenshot_ref: "",
   },
 };
