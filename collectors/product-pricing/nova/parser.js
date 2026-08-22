@@ -45,4 +45,8 @@ return {
     purchase_context: purchasePanel.text_sane(),
     screenshot_ref: "",
   },
+  jsonld: parser.jsonld,
+  product_api: parser.product_api,
+  product_api_evidence: parser.product_api_evidence,
+  page_screenshot: parser.page_screenshot,
 };

@@ -1,6 +1,6 @@
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
-export function GET() {
+export async function GET() {
   return Response.json(
     {
       schema_version: "1.0",
@@ -14,8 +14,7 @@ export function GET() {
         term_months: 12,
       },
       availability: "in_stock",
-      fixture_version: "v1",
     },
-    { headers: { "Cache-Control": "public, max-age=60" } },
+    { headers: { "Cache-Control": "no-store" } },
   );
 }

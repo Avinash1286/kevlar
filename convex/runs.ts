@@ -3,12 +3,12 @@ import { mutation, query } from "./_generated/server";
 
 export const latestBaseline = query({
   args: {},
+  returns: v.any(),
   handler: async (ctx) => {
     const run = await ctx.db
       .query("runs")
-      .withIndex("by_project_started")
+      .withIndex("by_mode_and_startedAt", (q) => q.eq("mode", "baseline"))
       .order("desc")
-      .filter((candidate) => candidate.eq(candidate.field("mode"), "baseline"))
       .first();
     if (!run) return null;
 
@@ -53,6 +53,7 @@ export const ingestBaseline = mutation({
       }),
     ),
   },
+  returns: v.object({ runId: v.id("runs"), duplicate: v.boolean() }),
   handler: async (ctx, args) => {
     const expectedKey = process.env.KEVLAR_BASELINE_INGEST_KEY;
     if (!expectedKey || args.ingestKey !== expectedKey)

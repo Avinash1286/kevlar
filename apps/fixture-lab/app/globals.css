@@ -269,6 +269,30 @@ a {
     500 22px var(--font-mono),
     monospace;
 }
+.financing-panel small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.fixture-v2 .financing-prominent {
+  margin: 0 0 20px;
+  padding: 28px;
+  align-items: center;
+  border: 2px solid var(--black);
+  background: var(--orange);
+  box-shadow: 8px 8px 0 var(--black);
+}
+.fixture-v2 .financing-prominent span,
+.fixture-v2 .financing-prominent h2,
+.fixture-v2 .financing-prominent p,
+.fixture-v2 .financing-prominent strong,
+.fixture-v2 .financing-prominent small {
+  color: var(--black);
+}
+.fixture-v2 .financing-prominent strong {
+  font-size: 38px;
+}
 .api-state {
   display: inline-block;
   margin-top: 24px;

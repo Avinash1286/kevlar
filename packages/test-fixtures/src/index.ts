@@ -11,7 +11,7 @@ export const novaBaseline = {
       currency: "USD",
       raw_text: "$129.00",
       label: "Purchase price",
-      nearby_text: "Purchase price $129.00 Buy now",
+      nearby_text: "Purchase price $129.00 USD one-time Buy now",
     },
     monthly_payment: {
       amount: 10.75,
@@ -24,7 +24,22 @@ export const novaBaseline = {
   independent_sources: { jsonld_price: 129, public_api_price: 129 },
   evidence: {
     page_heading: "Nova Wireless Headphones",
-    purchase_context: "Purchase price $129.00 Buy now",
+    purchase_context: "Purchase price $129.00 USD one-time Buy now",
     screenshot_ref: "pending-live-collector-run",
+  },
+} as const;
+
+export const novaSemanticSwap = {
+  ...novaBaseline,
+  captured_at: "2026-08-22T01:00:00.000Z",
+  product: {
+    ...novaBaseline.product,
+    purchase_price: {
+      amount: 10.75,
+      currency: "USD",
+      raw_text: "$10.75",
+      label: "Monthly financing",
+      nearby_text: "Monthly financing Split the total $10.75 per month",
+    },
   },
 } as const;

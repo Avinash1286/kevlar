@@ -1,8 +1,8 @@
 const pipeline = [
   { label: "Acquire", detail: "Custom Browser collector", state: "ready" },
-  { label: "Persist", detail: "Raw row + evidence refs", state: "awaiting" },
-  { label: "Verify", detail: "Semantic contract gate", state: "next" },
-  { label: "Release", detail: "Proof-carrying field", state: "locked" },
+  { label: "Persist", detail: "Raw row + evidence refs", state: "ready" },
+  { label: "Verify", detail: "Semantic contract gate", state: "ready" },
+  { label: "Release", detail: "Proof-carrying field", state: "ready" },
 ] as const;
 
 const evidence = [
@@ -57,7 +57,7 @@ export default async function Home() {
           <span>Kevlar</span>
         </a>
         <div className="phase-pill">
-          <span /> Gate A · Foundation
+          <span /> Gate B · Semantic trust
         </div>
         <a className="repo-link" href="https://github.com/Avinash1286/kevlar">
           GitHub ↗
@@ -77,10 +77,12 @@ export default async function Home() {
           support it.
         </p>
         <div className="hero-actions">
-          <a className="primary-action" href="#baseline">
-            Inspect baseline run <span>→</span>
+          <a className="primary-action" href="/feed">
+            Open trust feed <span>→</span>
           </a>
-          <span className="quiet-label">Week 1 of 12 · Local foundation</span>
+          <span className="quiet-label">
+            Week 2 of 12 · Semantic release gate
+          </span>
         </div>
       </section>
 
@@ -180,8 +182,8 @@ export default async function Home() {
           <div className="boundary-note">
             <span>Trust boundary</span>
             <p>
-              Schema validity is not verification. Release remains locked until
-              the semantic contract and evidence checks exist.
+              Schema validity is not verification. Semantic contracts and
+              independent evidence now control every release.
             </p>
           </div>
         </aside>

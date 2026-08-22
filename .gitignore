@@ -28,3 +28,5 @@ Thumbs.db
 # evidence created by live runs
 collectors/**/create.log
 gauntlet/results/*.json
+
+.vercel
