@@ -1194,6 +1194,21 @@ footer strong {
   }
 }
 
+.developer-hero > div > span { display: block; max-width: 720px; color: var(--muted); }
+.developer-metrics strong { font-size: 1.35rem; }
+.developer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 28px; }
+.developer-grid > article { min-width: 0; padding: 24px; border: 1px solid var(--line); background: white; }
+.developer-grid header { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font: 650 0.62rem var(--font-mono), monospace; letter-spacing: 0.07em; }
+.developer-grid header b { color: var(--green); }
+.developer-grid h2 { margin: 18px 0 8px; font-size: 1.15rem; }
+.developer-grid p { min-height: 42px; color: var(--muted); font-size: 0.78rem; }
+.developer-grid pre { min-height: 148px; margin: 18px -24px -24px; padding: 20px 24px; overflow: auto; background: var(--dark); color: var(--acid); font-size: 0.69rem; line-height: 1.65; }
+.developer-policy { display: grid; grid-template-columns: 1.4fr 1fr; gap: 34px; margin-top: 24px; padding: 24px; border-left: 4px solid var(--acid); background: var(--dark); color: white; }
+.developer-policy span { color: var(--acid); font: 650 0.63rem var(--font-mono), monospace; letter-spacing: 0.08em; }
+.developer-policy h2 { margin: 9px 0 0; font-size: 1.1rem; }
+.developer-policy p { margin: 0; color: #b8bcb2; font-size: 0.78rem; line-height: 1.6; }
+@media (max-width: 900px) { .developer-grid, .developer-policy { grid-template-columns: 1fr; } }
+
 /* Phase 9 — evidence graph, blast radius, and fleet canaries */
 .evidence-console { padding-bottom: 90px; }
 .evidence-root,

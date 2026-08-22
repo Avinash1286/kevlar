@@ -6561,12 +6561,12 @@ Expose verified intelligence to developers and agents through stable, secure int
 
 #### Exit gate
 
-- [ ] External code can fetch verified current and historical facts.
-- [ ] Webhook signatures verify correctly.
-- [ ] Duplicate deliveries are safe.
-- [ ] Failed deliveries can be replayed.
-- [ ] SDK types match API schemas.
-- [ ] MCP tools return evidence-aware answers only from released facts.
+- [x] External code can fetch verified current and historical facts.
+- [x] Webhook signatures verify correctly.
+- [x] Duplicate deliveries are safe.
+- [x] Failed deliveries can be replayed.
+- [x] SDK types match API schemas.
+- [x] MCP tools return evidence-aware answers only from released facts.
 
 ---
 

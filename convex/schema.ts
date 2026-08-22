@@ -107,6 +107,21 @@ import {
   tribunalContextItemKindValidator,
   verificationOutcomeValidator,
 } from "./phase9Validators";
+import {
+  apiContractKindValidator,
+  apiContractStatusValidator,
+  apiKeyStatusValidator,
+  apiRequestOutcomeValidator,
+  apiScopeValidator,
+  deliveryAttemptOutcomeValidator,
+  deliveryModeValidator,
+  deliveryStatusValidator,
+  phase10FilterValidator,
+  subscriptionChannelValidator,
+  subscriptionStatusValidator,
+  webhookEndpointStatusValidator,
+  webhookSecretStatusValidator,
+} from "./phase10Validators";
 
 const schema = defineSchema({
   fixtureStates: defineTable({
@@ -1899,6 +1914,175 @@ const schema = defineSchema({
     passedCanaryRunId: v.id("repairCanaryRuns"),
     gauntletRunId: v.id("fleetGauntletRuns"),
     extendedCertificateId: v.id("extendedRepairCertificates"),
+    createdAt: v.number(),
+  }).index("by_key", ["key"]),
+
+  apiKeys: defineTable({
+    projectId: v.id("projects"),
+    name: v.string(),
+    prefix: v.string(),
+    secretHash: v.string(),
+    scopes: v.array(apiScopeValidator),
+    status: apiKeyStatusValidator,
+    rateLimitPerMinute: v.number(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+    lastUsedAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+  })
+    .index("by_secretHash", ["secretHash"])
+    .index("by_projectId_and_status_and_createdAt", [
+      "projectId",
+      "status",
+      "createdAt",
+    ])
+    .index("by_operationKey", ["operationKey"]),
+
+  apiRateLimitBuckets: defineTable({
+    apiKeyId: v.id("apiKeys"),
+    bucketStart: v.number(),
+    requestCount: v.number(),
+    updatedAt: v.number(),
+  }).index("by_apiKeyId_and_bucketStart", ["apiKeyId", "bucketStart"]),
+
+  apiRequestAudit: defineTable({
+    projectId: v.optional(v.id("projects")),
+    apiKeyId: v.optional(v.id("apiKeys")),
+    requestId: v.string(),
+    scope: apiScopeValidator,
+    resource: v.string(),
+    outcome: apiRequestOutcomeValidator,
+    createdAt: v.number(),
+  })
+    .index("by_requestId", ["requestId"])
+    .index("by_projectId_and_createdAt", ["projectId", "createdAt"]),
+
+  apiContracts: defineTable({
+    identifier: v.string(),
+    version: v.string(),
+    kind: apiContractKindValidator,
+    schemaHash: v.string(),
+    status: apiContractStatusValidator,
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_identifier_and_version", ["identifier", "version"])
+    .index("by_operationKey", ["operationKey"]),
+
+  filteredSubscriptions: defineTable({
+    projectId: v.id("projects"),
+    name: v.string(),
+    channel: subscriptionChannelValidator,
+    filters: phase10FilterValidator,
+    webhookEndpointId: v.optional(v.id("webhookEndpoints")),
+    status: subscriptionStatusValidator,
+    operationKey: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_projectId_and_status_and_createdAt", [
+      "projectId",
+      "status",
+      "createdAt",
+    ])
+    .index("by_operationKey", ["operationKey"]),
+
+  webhookEndpoints: defineTable({
+    projectId: v.id("projects"),
+    name: v.string(),
+    url: v.string(),
+    status: webhookEndpointStatusValidator,
+    activeSecretVersionId: v.optional(v.id("webhookSecretVersions")),
+    operationKey: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    rotatedAt: v.optional(v.number()),
+  })
+    .index("by_projectId_and_status_and_createdAt", [
+      "projectId",
+      "status",
+      "createdAt",
+    ])
+    .index("by_operationKey", ["operationKey"]),
+
+  webhookSecretVersions: defineTable({
+    endpointId: v.id("webhookEndpoints"),
+    version: v.number(),
+    secretHash: v.string(),
+    secretRef: v.string(),
+    status: webhookSecretStatusValidator,
+    rotatedFromId: v.optional(v.id("webhookSecretVersions")),
+    operationKey: v.string(),
+    createdAt: v.number(),
+    retiredAt: v.optional(v.number()),
+  })
+    .index("by_endpointId_and_version", ["endpointId", "version"])
+    .index("by_operationKey", ["operationKey"]),
+
+  webhookDeliveries: defineTable({
+    projectId: v.id("projects"),
+    subscriptionId: v.id("filteredSubscriptions"),
+    endpointId: v.id("webhookEndpoints"),
+    eventId: v.optional(v.id("changeEvents")),
+    eventExternalId: v.string(),
+    mode: deliveryModeValidator,
+    payload: v.any(),
+    payloadHash: v.string(),
+    idempotencyKey: v.string(),
+    status: deliveryStatusValidator,
+    attemptCount: v.number(),
+    maxAttempts: v.number(),
+    nextAttemptAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_idempotencyKey", ["idempotencyKey"])
+    .index("by_status_and_nextAttemptAt", ["status", "nextAttemptAt"])
+    .index("by_subscriptionId_and_createdAt", ["subscriptionId", "createdAt"])
+    .index("by_eventExternalId", ["eventExternalId"]),
+
+  webhookDeliveryAttempts: defineTable({
+    deliveryId: v.id("webhookDeliveries"),
+    attempt: v.number(),
+    requestId: v.string(),
+    outcome: deliveryAttemptOutcomeValidator,
+    responseStatus: v.optional(v.number()),
+    responseSnippet: v.optional(v.string()),
+    errorCode: v.optional(v.string()),
+    latencyMs: v.number(),
+    secretVersionId: v.id("webhookSecretVersions"),
+    signatureTimestamp: v.number(),
+    signatureInput: v.string(),
+    signature: v.string(),
+    bodyHash: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_deliveryId_and_attempt", ["deliveryId", "attempt"])
+    .index("by_requestId", ["requestId"]),
+
+  webhookReplayRequests: defineTable({
+    projectId: v.id("projects"),
+    deliveryId: v.id("webhookDeliveries"),
+    replayDeliveryId: v.id("webhookDeliveries"),
+    reason: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_deliveryId_and_createdAt", ["deliveryId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  phase10Proofs: defineTable({
+    key: v.string(),
+    projectId: v.id("projects"),
+    apiKeyId: v.id("apiKeys"),
+    subscriptionId: v.id("filteredSubscriptions"),
+    endpointId: v.id("webhookEndpoints"),
+    secretVersionIds: v.array(v.id("webhookSecretVersions")),
+    sourceDeliveryId: v.id("webhookDeliveries"),
+    replayDeliveryId: v.id("webhookDeliveries"),
+    contractIds: v.array(v.id("apiContracts")),
+    releasedFactVersionId: v.id("factVersions"),
     createdAt: v.number(),
   }).index("by_key", ["key"]),
 
