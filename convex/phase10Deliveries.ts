@@ -1,10 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import type { Doc } from "./_generated/dataModel";
 import schema from "./schema";
 import {
   deliveryAttemptOutcomeValidator,
   deliveryModeValidator,
+  deliveryStatusValidator,
+  subscriptionChannelValidator,
+  subscriptionStatusValidator,
 } from "./phase10Validators";
 import {
   assertPhase10Text,
@@ -13,6 +15,7 @@ import {
   requirePhase10IngestKey,
   subscriptionMatches,
 } from "./phase10Support";
+import { requireProjectRole } from "./phase11Auth";
 
 const enqueueResultValidator = v.object({
   delivery: schema.doc("webhookDeliveries"),
@@ -282,26 +285,143 @@ export const replay = mutation({
   },
 });
 
+const deliveryReadRoles = [
+  "owner",
+  "admin",
+  "operator",
+  "reviewer",
+  "developer",
+  "viewer",
+] as const;
+
+const deliveryViewValidator = v.object({
+  _id: v.id("webhookDeliveries"),
+  _creationTime: v.number(),
+  projectId: v.id("projects"),
+  subscriptionId: v.id("filteredSubscriptions"),
+  endpointId: v.id("webhookEndpoints"),
+  eventId: v.optional(v.id("changeEvents")),
+  eventExternalId: v.string(),
+  mode: deliveryModeValidator,
+  payloadHash: v.string(),
+  status: deliveryStatusValidator,
+  attemptCount: v.number(),
+  maxAttempts: v.number(),
+  nextAttemptAt: v.optional(v.number()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+  completedAt: v.optional(v.number()),
+  payloadDeletedAt: v.optional(v.number()),
+});
+
+const deliveryAttemptViewValidator = v.object({
+  _id: v.id("webhookDeliveryAttempts"),
+  _creationTime: v.number(),
+  deliveryId: v.id("webhookDeliveries"),
+  attempt: v.number(),
+  outcome: deliveryAttemptOutcomeValidator,
+  responseStatus: v.optional(v.number()),
+  errorCode: v.optional(v.string()),
+  latencyMs: v.number(),
+  createdAt: v.number(),
+});
+
+const endpointViewValidator = v.object({
+  _id: v.id("webhookEndpoints"),
+  _creationTime: v.number(),
+  projectId: v.id("projects"),
+  name: v.string(),
+  status: subscriptionStatusValidator,
+  createdAt: v.number(),
+  updatedAt: v.number(),
+  rotatedAt: v.optional(v.number()),
+  deletedAt: v.optional(v.number()),
+});
+
+const subscriptionViewValidator = v.object({
+  _id: v.id("filteredSubscriptions"),
+  _creationTime: v.number(),
+  projectId: v.id("projects"),
+  name: v.string(),
+  channel: subscriptionChannelValidator,
+  status: subscriptionStatusValidator,
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
 export const delivery = query({
   args: { deliveryId: v.id("webhookDeliveries") },
   returns: v.union(
     v.object({
-      delivery: schema.doc("webhookDeliveries"),
-      attempts: v.array(schema.doc("webhookDeliveryAttempts")),
-      endpoint: schema.doc("webhookEndpoints"),
-      subscription: schema.doc("filteredSubscriptions"),
+      delivery: deliveryViewValidator,
+      attempts: v.array(deliveryAttemptViewValidator),
+      endpoint: endpointViewValidator,
+      subscription: subscriptionViewValidator,
     }),
     v.null(),
   ),
   handler: async (ctx, args) => {
     const delivery = await ctx.db.get("webhookDeliveries", args.deliveryId);
     if (!delivery) return null;
+    await requireProjectRole(ctx, delivery.projectId, deliveryReadRoles);
     const [attempts, endpoint, subscription] = await Promise.all([
       ctx.db.query("webhookDeliveryAttempts").withIndex("by_deliveryId_and_attempt", (q) => q.eq("deliveryId", delivery._id)).take(10),
       ctx.db.get("webhookEndpoints", delivery.endpointId),
       ctx.db.get("filteredSubscriptions", delivery.subscriptionId),
     ]);
     if (!endpoint || !subscription) return null;
-    return { delivery, attempts, endpoint, subscription };
+    return {
+      delivery: {
+        _id: delivery._id,
+        _creationTime: delivery._creationTime,
+        projectId: delivery.projectId,
+        subscriptionId: delivery.subscriptionId,
+        endpointId: delivery.endpointId,
+        eventId: delivery.eventId,
+        eventExternalId: delivery.eventExternalId,
+        mode: delivery.mode,
+        payloadHash: delivery.payloadHash,
+        status: delivery.status,
+        attemptCount: delivery.attemptCount,
+        maxAttempts: delivery.maxAttempts,
+        nextAttemptAt: delivery.nextAttemptAt,
+        createdAt: delivery.createdAt,
+        updatedAt: delivery.updatedAt,
+        completedAt: delivery.completedAt,
+        payloadDeletedAt: delivery.payloadDeletedAt,
+      },
+      attempts: attempts.map((attempt) => ({
+        _id: attempt._id,
+        _creationTime: attempt._creationTime,
+        deliveryId: attempt.deliveryId,
+        attempt: attempt.attempt,
+        outcome: attempt.outcome,
+        responseStatus: attempt.responseStatus,
+        errorCode: attempt.errorCode,
+        latencyMs: attempt.latencyMs,
+        createdAt: attempt.createdAt,
+      })),
+      endpoint: {
+        _id: endpoint._id,
+        _creationTime: endpoint._creationTime,
+        projectId: endpoint.projectId,
+        name: endpoint.name,
+        status: endpoint.status,
+        createdAt: endpoint.createdAt,
+        updatedAt: endpoint.updatedAt,
+        rotatedAt: endpoint.rotatedAt,
+        deletedAt: endpoint.deletedAt,
+      },
+      subscription: {
+        _id: subscription._id,
+        _creationTime: subscription._creationTime,
+        projectId: subscription.projectId,
+        name: subscription.name,
+        channel: subscription.channel,
+        status: subscription.status,
+        createdAt: subscription.createdAt,
+        updatedAt: subscription.updatedAt,
+      },
+    };
   },
 });

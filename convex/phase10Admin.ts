@@ -16,6 +16,9 @@ import {
 import { requireProjectRole } from "./phase11Auth";
 
 const persistApiKeyRef = makeFunctionReference<"mutation">("phase10AdminSupport:persistApiKey");
+const authorizeApiKeyCreationRef = makeFunctionReference<"query">(
+  "phase10AdminSupport:authorizeApiKeyCreation",
+);
 const persistWebhookEndpointRef = makeFunctionReference<"mutation">("phase10AdminSupport:persistWebhookEndpoint");
 const persistSecretRotationRef = makeFunctionReference<"mutation">("phase10AdminSupport:persistSecretRotation");
 const persistSubscriptionRef = makeFunctionReference<"mutation">("phase10AdminSupport:persistSubscription");
@@ -32,8 +35,9 @@ export const createApiKey = action({
   },
   returns: schema.doc("apiKeys"),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthenticated");
+    await ctx.runQuery(authorizeApiKeyCreationRef, {
+      projectId: args.projectId,
+    });
     assertPhase10Text(args.rawKey, "rawKey", 500);
     const secretHash = await sha256(args.rawKey);
     const prefix = args.rawKey.slice(0, Math.min(12, args.rawKey.length));

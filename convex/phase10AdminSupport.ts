@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 import schema from "./schema";
 import {
   apiContractKindValidator,
@@ -13,6 +13,17 @@ import {
   assertSha256,
 } from "./phase10Support";
 import { requireProjectRole } from "./phase11Auth";
+
+export const authorizeApiKeyCreation = internalQuery({
+  args: {
+    projectId: v.id("projects"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireProjectRole(ctx, args.projectId, ["owner", "admin"]);
+    return null;
+  },
+});
 
 export const persistApiKey = internalMutation({
   args: {
