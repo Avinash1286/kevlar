@@ -6389,13 +6389,13 @@ Convert source-specific verified observations into stable canonical entities wit
 
 #### Exit gate
 
-- [ ] Source-specific fields map deterministically.
-- [ ] Unit conversion is tested.
-- [ ] Every canonical field retains raw source and transformation evidence.
-- [ ] Clear identity matches auto-link.
-- [ ] Ambiguous matches wait for review.
-- [ ] Merges and splits are reversible.
-- [ ] The same model from two sources resolves to one canonical entity in a tested case.
+- [x] Source-specific fields map deterministically.
+- [x] Unit conversion is tested.
+- [x] Every canonical field retains raw source and transformation evidence.
+- [x] Clear identity matches auto-link.
+- [x] Ambiguous matches wait for review.
+- [x] Merges and splits are reversible.
+- [x] The same model from two sources resolves to one canonical entity in a tested case.
 
 ---
 

@@ -1,0 +1,16 @@
+schema_id: ai_infrastructure
+revision: 2
+status: draft
+compatibility_from_revision: 1
+changes:
+  - kind: add_optional_field
+    path: model.region
+entities:
+  - provider
+  - model
+  - endpoint
+  - pricing_plan
+  - region
+  - capability
+  - limit
+  - deprecation_notice

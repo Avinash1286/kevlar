@@ -57,7 +57,7 @@ export default async function Home() {
           <span>Kevlar</span>
         </a>
         <div className="phase-pill">
-          <span /> Gate E · Collector Mesh
+          <span /> Gate F · Canonical Mapping
         </div>
         <a className="repo-link" href="https://github.com/Avinash1286/kevlar">
           GitHub ↗
@@ -86,8 +86,11 @@ export default async function Home() {
           <a className="repo-link" href="/sources">
             Source catalog →
           </a>
+          <a className="repo-link" href="/mappings">
+            Mapping registry →
+          </a>
           <span className="quiet-label">
-            Week 5 of 12 · Governed collector fleet
+            Week 6 of 12 · Canonical identity graph
           </span>
         </div>
       </section>

@@ -1,6 +1,13 @@
 import { sha256 } from "@kevlar/hashing";
 import { z } from "zod";
 
+export * from "../schema/compatibility";
+export * from "../schema/registry";
+export * from "../mappings/engine";
+export * from "../mappings/specs";
+export * from "../identity/index";
+export * from "./units";
+
 export const AI_INFRASTRUCTURE_SCHEMA_REVISION = 1 as const;
 export const AI_INFRASTRUCTURE_SOURCE_SCHEMA_VERSION =
   "ai-infrastructure.source.v1" as const;
@@ -246,12 +253,14 @@ export function verifyAiInfrastructureObservation(raw: unknown) {
 export const canonicalFieldRegistry = {
   "provider.status": { entity: "provider", unit: "status" },
   "provider.api_base_url": { entity: "provider", unit: "url" },
+  "model.provider_id": { entity: "model", unit: "identifier" },
   "model.provider_model_id": { entity: "model", unit: "identifier" },
   "model.display_name": { entity: "model", unit: "text" },
   "model.family": { entity: "model", unit: "identifier" },
   "model.status": { entity: "model", unit: "status" },
   "model.context_window_tokens": { entity: "model", unit: "tokens" },
   "model.max_output_tokens": { entity: "model", unit: "tokens" },
+  "model.pricing_plan": { entity: "pricing_plan", unit: "identifier" },
   "model.input_price_usd_per_million_tokens": {
     entity: "pricing_plan",
     unit: "usd_per_million_input_tokens",

@@ -45,6 +45,24 @@ import {
   sourceLifecycleValidator,
   sourceTypeValidator,
 } from "./phase5Validators";
+import {
+  canonicalAliasTypeValidator,
+  canonicalEntityStatusValidator,
+  canonicalFieldStateValidator,
+  canonicalIdentityStatusValidator,
+  canonicalObservationTrustValidator,
+  canonicalSchemaStateValidator,
+  entityLineageRelationshipValidator,
+  entityLineageStatusValidator,
+  entityOperationKindValidator,
+  identityFeatureValidator,
+  identityGeneratorValidator,
+  identityRecommendationValidator,
+  identityReviewDecisionValidator,
+  mappingApprovalValidator,
+  mappingLifecycleValidator,
+  schemaCompatibilityValidator,
+} from "./phase6Validators";
 
 const schema = defineSchema({
   fixtureStates: defineTable({
@@ -839,6 +857,339 @@ const schema = defineSchema({
     .index("by_runId", ["runId"])
     .index("by_sourceId_and_capturedAt", ["sourceId", "capturedAt"])
     .index("by_trust_and_createdAt", ["trust", "createdAt"]),
+
+  canonicalSchemaRevisions: defineTable({
+    domainPackId: v.id("domainPacks"),
+    domain: v.string(),
+    revision: v.number(),
+    definition: v.any(),
+    definitionHash: v.string(),
+    createdBy: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_domainPackId_and_revision", ["domainPackId", "revision"])
+    .index("by_domain_and_revision", ["domain", "revision"])
+    .index("by_operationKey", ["operationKey"]),
+
+  canonicalSchemaRevisionStates: defineTable({
+    domainPackId: v.id("domainPacks"),
+    schemaRevisionId: v.id("canonicalSchemaRevisions"),
+    fromStatus: v.union(canonicalSchemaStateValidator, v.null()),
+    toStatus: canonicalSchemaStateValidator,
+    actor: v.string(),
+    reason: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_schemaRevisionId_and_createdAt", [
+      "schemaRevisionId",
+      "createdAt",
+    ])
+    .index("by_toStatus_and_createdAt", ["toStatus", "createdAt"])
+    .index("by_domainPackId_and_toStatus_and_createdAt", [
+      "domainPackId",
+      "toStatus",
+      "createdAt",
+    ])
+    .index("by_operationKey", ["operationKey"]),
+
+  canonicalSchemaCompatibility: defineTable({
+    domainPackId: v.id("domainPacks"),
+    fromRevisionId: v.id("canonicalSchemaRevisions"),
+    toRevisionId: v.id("canonicalSchemaRevisions"),
+    classification: schemaCompatibilityValidator,
+    reasons: v.array(v.string()),
+    migration: v.optional(v.any()),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_fromRevisionId_and_toRevisionId", [
+      "fromRevisionId",
+      "toRevisionId",
+    ])
+    .index("by_toRevisionId", ["toRevisionId"])
+    .index("by_operationKey", ["operationKey"]),
+
+  canonicalMappingSpecs: defineTable({
+    projectId: v.id("projects"),
+    sourceId: v.id("sources"),
+    endpointId: v.optional(v.id("sourceEndpoints")),
+    key: v.string(),
+    name: v.string(),
+    entityType: v.string(),
+    createdBy: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_sourceId_and_key", ["sourceId", "key"])
+    .index("by_projectId_and_createdAt", ["projectId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  canonicalMappingRevisions: defineTable({
+    mappingSpecId: v.id("canonicalMappingSpecs"),
+    revision: v.number(),
+    sourceSchemaVersion: v.string(),
+    canonicalSchemaRevisionId: v.id("canonicalSchemaRevisions"),
+    deterministic: v.literal(true),
+    specification: v.any(),
+    specificationHash: v.string(),
+    createdBy: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_mappingSpecId_and_revision", ["mappingSpecId", "revision"])
+    .index("by_canonicalSchemaRevisionId", ["canonicalSchemaRevisionId"])
+    .index("by_operationKey", ["operationKey"]),
+
+  canonicalMappingApprovals: defineTable({
+    mappingRevisionId: v.id("canonicalMappingRevisions"),
+    decision: mappingApprovalValidator,
+    actor: v.string(),
+    reason: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_mappingRevisionId_and_createdAt", [
+      "mappingRevisionId",
+      "createdAt",
+    ])
+    .index("by_operationKey", ["operationKey"]),
+
+  canonicalMappingTransitions: defineTable({
+    mappingSpecId: v.id("canonicalMappingSpecs"),
+    mappingRevisionId: v.id("canonicalMappingRevisions"),
+    fromStatus: v.union(mappingLifecycleValidator, v.null()),
+    toStatus: mappingLifecycleValidator,
+    actor: v.string(),
+    reason: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_mappingRevisionId_and_createdAt", [
+      "mappingRevisionId",
+      "createdAt",
+    ])
+    .index("by_toStatus_and_createdAt", ["toStatus", "createdAt"])
+    .index("by_mappingSpecId_and_toStatus_and_createdAt", [
+      "mappingSpecId",
+      "toStatus",
+      "createdAt",
+    ])
+    .index("by_operationKey", ["operationKey"]),
+
+  canonicalEntities: defineTable({
+    projectId: v.id("projects"),
+    domainPackId: v.id("domainPacks"),
+    entityType: v.string(),
+    canonicalKey: v.string(),
+    displayName: v.string(),
+    status: canonicalEntityStatusValidator,
+    mergedIntoId: v.optional(v.id("canonicalEntities")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_projectId_and_entityType_and_canonicalKey", [
+      "projectId",
+      "entityType",
+      "canonicalKey",
+    ])
+    .index("by_projectId_and_status", ["projectId", "status"])
+    .index("by_domainPackId_and_entityType", ["domainPackId", "entityType"]),
+
+  canonicalExternalIds: defineTable({
+    projectId: v.id("projects"),
+    entityId: v.id("canonicalEntities"),
+    sourceId: v.id("sources"),
+    namespace: v.string(),
+    externalId: v.string(),
+    normalizedExternalId: v.string(),
+    status: canonicalIdentityStatusValidator,
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_projectId_and_namespace_and_normalizedExternalId", [
+      "projectId",
+      "namespace",
+      "normalizedExternalId",
+    ])
+    .index("by_projectId_and_sourceId_and_namespace_and_normalizedExternalId", [
+      "projectId",
+      "sourceId",
+      "namespace",
+      "normalizedExternalId",
+    ])
+    .index("by_entityId", ["entityId"])
+    .index("by_operationKey", ["operationKey"]),
+
+  canonicalEntityAliases: defineTable({
+    projectId: v.id("projects"),
+    entityId: v.id("canonicalEntities"),
+    sourceId: v.optional(v.id("sources")),
+    aliasType: canonicalAliasTypeValidator,
+    value: v.string(),
+    normalizedValue: v.string(),
+    status: canonicalIdentityStatusValidator,
+    approvedBy: v.optional(v.string()),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_projectId_and_normalizedValue", ["projectId", "normalizedValue"])
+    .index("by_entityId_and_status", ["entityId", "status"])
+    .index("by_sourceId_and_normalizedValue", ["sourceId", "normalizedValue"])
+    .index("by_operationKey", ["operationKey"]),
+
+  canonicalObservations: defineTable({
+    projectId: v.id("projects"),
+    sourceId: v.id("sources"),
+    endpointId: v.id("sourceEndpoints"),
+    collectorBindingId: v.id("collectorBindings"),
+    sourceObservationId: v.optional(v.id("aiInfrastructureObservations")),
+    fixtureKey: v.optional(v.string()),
+    inputKind: v.union(
+      v.literal("verified_source"),
+      v.literal("stored_fixture"),
+    ),
+    mappingRevisionId: v.id("canonicalMappingRevisions"),
+    canonicalSchemaRevisionId: v.id("canonicalSchemaRevisions"),
+    sourceEntityKey: v.string(),
+    entityType: v.string(),
+    resolvedEntityId: v.optional(v.id("canonicalEntities")),
+    trustState: canonicalObservationTrustValidator,
+    observedAt: v.number(),
+    recordedAt: v.number(),
+    payloadHash: v.string(),
+    operationKey: v.string(),
+  })
+    .index("by_operationKey", ["operationKey"])
+    .index("by_sourceObservationId", ["sourceObservationId"])
+    .index("by_sourceId_and_sourceEntityKey", ["sourceId", "sourceEntityKey"])
+    .index("by_resolvedEntityId_and_observedAt", [
+      "resolvedEntityId",
+      "observedAt",
+    ])
+    .index("by_projectId_and_recordedAt", ["projectId", "recordedAt"]),
+
+  canonicalObservationFields: defineTable({
+    observationId: v.id("canonicalObservations"),
+    projectId: v.id("projects"),
+    canonicalPath: v.string(),
+    rawValue: v.any(),
+    normalizedValue: v.any(),
+    normalizedValueHash: v.string(),
+    unit: v.optional(v.string()),
+    originalUnit: v.optional(v.string()),
+    state: canonicalFieldStateValidator,
+    sourcePaths: v.array(v.string()),
+    evidenceRefs: v.array(v.id("evidence")),
+    transform: v.object({
+      name: v.string(),
+      version: v.string(),
+      input: v.any(),
+    }),
+    mappingRevisionId: v.id("canonicalMappingRevisions"),
+    createdAt: v.number(),
+  })
+    .index("by_observationId", ["observationId"])
+    .index("by_projectId_and_canonicalPath", ["projectId", "canonicalPath"])
+    .index("by_normalizedValueHash", ["normalizedValueHash"]),
+
+  identityCandidates: defineTable({
+    projectId: v.id("projects"),
+    observationId: v.id("canonicalObservations"),
+    candidateEntityId: v.id("canonicalEntities"),
+    score: v.number(),
+    features: v.array(identityFeatureValidator),
+    recommendation: identityRecommendationValidator,
+    generatedBy: identityGeneratorValidator,
+    explanation: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_observationId_and_score", ["observationId", "score"])
+    .index("by_candidateEntityId_and_createdAt", [
+      "candidateEntityId",
+      "createdAt",
+    ])
+    .index("by_operationKey", ["operationKey"]),
+
+  identityReviewDecisions: defineTable({
+    projectId: v.id("projects"),
+    candidateId: v.id("identityCandidates"),
+    decision: identityReviewDecisionValidator,
+    chosenEntityId: v.optional(v.id("canonicalEntities")),
+    actor: v.string(),
+    reason: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_candidateId_and_createdAt", ["candidateId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  canonicalObservationResolutions: defineTable({
+    projectId: v.id("projects"),
+    observationId: v.id("canonicalObservations"),
+    entityId: v.id("canonicalEntities"),
+    method: v.union(
+      v.literal("exact_external_id"),
+      v.literal("approved_alias"),
+      v.literal("canonical_key"),
+      v.literal("created_entity"),
+      v.literal("human_review"),
+    ),
+    candidateId: v.optional(v.id("identityCandidates")),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_observationId_and_createdAt", ["observationId", "createdAt"])
+    .index("by_entityId_and_createdAt", ["entityId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  canonicalEntityOperations: defineTable({
+    projectId: v.id("projects"),
+    kind: entityOperationKindValidator,
+    sourceEntityIds: v.array(v.id("canonicalEntities")),
+    targetEntityIds: v.array(v.id("canonicalEntities")),
+    reason: v.string(),
+    actor: v.string(),
+    evidenceRefs: v.array(v.id("evidence")),
+    reversalOfId: v.optional(v.id("canonicalEntityOperations")),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_projectId_and_createdAt", ["projectId", "createdAt"])
+    .index("by_reversalOfId", ["reversalOfId"])
+    .index("by_operationKey", ["operationKey"]),
+
+  canonicalEntityLineage: defineTable({
+    projectId: v.id("projects"),
+    fromEntityId: v.id("canonicalEntities"),
+    toEntityId: v.id("canonicalEntities"),
+    relationship: entityLineageRelationshipValidator,
+    status: entityLineageStatusValidator,
+    operationId: v.id("canonicalEntityOperations"),
+    reversedByOperationId: v.optional(v.id("canonicalEntityOperations")),
+    reason: v.string(),
+    createdAt: v.number(),
+    reversedAt: v.optional(v.number()),
+  })
+    .index("by_fromEntityId_and_status", ["fromEntityId", "status"])
+    .index("by_toEntityId_and_status", ["toEntityId", "status"])
+    .index("by_operationId", ["operationId"]),
+
+  phase6Proofs: defineTable({
+    key: v.string(),
+    projectId: v.id("projects"),
+    schemaRevisionId: v.id("canonicalSchemaRevisions"),
+    draftSchemaRevisionId: v.optional(v.id("canonicalSchemaRevisions")),
+    compatibilityId: v.optional(v.id("canonicalSchemaCompatibility")),
+    mappingRevisionIds: v.array(v.id("canonicalMappingRevisions")),
+    observationIds: v.array(v.id("canonicalObservations")),
+    resolvedEntityId: v.id("canonicalEntities"),
+    ambiguousCandidateIds: v.array(v.id("identityCandidates")),
+    entityOperationIds: v.array(v.id("canonicalEntityOperations")),
+    createdAt: v.number(),
+  }).index("by_key", ["key"]),
 
   auditEvents: defineTable({
     projectId: v.optional(v.id("projects")),

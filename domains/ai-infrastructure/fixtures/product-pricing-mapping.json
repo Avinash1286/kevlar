@@ -1,0 +1,14 @@
+{
+  "fixture_id": "product-pricing-nova-v1",
+  "source_schema": "product-pricing.source.v1",
+  "canonical_entity_type": "product_offer",
+  "source_entity_key": "nova-headphones",
+  "expected": {
+    "product.id": "nova-headphones",
+    "product.display_name": "Nova Wireless Headphones",
+    "offer.price.amount": 129,
+    "offer.price.currency": "USD",
+    "offer.availability": "in_stock"
+  },
+  "evidence_policy": "every target retains source path, transform, and evidence reference"
+}

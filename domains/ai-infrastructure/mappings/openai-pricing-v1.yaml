@@ -1,0 +1,18 @@
+mapping_id: map_openai_pricing_v1
+revision: 1
+status: active
+source_schema: ai-infrastructure.source.v1
+canonical_schema: ai_infrastructure
+canonical_schema_revision: 1
+identity:
+  source_key: records[].provider_model_id
+  canonical_key:
+    - model.provider_id
+    - model.provider_model_id
+transforms:
+  arbitrary_generated_code: prohibited
+  allowed:
+    - rename
+    - normalize_identifier
+    - normalize_whitespace
+    - unit_convert
