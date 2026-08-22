@@ -6473,12 +6473,12 @@ Distinguish meaningful real-world changes from presentation drift and source dis
 
 #### Exit gate
 
-- [ ] A layout-only change emits no business event.
-- [ ] A verified price change emits exactly one event.
-- [ ] A correction is distinguishable from a real-world change.
-- [ ] Conflicting official sources open a conflict.
-- [ ] No quarantined field can produce an event.
-- [ ] Event IDs are stable across retries.
+- [x] A layout-only change emits no business event.
+- [x] A verified price change emits exactly one event.
+- [x] A correction is distinguishable from a real-world change.
+- [x] Conflicting official sources open a conflict.
+- [x] No quarantined field can produce an event.
+- [x] Event IDs are stable across retries.
 
 ---
 

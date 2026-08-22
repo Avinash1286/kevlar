@@ -73,6 +73,17 @@ import {
   factVersionRelationKindValidator,
   factVersionStateValidator,
 } from "./phase7Validators";
+import {
+  changeEventRelationKindValidator,
+  changeEventStateValidator,
+  equivalenceRuleValidator,
+  policySourceRoleValidator,
+  reconciliationStrategyValidator,
+  releaseDecisionOutcomeValidator,
+  releasePolicyStatusValidator,
+  semanticEventTypeValidator,
+  sourceConflictStatusValidator,
+} from "./phase8Validators";
 
 const schema = defineSchema({
   fixtureStates: defineTable({
@@ -1326,6 +1337,180 @@ const schema = defineSchema({
     factVersionIds: v.array(v.id("factVersions")),
     relationIds: v.array(v.id("factVersionRelations")),
     currentFactIds: v.array(v.id("currentFacts")),
+    createdAt: v.number(),
+  }).index("by_key", ["key"]),
+
+  releasePolicies: defineTable({
+    projectId: v.id("projects"),
+    name: v.string(),
+    predicate: v.string(),
+    revision: v.number(),
+    status: releasePolicyStatusValidator,
+    strategy: reconciliationStrategyValidator,
+    equivalenceRule: equivalenceRuleValidator,
+    numericTolerancePercent: v.optional(v.number()),
+    quorum: v.optional(v.number()),
+    continueLastKnownGood: v.boolean(),
+    explicitRemovalRequired: v.boolean(),
+    repeatedAbsenceMinimum: v.number(),
+    policyHash: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_projectId_and_predicate_and_revision", [
+      "projectId",
+      "predicate",
+      "revision",
+    ])
+    .index("by_projectId_and_status_and_createdAt", [
+      "projectId",
+      "status",
+      "createdAt",
+    ])
+    .index("by_operationKey", ["operationKey"]),
+
+  releasePolicySources: defineTable({
+    policyId: v.id("releasePolicies"),
+    sourceId: v.id("sources"),
+    priority: v.number(),
+    role: policySourceRoleValidator,
+    independenceGroup: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_policyId_and_priority", ["policyId", "priority"])
+    .index("by_policyId_and_sourceId", ["policyId", "sourceId"])
+    .index("by_operationKey", ["operationKey"]),
+
+  releaseDecisions: defineTable({
+    projectId: v.id("projects"),
+    entityId: v.id("canonicalEntities"),
+    predicate: v.string(),
+    policyId: v.id("releasePolicies"),
+    strategy: reconciliationStrategyValidator,
+    candidateObservationIds: v.array(v.id("canonicalObservations")),
+    candidateSourceIds: v.array(v.id("sources")),
+    candidateValueHashes: v.array(v.string()),
+    selectedObservationIds: v.array(v.id("canonicalObservations")),
+    selectedValueHash: v.optional(v.string()),
+    previousFactVersionId: v.optional(v.id("factVersions")),
+    nextFactVersionId: v.optional(v.id("factVersions")),
+    outcome: releaseDecisionOutcomeValidator,
+    independentGroupCount: v.number(),
+    reasonCodes: v.array(v.string()),
+    details: v.any(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_entityId_and_predicate_and_createdAt", [
+      "entityId",
+      "predicate",
+      "createdAt",
+    ])
+    .index("by_policyId_and_createdAt", ["policyId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  sourceConflicts: defineTable({
+    projectId: v.id("projects"),
+    entityId: v.id("canonicalEntities"),
+    predicate: v.string(),
+    policyId: v.id("releasePolicies"),
+    releaseDecisionId: v.id("releaseDecisions"),
+    status: sourceConflictStatusValidator,
+    candidateObservationIds: v.array(v.id("canonicalObservations")),
+    candidateSourceIds: v.array(v.id("sources")),
+    candidateValueHashes: v.array(v.string()),
+    independentGroupCount: v.number(),
+    releasedFactVersionId: v.optional(v.id("factVersions")),
+    reason: v.string(),
+    resolution: v.optional(v.any()),
+    operationKey: v.string(),
+    openedAt: v.number(),
+    resolvedAt: v.optional(v.number()),
+  })
+    .index("by_projectId_and_status_and_openedAt", [
+      "projectId",
+      "status",
+      "openedAt",
+    ])
+    .index("by_entityId_and_predicate_and_openedAt", [
+      "entityId",
+      "predicate",
+      "openedAt",
+    ])
+    .index("by_releaseDecisionId", ["releaseDecisionId"])
+    .index("by_operationKey", ["operationKey"]),
+
+  changeEvents: defineTable({
+    projectId: v.id("projects"),
+    eventId: v.string(),
+    eventType: semanticEventTypeValidator,
+    state: changeEventStateValidator,
+    businessEvent: v.boolean(),
+    entityId: v.id("canonicalEntities"),
+    predicate: v.optional(v.string()),
+    releaseDecisionId: v.id("releaseDecisions"),
+    conflictId: v.optional(v.id("sourceConflicts")),
+    previousFactVersionId: v.optional(v.id("factVersions")),
+    nextFactVersionId: v.optional(v.id("factVersions")),
+    previousValueHash: v.optional(v.string()),
+    nextValueHash: v.optional(v.string()),
+    validFrom: v.optional(v.number()),
+    observedAt: v.number(),
+    releasedAt: v.optional(v.number()),
+    sourceObservationIds: v.array(v.id("canonicalObservations")),
+    evidenceRefs: v.array(v.id("evidence")),
+    certificateId: v.optional(v.id("certificates")),
+    correctionOfEventId: v.optional(v.string()),
+    eventHash: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_eventId", ["eventId"])
+    .index("by_operationKey", ["operationKey"])
+    .index("by_releaseDecisionId", ["releaseDecisionId"])
+    .index("by_projectId_and_createdAt", ["projectId", "createdAt"])
+    .index("by_projectId_and_eventType_and_createdAt", [
+      "projectId",
+      "eventType",
+      "createdAt",
+    ])
+    .index("by_entityId_and_createdAt", ["entityId", "createdAt"])
+    .index("by_state_and_createdAt", ["state", "createdAt"]),
+
+  changeEventTransitions: defineTable({
+    eventId: v.id("changeEvents"),
+    fromState: v.union(changeEventStateValidator, v.null()),
+    toState: changeEventStateValidator,
+    reason: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_eventId_and_createdAt", ["eventId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  changeEventRelations: defineTable({
+    projectId: v.id("projects"),
+    fromEventId: v.id("changeEvents"),
+    toEventId: v.id("changeEvents"),
+    kind: changeEventRelationKindValidator,
+    reason: v.string(),
+    operationKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_fromEventId_and_createdAt", ["fromEventId", "createdAt"])
+    .index("by_toEventId_and_createdAt", ["toEventId", "createdAt"])
+    .index("by_operationKey", ["operationKey"]),
+
+  phase8Proofs: defineTable({
+    key: v.string(),
+    projectId: v.id("projects"),
+    entityId: v.id("canonicalEntities"),
+    policyIds: v.array(v.id("releasePolicies")),
+    decisionIds: v.array(v.id("releaseDecisions")),
+    eventIds: v.array(v.id("changeEvents")),
+    conflictIds: v.array(v.id("sourceConflicts")),
+    blockedDecisionIds: v.array(v.id("releaseDecisions")),
     createdAt: v.number(),
   }).index("by_key", ["key"]),
 

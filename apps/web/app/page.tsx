@@ -57,7 +57,7 @@ export default async function Home() {
           <span>Kevlar</span>
         </a>
         <div className="phase-pill">
-          <span /> Gate G · Bitemporal Chronicle
+          <span /> Gate H · Semantic CDC
         </div>
         <a className="repo-link" href="https://github.com/Avinash1286/kevlar">
           GitHub ↗
@@ -92,8 +92,14 @@ export default async function Home() {
           <a className="repo-link" href="/history">
             Fact chronicle →
           </a>
+          <Link className="repo-link" href="/events">
+            Verified events →
+          </Link>
+          <Link className="repo-link" href="/conflicts">
+            Conflict courtroom →
+          </Link>
           <span className="quiet-label">
-            Week 7 of 12 · Bitemporal fact history
+            Week 8 of 12 · Semantic change and reconciliation
           </span>
         </div>
       </section>
@@ -210,5 +216,6 @@ export default async function Home() {
 }
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
