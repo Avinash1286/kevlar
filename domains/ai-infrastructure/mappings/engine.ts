@@ -14,13 +14,22 @@ export const safeTransformSchema = z.discriminatedUnion("name", [
   z.object({ name: z.literal("rename") }),
   z.object({ name: z.literal("trim") }),
   z.object({ name: z.literal("normalize_whitespace") }),
-  z.object({ name: z.literal("normalize_case"), mode: z.enum(["lower", "upper"]) }),
+  z.object({
+    name: z.literal("normalize_case"),
+    mode: z.enum(["lower", "upper"]),
+  }),
   z.object({ name: z.literal("normalize_identifier") }),
-  z.object({ name: z.literal("parse_number"), magnitude: z.boolean().default(false) }),
+  z.object({
+    name: z.literal("parse_number"),
+    magnitude: z.boolean().default(false),
+  }),
   z.object({ name: z.literal("parse_date"), timezone: z.literal("UTC") }),
   z.object({ name: z.literal("normalize_boolean") }),
   z.object({ name: z.literal("normalize_url") }),
-  z.object({ name: z.literal("normalize_list"), deduplicate: z.boolean().default(true) }),
+  z.object({
+    name: z.literal("normalize_list"),
+    deduplicate: z.boolean().default(true),
+  }),
   z.object({
     name: z.literal("unit_convert"),
     conversion: z.enum([
@@ -35,7 +44,11 @@ export const safeTransformSchema = z.discriminatedUnion("name", [
     values: z.record(z.string(), z.string()),
     fallback: z.string().optional(),
   }),
-  z.object({ name: z.literal("split"), separator: z.string(), index: z.number().int().nonnegative() }),
+  z.object({
+    name: z.literal("split"),
+    separator: z.string(),
+    index: z.number().int().nonnegative(),
+  }),
   z.object({ name: z.literal("combine"), separator: z.string() }),
   z.object({ name: z.literal("default"), value: z.unknown() }),
 ]);
@@ -65,7 +78,9 @@ export const deterministicMappingSpecSchema = z.object({
   generatedCode: z.never().optional(),
 });
 
-export type DeterministicMappingSpec = z.infer<typeof deterministicMappingSpecSchema>;
+export type DeterministicMappingSpec = z.infer<
+  typeof deterministicMappingSpecSchema
+>;
 
 export type MappingTransformEvidence = {
   name: SafeTransform["name"];
@@ -100,10 +115,18 @@ export type CanonicalMappedObservation = {
 };
 
 function objectAt(value: unknown, path: string): unknown {
-  return path.split(".").filter(Boolean).reduce<unknown>((current, segment) => {
-    if (current === null || current === undefined || typeof current !== "object") return undefined;
-    return (current as Record<string, unknown>)[segment];
-  }, value);
+  return path
+    .split(".")
+    .filter(Boolean)
+    .reduce<unknown>((current, segment) => {
+      if (
+        current === null ||
+        current === undefined ||
+        typeof current !== "object"
+      )
+        return undefined;
+      return (current as Record<string, unknown>)[segment];
+    }, value);
 }
 
 function sourceValue(
@@ -111,7 +134,8 @@ function sourceValue(
   record: AiInfrastructureSourceObservation["records"][number],
   path: string,
 ) {
-  if (path.startsWith("$observation.")) return objectAt(observation, path.slice(13));
+  if (path.startsWith("$observation."))
+    return objectAt(observation, path.slice(13));
   if (path === "$observation") return observation;
   return objectAt(record, path);
 }
@@ -131,9 +155,13 @@ function applyTransform(value: unknown, transform: SafeTransform): unknown {
     case "trim":
       return typeof value === "string" ? value.trim() : value;
     case "normalize_whitespace":
-      return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : value;
+      return typeof value === "string"
+        ? value.replace(/\s+/g, " ").trim()
+        : value;
     case "normalize_case":
-      return transform.mode === "lower" ? String(value).toLowerCase() : String(value).toUpperCase();
+      return transform.mode === "lower"
+        ? String(value).toLowerCase()
+        : String(value).toUpperCase();
     case "normalize_identifier":
       return String(value)
         .normalize("NFKC")
@@ -145,11 +173,16 @@ function applyTransform(value: unknown, transform: SafeTransform): unknown {
       if (typeof value === "number") return value;
       return transform.magnitude
         ? parseMagnitude(String(value))
-        : Number(String(value).replaceAll(",", "").replace(/[^0-9.+-]/g, ""));
+        : Number(
+            String(value)
+              .replaceAll(",", "")
+              .replace(/[^0-9.+-]/g, ""),
+          );
     }
     case "parse_date": {
       const timestamp = Date.parse(String(value));
-      if (!Number.isFinite(timestamp)) throw new Error(`Cannot parse UTC date: ${String(value)}`);
+      if (!Number.isFinite(timestamp))
+        throw new Error(`Cannot parse UTC date: ${String(value)}`);
       return new Date(timestamp).toISOString();
     }
     case "normalize_boolean":
@@ -162,38 +195,53 @@ function applyTransform(value: unknown, transform: SafeTransform): unknown {
     }
     case "normalize_list": {
       const values = Array.isArray(value) ? value : String(value).split(",");
-      const normalized = values.map((item) => String(item).trim()).filter(Boolean);
+      const normalized = values
+        .map((item) => String(item).trim())
+        .filter(Boolean);
       return transform.deduplicate ? [...new Set(normalized)] : normalized;
     }
     case "unit_convert": {
-      if (transform.conversion === "token_magnitude_to_tokens") return parseMagnitude(String(value));
+      if (transform.conversion === "token_magnitude_to_tokens")
+        return parseMagnitude(String(value));
       if (transform.conversion === "duration_to_milliseconds") {
-        if (!value || typeof value !== "object") throw new Error("Duration conversion requires a typed object.");
-        return durationToMilliseconds(value as Parameters<typeof durationToMilliseconds>[0]);
+        if (!value || typeof value !== "object")
+          throw new Error("Duration conversion requires a typed object.");
+        return durationToMilliseconds(
+          value as Parameters<typeof durationToMilliseconds>[0],
+        );
       }
-      const amount = typeof value === "object" && value !== null
-        ? Number((value as Record<string, unknown>).amount)
-        : Number(value);
+      const amount =
+        typeof value === "object" && value !== null
+          ? Number((value as Record<string, unknown>).amount)
+          : Number(value);
       return normalizeUsdPerMillionTokens({
         amount,
         currency: "USD",
         denominator:
-          transform.conversion === "usd_per_token_to_million" ? "token" : "thousand_tokens",
+          transform.conversion === "usd_per_token_to_million"
+            ? "token"
+            : "thousand_tokens",
       }).amount;
     }
     case "enum_map": {
       const key = String(value).trim().toLowerCase();
       const mapped = transform.values[key] ?? transform.fallback;
-      if (mapped === undefined) throw new Error(`No enum mapping for ${String(value)}`);
+      if (mapped === undefined)
+        throw new Error(`No enum mapping for ${String(value)}`);
       return mapped;
     }
     case "split":
       return String(value).split(transform.separator)[transform.index]?.trim();
     case "combine":
-      if (!Array.isArray(value)) throw new Error("Combine requires multiple source paths.");
-      return value.filter((item) => item !== undefined && item !== null && item !== "").join(transform.separator);
+      if (!Array.isArray(value))
+        throw new Error("Combine requires multiple source paths.");
+      return value
+        .filter((item) => item !== undefined && item !== null && item !== "")
+        .join(transform.separator);
     case "default":
-      return value === undefined || value === null || value === "" ? transform.value : value;
+      return value === undefined || value === null || value === ""
+        ? transform.value
+        : value;
   }
 }
 
@@ -209,7 +257,9 @@ function mappingRecordApplies(
 export function validateDeterministicMappingSpec(raw: unknown) {
   const parsed = deterministicMappingSpecSchema.safeParse(raw);
   if (!parsed.success) {
-    throw new Error(`Mapping specification is unsafe or invalid: ${parsed.error.issues[0]?.message ?? "unknown error"}`);
+    throw new Error(
+      `Mapping specification is unsafe or invalid: ${parsed.error.issues[0]?.message ?? "unknown error"}`,
+    );
   }
   return parsed.data;
 }
@@ -218,19 +268,35 @@ export function executeDeterministicMapping(
   rawObservation: unknown,
   rawSpec: unknown,
 ): CanonicalMappedObservation[] {
-  const observation = aiInfrastructureSourceObservationSchema.parse(rawObservation);
+  const observation =
+    aiInfrastructureSourceObservationSchema.parse(rawObservation);
   const spec = validateDeterministicMappingSpec(rawSpec);
-  if (observation.schema_version !== spec.sourceSchema || observation.source_type !== spec.sourceType) {
-    throw new Error("Mapping source schema or archetype does not match the verified observation.");
+  if (
+    observation.schema_version !== spec.sourceSchema ||
+    observation.source_type !== spec.sourceType
+  ) {
+    throw new Error(
+      "Mapping source schema or archetype does not match the verified observation.",
+    );
   }
-  if (spec.status !== "shadow" && spec.status !== "canary" && spec.status !== "active") {
-    throw new Error(`Mapping revision ${spec.revision} is not executable in ${spec.status} state.`);
+  if (
+    spec.status !== "shadow" &&
+    spec.status !== "canary" &&
+    spec.status !== "active"
+  ) {
+    throw new Error(
+      `Mapping revision ${spec.revision} is not executable in ${spec.status} state.`,
+    );
   }
 
   return observation.records.flatMap((record, recordIndex) => {
     if (!mappingRecordApplies(spec.sourceType, record)) return [];
     const sourceKeyValue = sourceValue(observation, record, spec.sourceKey);
-    if (sourceKeyValue === undefined || sourceKeyValue === null || sourceKeyValue === "") {
+    if (
+      sourceKeyValue === undefined ||
+      sourceKeyValue === null ||
+      sourceKeyValue === ""
+    ) {
       throw new Error(`Missing source entity key at ${spec.sourceKey}.`);
     }
     const fields: Record<string, unknown> = {};
@@ -238,32 +304,50 @@ export function executeDeterministicMapping(
 
     for (const rule of spec.fields) {
       const paths = Array.isArray(rule.source) ? rule.source : [rule.source];
-      let value: unknown = paths.length === 1
-        ? sourceValue(observation, record, paths[0])
-        : paths.map((path) => sourceValue(observation, record, path));
+      let value: unknown =
+        paths.length === 1
+          ? sourceValue(observation, record, paths[0])
+          : paths.map((path) => sourceValue(observation, record, path));
       const transformations: MappingTransformEvidence[] = [];
       for (const transform of rule.transforms) {
         const input = value;
         value = applyTransform(value, transform);
-        transformations.push({ name: transform.name, version: "1.0.0", input, output: value });
+        transformations.push({
+          name: transform.name,
+          version: "1.0.0",
+          input,
+          output: value,
+        });
       }
-      if (rule.required && (value === undefined || value === null || value === "")) {
-        throw new Error(`Required canonical field ${rule.target} has no value.`);
+      if (
+        rule.required &&
+        (value === undefined || value === null || value === "")
+      ) {
+        throw new Error(
+          `Required canonical field ${rule.target} has no value.`,
+        );
       }
       fields[rule.target] = value ?? null;
       const exactSourceFields = paths.map((path) =>
-        path.startsWith("$observation.") ? path.slice(13) : `records[${recordIndex}].${path}`,
+        path.startsWith("$observation.")
+          ? path.slice(13)
+          : `records[${recordIndex}].${path}`,
       );
       const evidenceSourceFields = rule.evidencePaths.map((path) =>
-        path.startsWith("$observation.") ? path.slice(13) : `records[${recordIndex}].${path}`,
+        path.startsWith("$observation.")
+          ? path.slice(13)
+          : `records[${recordIndex}].${path}`,
       );
       fieldEvidence.push({
         canonicalField: rule.target,
         value: value ?? null,
         transformations,
-        sourceFields: [...new Set([...exactSourceFields, ...evidenceSourceFields])],
+        sourceFields: [
+          ...new Set([...exactSourceFields, ...evidenceSourceFields]),
+        ],
         evidenceRefs: observation.evidence.contexts.map(
-          (_context, index) => `${observation.evidence.content_hash}:context:${index}`,
+          (_context, index) =>
+            `${observation.evidence.content_hash}:context:${index}`,
         ),
         rawSourceHash: observation.evidence.content_hash,
       });

@@ -18,23 +18,12 @@ export type SemanticChangeClass =
   | "unknown";
 
 export type EventState =
-  | "pending"
-  | "verified"
-  | "released"
-  | "withheld"
-  | "superseded"
-  | "retracted";
+  "pending" | "verified" | "released" | "withheld" | "superseded" | "retracted";
 
-export type CandidateTrustState =
-  | "verified"
-  | "quarantined"
-  | "needs_review";
+export type CandidateTrustState = "verified" | "quarantined" | "needs_review";
 
 export type ReconciliationStrategy =
-  | "authoritative"
-  | "quorum"
-  | "ordered_fallback"
-  | "human_review";
+  "authoritative" | "quorum" | "ordered_fallback" | "human_review";
 
 export type FieldEquivalenceRule =
   | {
@@ -200,7 +189,10 @@ function valueHash(value: unknown) {
   return sha256(stableValue(value));
 }
 
-function normalizeText(value: unknown, rule: Extract<FieldEquivalenceRule, { kind: "text" | "identifier" }>) {
+function normalizeText(
+  value: unknown,
+  rule: Extract<FieldEquivalenceRule, { kind: "text" | "identifier" }>,
+) {
   if (typeof value !== "string") return value;
   let normalized = rule.collapseWhitespace
     ? value.trim().replace(/\s+/g, " ")
@@ -236,12 +228,16 @@ export function valuesEquivalent(
   return normalizeText(left, rule) === normalizeText(right, rule);
 }
 
-function sourcePriority(candidate: ReconciliationCandidate, policy: ReleasePolicy) {
+function sourcePriority(
+  candidate: ReconciliationCandidate,
+  policy: ReleasePolicy,
+) {
   const match = policy.sources.find(
     (rule) =>
       (!rule.sourceId || rule.sourceId === candidate.sourceId) &&
       (!rule.sourceType || rule.sourceType === candidate.sourceType) &&
-      (!rule.organizationId || rule.organizationId === candidate.organizationId),
+      (!rule.organizationId ||
+        rule.organizationId === candidate.organizationId),
   );
   return match?.priority ?? Number.MAX_SAFE_INTEGER;
 }
@@ -252,7 +248,8 @@ export function independentCandidates(candidates: ReconciliationCandidate[]) {
   const evidencePayloads = new Set<string>();
   return candidates.filter((candidate) => {
     const organizationAndType = `${candidate.organizationId}:${candidate.sourceType}`;
-    const sharesOrganizationAndType = organizationsAndTypes.has(organizationAndType);
+    const sharesOrganizationAndType =
+      organizationsAndTypes.has(organizationAndType);
     const sharesEndpoint = candidate.endpointId
       ? endpoints.has(candidate.endpointId)
       : false;
@@ -311,8 +308,11 @@ export function reconcileCandidates(input: {
   entityId: string;
   candidates: ReconciliationCandidate[];
   policy: ReleasePolicy;
-}) : ReconciliationDecision {
-  if (input.policy.predicate !== input.candidates[0]?.predicate && input.candidates.length > 0) {
+}): ReconciliationDecision {
+  if (
+    input.policy.predicate !== input.candidates[0]?.predicate &&
+    input.candidates.length > 0
+  ) {
     throw new Error("Release policy must match the reconciled predicate.");
   }
   const eligible = independentCandidates(
@@ -321,7 +321,8 @@ export function reconcileCandidates(input: {
     ),
   ).sort(
     (left, right) =>
-      sourcePriority(left, input.policy) - sourcePriority(right, input.policy) ||
+      sourcePriority(left, input.policy) -
+        sourcePriority(right, input.policy) ||
       right.observedAt - left.observedAt,
   );
   const rejected = input.candidates.filter((item) => !eligible.includes(item));
@@ -388,14 +389,15 @@ export function reconcileCandidates(input: {
         selected: null,
         supporting: [],
         rejected,
-        conflict: groups.length > 1
-          ? createConflict(
-              input.entityId,
-              input.policy.predicate,
-              eligible,
-              "No semantically equivalent independent source quorum exists.",
-            )
-          : null,
+        conflict:
+          groups.length > 1
+            ? createConflict(
+                input.entityId,
+                input.policy.predicate,
+                eligible,
+                "No semantically equivalent independent source quorum exists.",
+              )
+            : null,
         reasonCodes: ["independent_quorum_not_met"],
       };
     }
@@ -453,7 +455,7 @@ export function deterministicEventId(input: {
 function classifyEvent(
   input: DetectChangeInput,
   selected: ReconciliationCandidate,
-) : SemanticChangeClass {
+): SemanticChangeClass {
   if (!input.previousFact) return "fact_created";
   if (input.intent === "correction") return "fact_corrected";
   if (input.intent === "rename") return "entity_renamed";
@@ -518,10 +520,10 @@ function buildEvent(input: {
     after: structuredClone(nextValue),
     validFrom,
     observedAt: input.source.observedAt,
-    releasedAt: input.state === "released" ? input.source.observedAt : undefined,
+    releasedAt:
+      input.state === "released" ? input.source.observedAt : undefined,
     sourceObservationIds: payload.sourceObservationIds,
-    evidenceRefs:
-      input.evidenceRefs ?? input.candidate?.evidenceRefs ?? [],
+    evidenceRefs: input.evidenceRefs ?? input.candidate?.evidenceRefs ?? [],
     releasePolicyId: input.source.policy.id,
     reasonCodes: input.reasonCodes,
     createdAt: input.source.observedAt,
@@ -594,8 +596,7 @@ export function detectSemanticChange(input: DetectChangeInput) {
     const removalAllowed =
       (!input.policy.removal.requireExplicitStatement ||
         selected.explicitRemoval === true) &&
-      independentAbsences >=
-        input.policy.removal.minimumIndependentAbsences &&
+      independentAbsences >= input.policy.removal.minimumIndependentAbsences &&
       (!input.policy.removal.humanApprovalRequired ||
         input.humanRemovalApproved === true);
     if (!removalAllowed)

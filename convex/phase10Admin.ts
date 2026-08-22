@@ -15,14 +15,24 @@ import {
 } from "./phase10Support";
 import { requireProjectRole } from "./phase11Auth";
 
-const persistApiKeyRef = makeFunctionReference<"mutation">("phase10AdminSupport:persistApiKey");
+const persistApiKeyRef = makeFunctionReference<"mutation">(
+  "phase10AdminSupport:persistApiKey",
+);
 const authorizeApiKeyCreationRef = makeFunctionReference<"query">(
   "phase10AdminSupport:authorizeApiKeyCreation",
 );
-const persistWebhookEndpointRef = makeFunctionReference<"mutation">("phase10AdminSupport:persistWebhookEndpoint");
-const persistSecretRotationRef = makeFunctionReference<"mutation">("phase10AdminSupport:persistSecretRotation");
-const persistSubscriptionRef = makeFunctionReference<"mutation">("phase10AdminSupport:persistSubscription");
-const persistContractRef = makeFunctionReference<"mutation">("phase10AdminSupport:persistContract");
+const persistWebhookEndpointRef = makeFunctionReference<"mutation">(
+  "phase10AdminSupport:persistWebhookEndpoint",
+);
+const persistSecretRotationRef = makeFunctionReference<"mutation">(
+  "phase10AdminSupport:persistSecretRotation",
+);
+const persistSubscriptionRef = makeFunctionReference<"mutation">(
+  "phase10AdminSupport:persistSubscription",
+);
+const persistContractRef = makeFunctionReference<"mutation">(
+  "phase10AdminSupport:persistContract",
+);
 
 export const createApiKey = action({
   args: {
@@ -162,7 +172,10 @@ export const revokeApiKey = mutation({
     await requireProjectRole(ctx, key.projectId, ["owner", "admin"]);
     if (key.status === "active") {
       const now = Date.now();
-      await ctx.db.patch("apiKeys", key._id, { status: "revoked", revokedAt: now });
+      await ctx.db.patch("apiKeys", key._id, {
+        status: "revoked",
+        revokedAt: now,
+      });
       await ctx.db.insert("auditEvents", {
         projectId: key.projectId,
         actorType: "system",

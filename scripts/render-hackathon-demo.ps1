@@ -10,10 +10,10 @@ $ErrorActionPreference = "Stop"
 $invariantCulture = [System.Globalization.CultureInfo]::InvariantCulture
 $repositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $artifactDirectory = Join-Path $repositoryRoot "artifacts/demo"
-$sourceVideo = Join-Path $artifactDirectory "kevlar-full-platform-v1.0.0.webm"
+$sourceVideo = Join-Path $artifactDirectory "kevlar-full-platform-v1.0.1.webm"
 $submissionDocument = Join-Path $repositoryRoot "docs/HACKATHON_SUBMISSION.md"
-$captionPath = Join-Path $artifactDirectory "kevlar-hackathon-submission-v1.0.0.en.srt"
-$outputVideo = Join-Path $artifactDirectory "kevlar-hackathon-submission-v1.0.0.mp4"
+$captionPath = Join-Path $artifactDirectory "kevlar-hackathon-submission-v1.0.1.en.srt"
+$outputVideo = Join-Path $artifactDirectory "kevlar-hackathon-submission-v1.0.1.mp4"
 
 foreach ($requiredPath in @($sourceVideo, $submissionDocument)) {
   if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
@@ -57,7 +57,7 @@ function Get-MediaDuration {
 }
 
 $segments = @()
-foreach ($line in Get-Content -LiteralPath $submissionDocument) {
+foreach ($line in Get-Content -LiteralPath $submissionDocument -Encoding UTF8) {
   if ($line -notmatch '^\|\s*00:\d{2}') {
     continue
   }
@@ -68,7 +68,7 @@ foreach ($line in Get-Content -LiteralPath $submissionDocument) {
     continue
   }
 
-  $bounds = @($columns[0] -split '\s*[–-]\s*')
+  $bounds = @($columns[0] -split '\s*(?:\u2013|-)\s*')
   if ($bounds.Count -ne 2) {
     throw "Unable to parse narration range '$($columns[0])'."
   }
@@ -106,11 +106,13 @@ for ($index = 0; $index -lt $segments.Count; $index += 1) {
   $srtLines.Add($segment.Text)
   $srtLines.Add("")
 }
+$srtLines.RemoveAt($srtLines.Count - 1)
 [System.IO.File]::WriteAllLines($captionPath, $srtLines, [System.Text.UTF8Encoding]::new($false))
 
 Add-Type -AssemblyName System.Speech
 $synthesizer = [System.Speech.Synthesis.SpeechSynthesizer]::new()
 $intermediateFiles = [System.Collections.Generic.List[string]]::new()
+$selectedVoice = $null
 try {
   $installedVoices = @($synthesizer.GetInstalledVoices() | ForEach-Object { $_.VoiceInfo.Name })
   if ($installedVoices -contains $Voice) {
@@ -128,7 +130,8 @@ try {
 
   $synthesizer.Rate = $SpeechRate
   $synthesizer.Volume = 100
-  Write-Host "Narrator: $($synthesizer.Voice.Name), rate $SpeechRate"
+  $selectedVoice = $synthesizer.Voice.Name
+  Write-Host "Narrator: $selectedVoice, rate $SpeechRate"
 
   for ($index = 0; $index -lt $segments.Count; $index += 1) {
     $segmentPath = Join-Path $artifactDirectory (".kevlar-hackathon-segment-{0:D2}.wav" -f ($index + 1))
@@ -164,7 +167,7 @@ for ($index = 0; $index -lt $segments.Count; $index += 1) {
 $audioFilters.Add("$($mixedLabels -join '')amix=inputs=$($segments.Count):duration=longest:normalize=0,loudnorm=I=-16:LRA=11:TP=-1.5,apad=pad_dur=180[aout]")
 $audioFilterGraph = $audioFilters -join ";"
 
-$relativeCaptionPath = "artifacts/demo/kevlar-hackathon-submission-v1.0.0.en.srt"
+$relativeCaptionPath = "artifacts/demo/kevlar-hackathon-submission-v1.0.1.en.srt"
 $subtitleFilter = "subtitles=filename='$relativeCaptionPath':force_style='FontName=Arial,FontSize=19,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=3,BackColour=&H80000000,Outline=1,Shadow=0,MarginV=26,Alignment=2'"
 $durationText = $sourceDuration.ToString("0.###", $invariantCulture)
 
@@ -192,7 +195,7 @@ foreach ($argument in @(
     "-ar", "48000",
     "-ac", "2",
     "-movflags", "+faststart",
-    "-metadata", "title=Kevlar — verified live-web intelligence",
+    "-metadata", "title=Kevlar - verified live-web intelligence",
     "-metadata", "comment=Into the Scrape-Verse submission demo; controlled benchmark claims only",
     $outputVideo
   )) {
@@ -241,8 +244,8 @@ if (-not $KeepIntermediateAudio) {
 }
 
 $result = [ordered]@{
-  output = [System.IO.Path]::GetRelativePath($repositoryRoot, $outputVideo).Replace("\", "/")
-  captions = [System.IO.Path]::GetRelativePath($repositoryRoot, $captionPath).Replace("\", "/")
+  output = "artifacts/demo/kevlar-hackathon-submission-v1.0.1.mp4"
+  captions = "artifacts/demo/kevlar-hackathon-submission-v1.0.1.en.srt"
   duration_seconds = [math]::Round($outputDuration, 3)
   video_codec = $videoStream.codec_name
   audio_codec = $audioStream.codec_name
@@ -251,7 +254,7 @@ $result = [ordered]@{
   audio_channels = [int]$audioStream.channels
   size_bytes = [int64]$probe.format.size
   sha256 = (Get-FileHash -LiteralPath $outputVideo -Algorithm SHA256).Hash.ToLowerInvariant()
-  narrator = $Voice
+  narrator = $selectedVoice
   speech_rate = $SpeechRate
 }
 

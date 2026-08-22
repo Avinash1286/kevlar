@@ -4,7 +4,15 @@
   "private": true,
   "type": "module",
   "exports": "./src/index.ts",
-  "scripts": { "build": "tsc --noEmit", "lint": "tsc --noEmit", "typecheck": "tsc --noEmit" },
-  "dependencies": { "zod": "catalog:" },
-  "devDependencies": { "typescript": "catalog:" }
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
 }

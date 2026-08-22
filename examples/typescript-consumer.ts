@@ -8,7 +8,14 @@ const kevlar = new KevlarClient({
   apiKey,
 });
 
-const page = await kevlar.currentFacts(process.argv[2] ?? "qs79dceshc71enmf9q6pr6r1q18cyeqb");
+const page = await kevlar.currentFacts(
+  process.argv[2] ?? "qs79dceshc71enmf9q6pr6r1q18cyeqb",
+);
 for (const fact of page.data) {
-  console.log(fact.predicate, fact.value, fact.trust.state, fact.trust.evidence_refs);
+  console.log(
+    fact.predicate,
+    fact.value,
+    fact.trust.state,
+    fact.trust.evidence_refs,
+  );
 }

@@ -1,0 +1,500 @@
+{
+  "schema_version": "kevlar.release-load.v1",
+  "measured_at": "2026-08-22T14:52:36.903Z",
+  "target": "https://kevlar-web.vercel.app",
+  "requests": 80,
+  "concurrency": 10,
+  "successful_requests": 80,
+  "status_counts": {
+    "200": 80
+  },
+  "latency_ms": {
+    "min": 45.65,
+    "median": 302.8,
+    "p95": 1193.86,
+    "max": 1291.04
+  },
+  "transferred_bytes": 1349790,
+  "samples": [
+    {
+      "path": "/",
+      "status": 200,
+      "latencyMs": 1291.04,
+      "bytes": 20958
+    },
+    {
+      "path": "/feed",
+      "status": 200,
+      "latencyMs": 1200.23,
+      "bytes": 13284
+    },
+    {
+      "path": "/evidence",
+      "status": 200,
+      "latencyMs": 1241.93,
+      "bytes": 24313
+    },
+    {
+      "path": "/events",
+      "status": 200,
+      "latencyMs": 1195.95,
+      "bytes": 16196
+    },
+    {
+      "path": "/operations",
+      "status": 200,
+      "latencyMs": 711.52,
+      "bytes": 14781
+    },
+    {
+      "path": "/router",
+      "status": 200,
+      "latencyMs": 1193.86,
+      "bytes": 13036
+    },
+    {
+      "path": "/security",
+      "status": 200,
+      "latencyMs": 1187.3,
+      "bytes": 15014
+    },
+    {
+      "path": "/developers",
+      "status": 200,
+      "latencyMs": 256.36,
+      "bytes": 17397
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "latencyMs": 1188.14,
+      "bytes": 20958
+    },
+    {
+      "path": "/feed",
+      "status": 200,
+      "latencyMs": 1188.75,
+      "bytes": 13284
+    },
+    {
+      "path": "/evidence",
+      "status": 200,
+      "latencyMs": 446.69,
+      "bytes": 24313
+    },
+    {
+      "path": "/events",
+      "status": 200,
+      "latencyMs": 380.03,
+      "bytes": 16196
+    },
+    {
+      "path": "/operations",
+      "status": 200,
+      "latencyMs": 380.02,
+      "bytes": 14781
+    },
+    {
+      "path": "/router",
+      "status": 200,
+      "latencyMs": 399.34,
+      "bytes": 13036
+    },
+    {
+      "path": "/security",
+      "status": 200,
+      "latencyMs": 377.24,
+      "bytes": 15014
+    },
+    {
+      "path": "/developers",
+      "status": 200,
+      "latencyMs": 128.15,
+      "bytes": 17397
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "latencyMs": 379.53,
+      "bytes": 20958
+    },
+    {
+      "path": "/feed",
+      "status": 200,
+      "latencyMs": 377.67,
+      "bytes": 13284
+    },
+    {
+      "path": "/evidence",
+      "status": 200,
+      "latencyMs": 389.79,
+      "bytes": 24313
+    },
+    {
+      "path": "/events",
+      "status": 200,
+      "latencyMs": 304.06,
+      "bytes": 16196
+    },
+    {
+      "path": "/operations",
+      "status": 200,
+      "latencyMs": 343.74,
+      "bytes": 14781
+    },
+    {
+      "path": "/router",
+      "status": 200,
+      "latencyMs": 287.31,
+      "bytes": 13036
+    },
+    {
+      "path": "/security",
+      "status": 200,
+      "latencyMs": 321.01,
+      "bytes": 15014
+    },
+    {
+      "path": "/developers",
+      "status": 200,
+      "latencyMs": 84.54,
+      "bytes": 17397
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "latencyMs": 305.56,
+      "bytes": 20958
+    },
+    {
+      "path": "/feed",
+      "status": 200,
+      "latencyMs": 290.5,
+      "bytes": 13284
+    },
+    {
+      "path": "/evidence",
+      "status": 200,
+      "latencyMs": 380.58,
+      "bytes": 24313
+    },
+    {
+      "path": "/events",
+      "status": 200,
+      "latencyMs": 300.74,
+      "bytes": 16196
+    },
+    {
+      "path": "/operations",
+      "status": 200,
+      "latencyMs": 349.25,
+      "bytes": 14781
+    },
+    {
+      "path": "/router",
+      "status": 200,
+      "latencyMs": 301.69,
+      "bytes": 13036
+    },
+    {
+      "path": "/security",
+      "status": 200,
+      "latencyMs": 300.35,
+      "bytes": 15014
+    },
+    {
+      "path": "/developers",
+      "status": 200,
+      "latencyMs": 47.49,
+      "bytes": 17397
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "latencyMs": 319.62,
+      "bytes": 20958
+    },
+    {
+      "path": "/feed",
+      "status": 200,
+      "latencyMs": 298.87,
+      "bytes": 13284
+    },
+    {
+      "path": "/evidence",
+      "status": 200,
+      "latencyMs": 318.92,
+      "bytes": 24313
+    },
+    {
+      "path": "/events",
+      "status": 200,
+      "latencyMs": 318.06,
+      "bytes": 16196
+    },
+    {
+      "path": "/operations",
+      "status": 200,
+      "latencyMs": 348.11,
+      "bytes": 14781
+    },
+    {
+      "path": "/router",
+      "status": 200,
+      "latencyMs": 316.64,
+      "bytes": 13036
+    },
+    {
+      "path": "/security",
+      "status": 200,
+      "latencyMs": 297.99,
+      "bytes": 15014
+    },
+    {
+      "path": "/developers",
+      "status": 200,
+      "latencyMs": 51.98,
+      "bytes": 17397
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "latencyMs": 288.34,
+      "bytes": 20958
+    },
+    {
+      "path": "/feed",
+      "status": 200,
+      "latencyMs": 292.24,
+      "bytes": 13284
+    },
+    {
+      "path": "/evidence",
+      "status": 200,
+      "latencyMs": 336.9,
+      "bytes": 24313
+    },
+    {
+      "path": "/events",
+      "status": 200,
+      "latencyMs": 291.27,
+      "bytes": 16196
+    },
+    {
+      "path": "/operations",
+      "status": 200,
+      "latencyMs": 339.27,
+      "bytes": 14781
+    },
+    {
+      "path": "/router",
+      "status": 200,
+      "latencyMs": 295.71,
+      "bytes": 13036
+    },
+    {
+      "path": "/security",
+      "status": 200,
+      "latencyMs": 292.99,
+      "bytes": 15014
+    },
+    {
+      "path": "/developers",
+      "status": 200,
+      "latencyMs": 89.97,
+      "bytes": 17397
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "latencyMs": 301.46,
+      "bytes": 20958
+    },
+    {
+      "path": "/feed",
+      "status": 200,
+      "latencyMs": 310.67,
+      "bytes": 13284
+    },
+    {
+      "path": "/evidence",
+      "status": 200,
+      "latencyMs": 302.54,
+      "bytes": 24313
+    },
+    {
+      "path": "/events",
+      "status": 200,
+      "latencyMs": 310.32,
+      "bytes": 16196
+    },
+    {
+      "path": "/operations",
+      "status": 200,
+      "latencyMs": 342.79,
+      "bytes": 14781
+    },
+    {
+      "path": "/router",
+      "status": 200,
+      "latencyMs": 289.62,
+      "bytes": 13036
+    },
+    {
+      "path": "/security",
+      "status": 200,
+      "latencyMs": 307.3,
+      "bytes": 15014
+    },
+    {
+      "path": "/developers",
+      "status": 200,
+      "latencyMs": 50.48,
+      "bytes": 17397
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "latencyMs": 282.21,
+      "bytes": 20958
+    },
+    {
+      "path": "/feed",
+      "status": 200,
+      "latencyMs": 289.96,
+      "bytes": 13284
+    },
+    {
+      "path": "/evidence",
+      "status": 200,
+      "latencyMs": 314.39,
+      "bytes": 24313
+    },
+    {
+      "path": "/events",
+      "status": 200,
+      "latencyMs": 302.8,
+      "bytes": 16196
+    },
+    {
+      "path": "/operations",
+      "status": 200,
+      "latencyMs": 362.77,
+      "bytes": 14781
+    },
+    {
+      "path": "/router",
+      "status": 200,
+      "latencyMs": 282.47,
+      "bytes": 13036
+    },
+    {
+      "path": "/security",
+      "status": 200,
+      "latencyMs": 284.13,
+      "bytes": 15014
+    },
+    {
+      "path": "/developers",
+      "status": 200,
+      "latencyMs": 52.93,
+      "bytes": 17397
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "latencyMs": 282.76,
+      "bytes": 20958
+    },
+    {
+      "path": "/feed",
+      "status": 200,
+      "latencyMs": 281.87,
+      "bytes": 13284
+    },
+    {
+      "path": "/evidence",
+      "status": 200,
+      "latencyMs": 301.41,
+      "bytes": 24313
+    },
+    {
+      "path": "/events",
+      "status": 200,
+      "latencyMs": 281.53,
+      "bytes": 16196
+    },
+    {
+      "path": "/operations",
+      "status": 200,
+      "latencyMs": 357.8,
+      "bytes": 14781
+    },
+    {
+      "path": "/router",
+      "status": 200,
+      "latencyMs": 284.67,
+      "bytes": 13036
+    },
+    {
+      "path": "/security",
+      "status": 200,
+      "latencyMs": 284.05,
+      "bytes": 15014
+    },
+    {
+      "path": "/developers",
+      "status": 200,
+      "latencyMs": 45.65,
+      "bytes": 17397
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "latencyMs": 283.91,
+      "bytes": 20958
+    },
+    {
+      "path": "/feed",
+      "status": 200,
+      "latencyMs": 281.32,
+      "bytes": 13284
+    },
+    {
+      "path": "/evidence",
+      "status": 200,
+      "latencyMs": 319.67,
+      "bytes": 24313
+    },
+    {
+      "path": "/events",
+      "status": 200,
+      "latencyMs": 299.97,
+      "bytes": 16196
+    },
+    {
+      "path": "/operations",
+      "status": 200,
+      "latencyMs": 376.55,
+      "bytes": 14781
+    },
+    {
+      "path": "/router",
+      "status": 200,
+      "latencyMs": 299.24,
+      "bytes": 13036
+    },
+    {
+      "path": "/security",
+      "status": 200,
+      "latencyMs": 318.03,
+      "bytes": 15014
+    },
+    {
+      "path": "/developers",
+      "status": 200,
+      "latencyMs": 60.66,
+      "bytes": 17397
+    }
+  ]
+}

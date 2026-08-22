@@ -6307,7 +6307,7 @@ Complete Kevlar Core end to end.
 - [x] Last-known-good remains active during failure.
 - [x] Same Collector ID is documented before and after repair.
 - [x] Certificate is generated from measured results.
-- [x] The full flow works from `make demo-reset`.
+- [ ] The full provider-backed flow is replayed after `make demo-reset` (the command currently resets fixture state only).
 
 ---
 
@@ -6653,13 +6653,13 @@ Turn the system into a reproducible, explainable, and releasable product.
 - [x] All critical tests pass.
 - [x] No benchmark placeholder remains.
 - [x] Every public claim is supported by measured output.
-- [x] Core repair certification still works from reset.
+- [ ] Core repair certification is replayed from a clean reset against the provider workflow.
 - [x] Multi-source facts and events are queryable.
 - [x] API, webhook, SDK, and MCP examples work.
 - [x] AI-router integration works.
 - [x] Security review and secret scan pass.
 - [x] Documentation explains limitations honestly.
-- [x] Production can be restored from documented backups.
+- [ ] An export is restored and queried in an isolated throwaway deployment.
 
 ---
 
@@ -8044,7 +8044,7 @@ Each ADR includes context, decision, alternatives, consequences, and reversal co
 
 #### Core foundation
 
-- [x] The product-price fixture and complete repair workflow function from a clean reset.
+- [ ] The product-price fixture and complete provider-backed repair workflow are replayed from a clean reset.
 - [x] Incident and certificate pages are accessible.
 - [x] Core trust-kernel tests pass.
 - [x] Verified price output is produced through the product-pricing domain abstraction.

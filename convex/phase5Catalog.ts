@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type MutationCtx } from "./_generated/server";
 import schema from "./schema";
 import { assertPhase5Text, requirePhase5IngestKey } from "./phase5Auth";
 import {
@@ -101,6 +101,327 @@ const sourceSpecs = [
     ],
   },
 ] as const;
+
+const phase5SourceKeyValidator = v.union(
+  v.literal("openai-pricing"),
+  v.literal("openai-models"),
+  v.literal("anthropic-release-notes"),
+  v.literal("anthropic-pricing"),
+  v.literal("anthropic-models"),
+);
+
+const anthropicActivationSourceKeyValidator = v.union(
+  v.literal("anthropic-pricing"),
+  v.literal("anthropic-models"),
+);
+
+type Phase5SourceKey = (typeof sourceSpecs)[number]["key"];
+
+function sourceSpecFor(sourceKey: Phase5SourceKey) {
+  const spec = sourceSpecs.find((candidate) => candidate.key === sourceKey);
+  if (!spec) throw new Error(`Unsupported Phase 5 source ${sourceKey}`);
+  return spec;
+}
+
+async function resolvePhase5AutomationContext(
+  ctx: MutationCtx,
+  sourceKey: Phase5SourceKey,
+  collectorPlatformId: string,
+) {
+  const spec = sourceSpecFor(sourceKey);
+  if (collectorPlatformId !== spec.collectorPlatformId)
+    throw new Error("Collector platform ID does not match the source policy");
+
+  const [project, domainPack, source, collector] = await Promise.all([
+    ctx.db
+      .query("projects")
+      .withIndex("by_slug", (q) => q.eq("slug", "kevlar-core"))
+      .unique(),
+    ctx.db
+      .query("domainPacks")
+      .withIndex("by_key", (q) => q.eq("key", "ai-infrastructure"))
+      .unique(),
+    ctx.db
+      .query("sources")
+      .withIndex("by_key", (q) => q.eq("key", sourceKey))
+      .unique(),
+    ctx.db
+      .query("collectors")
+      .withIndex("by_platform_id", (q) =>
+        q.eq("collectorId", collectorPlatformId),
+      )
+      .unique(),
+  ]);
+  if (
+    !project ||
+    project.status !== "active" ||
+    project.deletionState !== undefined ||
+    project.deletedAt !== undefined
+  )
+    throw new Error("Stable kevlar-core project is unavailable");
+  if (!domainPack || domainPack.status !== "active")
+    throw new Error("AI-infrastructure domain pack is unavailable");
+  if (
+    !source ||
+    source.domainPackId !== domainPack._id ||
+    source.providerKey !== spec.providerKey ||
+    source.sourceType !== spec.sourceType ||
+    !source.official ||
+    source.visibility !== "public"
+  )
+    throw new Error("Source does not match the committed Phase 5 policy");
+  if (
+    !collector ||
+    collector.projectId !== project._id ||
+    collector.targetUrl !== spec.url ||
+    collector.status !== "published"
+  )
+    throw new Error("Collector does not belong to the stable release project");
+
+  const binding = await ctx.db
+    .query("collectorBindings")
+    .withIndex("by_sourceId_and_collectorId", (q) =>
+      q.eq("sourceId", source._id).eq("collectorId", collector._id),
+    )
+    .unique();
+  if (
+    !binding ||
+    !binding.endpointId ||
+    binding.bindingKind !== "production" ||
+    binding.lifecycleStatus === "disabled" ||
+    binding.bypassCore !== false
+  )
+    throw new Error("Stable production collector binding is unavailable");
+  const endpoint = await ctx.db.get("sourceEndpoints", binding.endpointId);
+  if (
+    !endpoint ||
+    endpoint.sourceId !== source._id ||
+    endpoint.url !== spec.url ||
+    endpoint.host !== spec.host ||
+    endpoint.pathPrefix !== spec.pathPrefix ||
+    !endpoint.public
+  )
+    throw new Error("Collector binding has an invalid source endpoint");
+
+  const authorities = await Promise.all(
+    spec.predicates.map((predicate) =>
+      ctx.db
+        .query("sourceAuthorities")
+        .withIndex("by_sourceId_and_predicate", (q) =>
+          q.eq("sourceId", source._id).eq("predicate", predicate),
+        )
+        .unique(),
+    ),
+  );
+  const policyReady =
+    source.approvalStatus === "approved" &&
+    source.lifecycleStatus === "active" &&
+    endpoint.approvalStatus === "approved" &&
+    authorities.every(
+      (authority) =>
+        authority?.authority === "authoritative" && authority.active,
+    );
+  return {
+    spec,
+    project,
+    source,
+    endpoint,
+    collector,
+    binding,
+    authorities,
+    policyReady,
+  };
+}
+
+export const resolveFleetBinding = mutation({
+  args: {
+    ingestKey: v.string(),
+    sourceKey: phase5SourceKeyValidator,
+    collectorPlatformId: v.string(),
+  },
+  returns: v.object({
+    sourceId: v.id("sources"),
+    endpointId: v.id("sourceEndpoints"),
+    collectorId: v.id("collectors"),
+    bindingId: v.id("collectorBindings"),
+    policyReady: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    requirePhase5IngestKey(args.ingestKey);
+    assertPhase5Text(args.collectorPlatformId, "collectorPlatformId", 120);
+    const resolved = await resolvePhase5AutomationContext(
+      ctx,
+      args.sourceKey,
+      args.collectorPlatformId,
+    );
+    return {
+      sourceId: resolved.source._id,
+      endpointId: resolved.endpoint._id,
+      collectorId: resolved.collector._id,
+      bindingId: resolved.binding._id,
+      policyReady: resolved.policyReady,
+    };
+  },
+});
+
+export const activateVerifiedAnthropicPolicy = mutation({
+  args: {
+    ingestKey: v.string(),
+    sourceKey: anthropicActivationSourceKeyValidator,
+    collectorPlatformId: v.string(),
+    verificationSnapshotId: v.string(),
+    verifiedRowCount: v.literal(1),
+    operationKey: v.string(),
+  },
+  returns: v.object({
+    reviewId: v.id("sourceReviews"),
+    authorityIds: v.array(v.id("sourceAuthorities")),
+    duplicate: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    requirePhase5IngestKey(args.ingestKey);
+    assertPhase5Text(args.collectorPlatformId, "collectorPlatformId", 120);
+    assertPhase5Text(
+      args.verificationSnapshotId,
+      "verificationSnapshotId",
+      240,
+    );
+    assertPhase5Text(args.operationKey, "operationKey", 240);
+    if (!/^[A-Za-z0-9_-]+$/.test(args.verificationSnapshotId))
+      throw new Error("verificationSnapshotId has an invalid format");
+
+    const resolved = await resolvePhase5AutomationContext(
+      ctx,
+      args.sourceKey,
+      args.collectorPlatformId,
+    );
+    if (resolved.spec.initialApproval !== "pending")
+      throw new Error("Only pending Anthropic sources can use this operation");
+    const requestHash = JSON.stringify({
+      sourceKey: args.sourceKey,
+      collectorPlatformId: args.collectorPlatformId,
+      verificationSnapshotId: args.verificationSnapshotId,
+      verifiedRowCount: args.verifiedRowCount,
+    });
+    const idempotency = await ctx.db
+      .query("idempotencyRecords")
+      .withIndex("by_operationKey", (q) =>
+        q.eq("operationKey", args.operationKey),
+      )
+      .unique();
+    if (idempotency) {
+      if (idempotency.requestHash !== requestHash)
+        throw new Error(
+          "operationKey was reused with different source activation input",
+        );
+      const review = await ctx.db
+        .query("sourceReviews")
+        .withIndex("by_operationKey", (q) =>
+          q.eq("operationKey", args.operationKey),
+        )
+        .unique();
+      const authorityIds = resolved.authorities.flatMap((authority) =>
+        authority ? [authority._id] : [],
+      );
+      if (
+        !review ||
+        review.sourceId !== resolved.source._id ||
+        !resolved.policyReady ||
+        authorityIds.length !== resolved.spec.predicates.length
+      )
+        throw new Error("Idempotent source activation state is incomplete");
+      return { reviewId: review._id, authorityIds, duplicate: true };
+    }
+    if (
+      resolved.source.approvalStatus === "rejected" ||
+      resolved.endpoint.approvalStatus === "rejected" ||
+      (resolved.source.lifecycleStatus !== "onboarding" &&
+        resolved.source.lifecycleStatus !== "active")
+    )
+      throw new Error("Rejected or inactive source policy cannot be activated");
+    const conflictingReview = await ctx.db
+      .query("sourceReviews")
+      .withIndex("by_operationKey", (q) =>
+        q.eq("operationKey", args.operationKey),
+      )
+      .unique();
+    if (conflictingReview)
+      throw new Error("operationKey belongs to another source review");
+
+    const now = Date.now();
+    const authorityIds = [];
+    for (const [index, predicate] of resolved.spec.predicates.entries()) {
+      const existing = resolved.authorities[index];
+      const authorityInput = {
+        authority: "authoritative" as const,
+        active: true,
+        rationale: `Activated after verified Bright Data snapshot ${args.verificationSnapshotId}.`,
+        operationKey: `${args.operationKey}:authority:${index}`,
+        updatedAt: now,
+      };
+      if (existing) {
+        await ctx.db.patch("sourceAuthorities", existing._id, authorityInput);
+        authorityIds.push(existing._id);
+      } else {
+        authorityIds.push(
+          await ctx.db.insert("sourceAuthorities", {
+            sourceId: resolved.source._id,
+            predicate,
+            ...authorityInput,
+            createdAt: now,
+          }),
+        );
+      }
+    }
+    const reviewId = await ctx.db.insert("sourceReviews", {
+      sourceId: resolved.source._id,
+      decision: "approved",
+      summary: `Approved after the committed contract returned one verified row in Bright Data snapshot ${args.verificationSnapshotId}.`,
+      reviewerId: "system:phase5-verified-collector-activation",
+      operationKey: args.operationKey,
+      createdAt: now,
+    });
+    await ctx.db.patch("sourceEndpoints", resolved.endpoint._id, {
+      approvalStatus: "approved",
+      updatedAt: now,
+    });
+    await ctx.db.patch("sources", resolved.source._id, {
+      approvalStatus: "approved",
+      lifecycleStatus: "active",
+      updatedAt: now,
+    });
+    await ctx.db.insert("auditEvents", {
+      projectId: resolved.project._id,
+      actorType: "system",
+      action: "phase5.verified_source_policy_activated",
+      targetType: "source",
+      targetId: String(resolved.source._id),
+      payload: {
+        sourceKey: args.sourceKey,
+        collectorPlatformId: args.collectorPlatformId,
+        verificationSnapshotId: args.verificationSnapshotId,
+        verifiedRowCount: args.verifiedRowCount,
+        endpointId: resolved.endpoint._id,
+        bindingId: resolved.binding._id,
+        predicates: resolved.spec.predicates,
+        reviewId,
+      },
+      createdAt: now,
+    });
+    await ctx.db.insert("idempotencyRecords", {
+      projectId: resolved.project._id,
+      operationKey: args.operationKey,
+      scope: "workflow",
+      status: "completed",
+      requestHash,
+      result: { reviewId, authorityIds },
+      attempts: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return { reviewId, authorityIds, duplicate: false };
+  },
+});
 
 export const seedCatalog = mutation({
   args: {

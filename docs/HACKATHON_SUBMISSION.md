@@ -14,7 +14,7 @@ This file contains copy-ready material for the Into the Scrape-Verse submission 
 
 - Repository: <https://github.com/Avinash1286/kevlar>
 - Production application: <https://kevlar-web.vercel.app>
-- Public release: <https://github.com/Avinash1286/kevlar/releases/tag/v1.0.0>
+- Public release: <https://github.com/Avinash1286/kevlar/releases/tag/v1.0.1>
 
 ## Project description
 
@@ -22,7 +22,7 @@ Kevlar is a verification firewall for live-web intelligence. Custom Bright Data 
 
 When a collector silently swaps meaning or a source changes shape, Kevlar quarantines the suspect result and continues serving an explicitly labelled last-known-good value. Bright Data can propose a repair, while Kevlar requires evidence, human approval for high-impact decisions, visible and held-out mutation tests, negative controls, and a digest-bound Repair Certificate before release. Verified facts and semantic events are then available through REST, signed webhooks, a TypeScript SDK, read-only MCP, and a reviewed AI-router consumer.
 
-The v1.0.0 controlled benchmark passed 24/24 labelled checks with zero false releases. These are fixture-backed regression results, not population-level accuracy claims.
+The v1.0.1 controlled benchmark passed 24/24 labelled checks with zero false releases. These are fixture-backed regression results, not population-level accuracy claims.
 
 ## Stack and architecture
 
@@ -62,12 +62,12 @@ For the two new Anthropic collectors, the generated self-heal previews did not s
 
 ## Demo video plan
 
-Base recording: `artifacts/demo/kevlar-full-platform-v1.0.0.webm`
+Upload-ready recording: `artifacts/demo/kevlar-hackathon-submission-v1.0.1.mp4`
 
-- Measured duration: **41.84 seconds**
+- Measured duration: **45.44 seconds**
 - Resolution: **1440 × 900**
 - Route order: home, sources, entities, history, events, conflicts, developers, router, operations, security
-- Upload requirement: add the narration below, export at no more than three minutes, upload to YouTube as public or unlisted, and verify the link while signed out.
+- Upload requirement: upload this already narrated and captioned MP4 to YouTube as public or unlisted, and verify the link while signed out.
 
 ### Narration matched to the recording
 
@@ -82,7 +82,7 @@ Base recording: `artifacts/demo/kevlar-full-platform-v1.0.0.webm`
 | 00:24–00:29    | Developers | “Next.js on Vercel exposes REST, signed webhooks, a TypeScript SDK, and read-only MCP.”                |
 | 00:29–00:33    | Router     | “AI sees only released events and proposes changes; it never approves them.”                           |
 | 00:33–00:38    | Operations | “Operations track freshness, delivery, provider health, costs, backups, and alerts.”                   |
-| 00:38–00:41.84 | Security   | “Our controlled benchmark passed twenty-four of twenty-four checks with zero false releases.”          |
+| 00:38–00:45.44 | Security   | “Our controlled benchmark passed twenty-four of twenty-four checks with zero false releases.”          |
 
 Speak at approximately 145–150 words per minute. Do not replace “controlled benchmark” with a general accuracy claim.
 

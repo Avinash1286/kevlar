@@ -1,0 +1,125 @@
+{
+  "schema_version": "kevlar.release-e2e.v1",
+  "measured_at": "2026-08-22T14:52:26.382Z",
+  "public_url": "https://kevlar-web.vercel.app",
+  "pages": [
+    {
+      "path": "/",
+      "status": 200,
+      "bytes": 20868,
+      "kevlarShell": true
+    },
+    {
+      "path": "/gauntlet",
+      "status": 200,
+      "bytes": 17405,
+      "kevlarShell": true
+    },
+    {
+      "path": "/fleet/repairs",
+      "status": 200,
+      "bytes": 15026,
+      "kevlarShell": true
+    },
+    {
+      "path": "/feed",
+      "status": 200,
+      "bytes": 13268,
+      "kevlarShell": true
+    },
+    {
+      "path": "/sources",
+      "status": 200,
+      "bytes": 22176,
+      "kevlarShell": true
+    },
+    {
+      "path": "/entities",
+      "status": 200,
+      "bytes": 22280,
+      "kevlarShell": true
+    },
+    {
+      "path": "/history",
+      "status": 200,
+      "bytes": 18878,
+      "kevlarShell": true
+    },
+    {
+      "path": "/events",
+      "status": 200,
+      "bytes": 16190,
+      "kevlarShell": true
+    },
+    {
+      "path": "/conflicts",
+      "status": 200,
+      "bytes": 11799,
+      "kevlarShell": true
+    },
+    {
+      "path": "/evidence",
+      "status": 200,
+      "bytes": 24303,
+      "kevlarShell": true
+    },
+    {
+      "path": "/developers",
+      "status": 200,
+      "bytes": 17375,
+      "kevlarShell": true
+    },
+    {
+      "path": "/operations",
+      "status": 200,
+      "bytes": 14773,
+      "kevlarShell": true
+    },
+    {
+      "path": "/router",
+      "status": 200,
+      "bytes": 13018,
+      "kevlarShell": true
+    },
+    {
+      "path": "/security",
+      "status": 200,
+      "bytes": 15006,
+      "kevlarShell": true
+    },
+    {
+      "path": "/subscriptions",
+      "status": 200,
+      "bytes": 13357,
+      "kevlarShell": true
+    },
+    {
+      "path": "/sign-in",
+      "status": 200,
+      "bytes": 10684,
+      "kevlarShell": true
+    },
+    {
+      "path": "/release",
+      "status": 200,
+      "bytes": 15306,
+      "kevlarShell": true
+    }
+  ],
+  "assertions": {
+    "public_pages_healthy": true,
+    "repair_certificate_available": true,
+    "multi_source_history_queryable": true,
+    "semantic_events_queryable": true,
+    "api_webhook_sdk_mcp_proved": true,
+    "ai_router_verified_event_only": true,
+    "security_and_chaos_proved": true
+  },
+  "proof_ids": {
+    "phase4": "n1730dvwyn9g3sya48ckppfmj58cyhjf",
+    "phase7": "tn7ajq4bv8syt68w6v15mvrvj18cyv91",
+    "phase8": "v57191ac67g1fe5x1bdbpbkw458cycp2",
+    "phase10": "yx7a2375k9wbfa1gzvn3qs15t58cz507",
+    "phase11": "hs7h4049ek078wm53rxz4xtc198cykh3"
+  }
+}

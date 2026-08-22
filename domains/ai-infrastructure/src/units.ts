@@ -8,7 +8,12 @@ export const currencyAmountSchema = z.object({
 
 export const tokenQuantitySchema = z.object({
   amount: z.number().int().nonnegative(),
-  unit: z.enum(["tokens", "thousand_tokens", "million_tokens", "billion_tokens"]),
+  unit: z.enum([
+    "tokens",
+    "thousand_tokens",
+    "million_tokens",
+    "billion_tokens",
+  ]),
   original: z.object({ value: z.string().min(1), unit: z.string().min(1) }),
 });
 
@@ -28,7 +33,13 @@ export const canonicalRateSchema = z.object({
 
 export const regionSchema = z.object({
   code: z.string().min(2),
-  scope: z.enum(["global", "country", "cloud_region", "provider_region", "unknown"]),
+  scope: z.enum([
+    "global",
+    "country",
+    "cloud_region",
+    "provider_region",
+    "unknown",
+  ]),
   original: z.string().min(1),
 });
 
@@ -58,7 +69,10 @@ const magnitudes: Record<string, number> = {
 };
 
 export function parseMagnitude(value: string): number {
-  const match = value.trim().replaceAll(",", "").match(/^(-?\d+(?:\.\d+)?)\s*([KMB])?$/i);
+  const match = value
+    .trim()
+    .replaceAll(",", "")
+    .match(/^(-?\d+(?:\.\d+)?)\s*([KMB])?$/i);
   if (!match) throw new Error(`Cannot parse numeric magnitude: ${value}`);
   return Number(match[1]) * magnitudes[(match[2] ?? "tokens").toLowerCase()];
 }

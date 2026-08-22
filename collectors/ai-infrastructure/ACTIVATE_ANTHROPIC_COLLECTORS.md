@@ -17,7 +17,21 @@ The Bright Data API created both stable collectors and generated runnable templa
    pnpm phase5:verify anthropic-pricing c_mt4e7tgw1i46wxboqa
    ```
 
-   Continue only when it reports one row and `verified: 1`.
+   Continue only when the final JSON reports one row and `verified: 1`. Copy
+   that run's `snapshotId`; do not reuse the rejected snapshot recorded in the
+   existing `verification-evidence.json`.
+
+9. Explicitly approve the verified source policy, activate its named
+   authorities, certify the collector, and start its production schedule:
+
+   ```powershell
+   pnpm phase5:run anthropic-pricing --activate-policy <pricing-verification-snapshot-id>
+   ```
+
+   Supplying `--activate-policy` is an operator attestation that the immediately
+   preceding verification returned exactly one contract-valid row. The secure
+   Convex operation accepts only this committed Anthropic source/collector pair
+   and records the verification snapshot in its approval review and audit event.
 
 ## Anthropic model catalog
 
@@ -34,6 +48,27 @@ The Bright Data API created both stable collectors and generated runnable templa
    pnpm phase5:verify anthropic-models c_mt4e811ufis8kdvlt
    ```
 
-   Continue only when it reports one row and `verified: 1`.
+   Continue only when the final JSON reports one row and `verified: 1`. Copy
+   that run's `snapshotId`; do not reuse the rejected snapshot recorded in the
+   existing `verification-evidence.json`.
 
-After both verifications pass, seed their source and collector bindings in Convex, run each through `phase5:run`, and preserve the resulting source-certification and ingestion IDs. Until then, the strict six-production-collector gate remains open.
+9. Explicitly approve the verified source policy, activate its named
+   authorities, certify the collector, and start its production schedule:
+
+   ```powershell
+   pnpm phase5:run anthropic-models --activate-policy <models-verification-snapshot-id>
+   ```
+
+The run command seeds missing Phase 5 catalog records and resolves internal
+collector IDs through an ingest-key-protected Convex mutation. It does not use
+or weaken the redacted public `phase5Queries:catalog` response. After a source
+policy has been activated, later collection runs omit the attestation flag:
+
+```powershell
+pnpm phase5:run anthropic-pricing
+pnpm phase5:run anthropic-models
+```
+
+Preserve each successful command's source-certification and ingestion IDs.
+Until both collectors pass, the strict six-production-collector gate remains
+open.

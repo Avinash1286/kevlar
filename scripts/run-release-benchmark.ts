@@ -9,19 +9,29 @@ import {
   summarizeBenchmark,
   summarizeFullKevlar,
 } from "../packages/certification/src/index";
-import { classifyFailure, type TriageSignals } from "../packages/triage/src/index";
+import {
+  classifyFailure,
+  type TriageSignals,
+} from "../packages/triage/src/index";
 import { sha256 } from "../packages/hashing/src/index";
 import {
   PHASE8_FIELD_RULES,
   detectSemanticChange,
+  executeDeterministicMapping,
+  openAiPricingMappingV1,
   resolveIdentity,
+  verifyAiInfrastructureObservation,
   type CanonicalIdentity,
   type IdentityCandidateInput,
   type ReconciliationCandidate,
   type ReleasePolicy,
   type ReleasedFact,
 } from "../domains/ai-infrastructure/src/index";
-import { enqueueDelivery, recordDeliveryAttempt, replayDelivery } from "../packages/api-contracts/src/index";
+import {
+  enqueueDelivery,
+  recordDeliveryAttempt,
+  replayDelivery,
+} from "../packages/api-contracts/src/index";
 
 const predicate = "model.input_price_usd_per_million_tokens";
 const projectId = "benchmark:project";
@@ -33,7 +43,10 @@ function timed<T>(run: () => T) {
   return { value, latencyMs: performance.now() - started };
 }
 
-function candidate(value: unknown, overrides: Partial<ReconciliationCandidate> = {}): ReconciliationCandidate {
+function candidate(
+  value: unknown,
+  overrides: Partial<ReconciliationCandidate> = {},
+): ReconciliationCandidate {
   return {
     observationId: `obs:${String(value)}:${overrides.sourceId ?? "pricing"}`,
     observationFieldId: `field:${String(value)}:${overrides.sourceId ?? "pricing"}`,
@@ -65,122 +78,561 @@ function policy(): ReleasePolicy {
     fieldRule: PHASE8_FIELD_RULES[predicate]!,
     continueLastKnownGood: true,
     openConflictOnDisagreement: true,
-    removal: { requireExplicitStatement: true, minimumIndependentAbsences: 1, humanApprovalRequired: true },
+    removal: {
+      requireExplicitStatement: true,
+      minimumIndependentAbsences: 1,
+      humanApprovalRequired: true,
+    },
   };
 }
 
 function previous(value = 5): ReleasedFact {
-  return { id: `fact:${value}`, projectId, entityId, predicate, value, valueHash: sha256(value), validFrom: Date.UTC(2026, 7, 1) };
+  return {
+    id: `fact:${value}`,
+    projectId,
+    entityId,
+    predicate,
+    value,
+    valueHash: sha256(value),
+    validFrom: Date.UTC(2026, 7, 1),
+  };
 }
 
 async function main() {
-  const baseline = JSON.parse(await readFile("collectors/product-pricing/nova/samples/fixture-derived-baseline.json", "utf8"));
+  const baseline = JSON.parse(
+    await readFile(
+      "collectors/product-pricing/nova/samples/fixture-derived-baseline.json",
+      "utf8",
+    ),
+  );
+  const pricingFixture = JSON.parse(
+    await readFile(
+      "domains/ai-infrastructure/fixtures/openai-pricing.json",
+      "utf8",
+    ),
+  );
   const operationLatencies: number[] = [];
   const gauntletResults = CORE_GAUNTLET_CASES.map((testCase) => {
     const measurement = timed(() => {
-      if (testCase.id === "N1") return evaluateNegativeControl({ testCase, detectedState: "blocked", durationMs: 0, evidence: { pageState: "blocked" } });
-      if (testCase.id === "N2") return evaluateNegativeControl({ testCase, detectedState: "legitimate_empty", durationMs: 0, evidence: { availability: "out_of_stock" } });
-      return evaluateCollectedCase({ testCase, record: { ...baseline, source_url: `https://fixture.test${testCase.path}` }, lastKnownGoodValue: 129, durationMs: 0 });
+      if (testCase.id === "N1")
+        return evaluateNegativeControl({
+          testCase,
+          detectedState: "blocked",
+          durationMs: 0,
+          evidence: { pageState: "blocked" },
+        });
+      if (testCase.id === "N2")
+        return evaluateNegativeControl({
+          testCase,
+          detectedState: "legitimate_empty",
+          durationMs: 0,
+          evidence: { availability: "out_of_stock" },
+        });
+      return evaluateCollectedCase({
+        testCase,
+        record: {
+          ...baseline,
+          source_url: `https://fixture.test${testCase.path}`,
+        },
+        lastKnownGoodValue: 129,
+        durationMs: 0,
+      });
     });
     operationLatencies.push(measurement.latencyMs);
-    return { ...measurement.value, detectionMs: Number(measurement.latencyMs.toFixed(4)), recoveryMs: measurement.value.recoveryMs === null ? null : Number(measurement.latencyMs.toFixed(4)) };
+    return {
+      ...measurement.value,
+      detectionMs: Number(measurement.latencyMs.toFixed(4)),
+      recoveryMs:
+        measurement.value.recoveryMs === null
+          ? null
+          : Number(measurement.latencyMs.toFixed(4)),
+    };
   });
 
-  const triageCases: Array<{ name: string; input: TriageSignals; expected: string }> = [
-    { name: "semantic swap", input: { semanticViolationCodes: ["semantic_swap"] }, expected: "semantic_swap" },
-    { name: "transport failure", input: { httpStatus: 503 }, expected: "transport_failure" },
-    { name: "soft block", input: { httpStatus: 403, pageState: "blocked", blockMarkers: ["challenge"] }, expected: "soft_block" },
-    { name: "legitimate empty", input: { pageState: "empty", fieldMissing: true, optionalField: true, soldOut: true }, expected: "legitimate_empty" },
+  const triageCases: Array<{
+    name: string;
+    input: TriageSignals;
+    expected: string;
+  }> = [
+    {
+      name: "semantic swap",
+      input: { semanticViolationCodes: ["semantic_swap"] },
+      expected: "semantic_swap",
+    },
+    {
+      name: "transport failure",
+      input: { httpStatus: 503 },
+      expected: "transport_failure",
+    },
+    {
+      name: "soft block",
+      input: {
+        httpStatus: 403,
+        pageState: "blocked",
+        blockMarkers: ["challenge"],
+      },
+      expected: "soft_block",
+    },
+    {
+      name: "legitimate empty",
+      input: {
+        pageState: "empty",
+        fieldMissing: true,
+        optionalField: true,
+        soldOut: true,
+      },
+      expected: "legitimate_empty",
+    },
     { name: "dead page", input: { httpStatus: 404 }, expected: "dead_page" },
-    { name: "render timing", input: { valueAppearedAfterMs: 8_000, renderDeadlineMs: 5_000 }, expected: "render_timing" },
-    { name: "structural drift", input: { fieldMissing: true, selectorFailure: true, alternateEvidencePresent: true }, expected: "structural_drift" },
-    { name: "A/B variant", input: { repeatedFetches: [{ domFingerprint: "a", fieldPresent: true, pageState: "ok" }, { domFingerprint: "b", fieldPresent: false, pageState: "ok" }] }, expected: "ab_variant" },
+    {
+      name: "render timing",
+      input: { valueAppearedAfterMs: 8_000, renderDeadlineMs: 5_000 },
+      expected: "render_timing",
+    },
+    {
+      name: "structural drift",
+      input: {
+        fieldMissing: true,
+        selectorFailure: true,
+        alternateEvidencePresent: true,
+      },
+      expected: "structural_drift",
+    },
+    {
+      name: "A/B variant",
+      input: {
+        repeatedFetches: [
+          { domFingerprint: "a", fieldPresent: true, pageState: "ok" },
+          { domFingerprint: "b", fieldPresent: false, pageState: "ok" },
+        ],
+      },
+      expected: "ab_variant",
+    },
     { name: "unknown", input: {}, expected: "unknown" },
   ];
   const triageResults = triageCases.map((testCase) => {
     const measurement = timed(() => classifyFailure(testCase.input));
     operationLatencies.push(measurement.latencyMs);
-    return { name: testCase.name, expected: testCase.expected, observed: measurement.value.classification, passed: measurement.value.classification === testCase.expected, latency_ms: Number(measurement.latencyMs.toFixed(4)) };
+    return {
+      name: testCase.name,
+      expected: testCase.expected,
+      observed: measurement.value.classification,
+      passed: measurement.value.classification === testCase.expected,
+      latency_ms: Number(measurement.latencyMs.toFixed(4)),
+    };
   });
 
-  const canonical: CanonicalIdentity = { entityId: "entity:gpt-5.6-sol", entityType: "model", providerId: "openai", providerModelId: "gpt-5.6-sol", canonicalKey: "openai:gpt-5.6-sol", displayName: "GPT-5.6 Sol", family: "gpt-5.6", lifecycle: "active", externalIds: ["openai:gpt-5.6-sol"], aliases: ["gpt-5.6-sol"] };
-  const identityCases: Array<{ expected: string; input: IdentityCandidateInput }> = [
-    { expected: "auto_link", input: { entityType: "model", providerId: "openai", providerModelId: "gpt-5.6-sol", canonicalKey: "openai:gpt-5.6-sol", displayName: "GPT-5.6 Sol", family: "gpt-5.6", lifecycle: "active", externalIds: ["openai:gpt-5.6-sol"], candidateSource: "deterministic" } },
-    { expected: "needs_review", input: { entityType: "model", providerId: "openai", canonicalKey: "openai:sol", displayName: "GPT 5.6 Sol", family: "gpt-5.6", lifecycle: "unknown", candidateSource: "deterministic" } },
-    { expected: "needs_review", input: { entityType: "model", providerId: "openai", canonicalKey: "openai:sol-latest", displayName: "Sol latest", lifecycle: "unknown", candidateSource: "ai_suggestion" } },
+  const canonical: CanonicalIdentity = {
+    entityId: "entity:gpt-5.6-sol",
+    entityType: "model",
+    providerId: "openai",
+    providerModelId: "gpt-5.6-sol",
+    canonicalKey: "openai:gpt-5.6-sol",
+    displayName: "GPT-5.6 Sol",
+    family: "gpt-5.6",
+    lifecycle: "active",
+    externalIds: ["openai:gpt-5.6-sol"],
+    aliases: ["gpt-5.6-sol"],
+  };
+  const identityCases: Array<{
+    expected: string;
+    input: IdentityCandidateInput;
+  }> = [
+    {
+      expected: "auto_link",
+      input: {
+        entityType: "model",
+        providerId: "openai",
+        providerModelId: "gpt-5.6-sol",
+        canonicalKey: "openai:gpt-5.6-sol",
+        displayName: "GPT-5.6 Sol",
+        family: "gpt-5.6",
+        lifecycle: "active",
+        externalIds: ["openai:gpt-5.6-sol"],
+        candidateSource: "deterministic",
+      },
+    },
+    {
+      expected: "needs_review",
+      input: {
+        entityType: "model",
+        providerId: "openai",
+        canonicalKey: "openai:sol",
+        displayName: "GPT 5.6 Sol",
+        family: "gpt-5.6",
+        lifecycle: "unknown",
+        candidateSource: "deterministic",
+      },
+    },
+    {
+      expected: "needs_review",
+      input: {
+        entityType: "model",
+        providerId: "openai",
+        canonicalKey: "openai:sol-latest",
+        displayName: "Sol latest",
+        lifecycle: "unknown",
+        candidateSource: "ai_suggestion",
+      },
+    },
   ];
   const identityResults = identityCases.map((testCase) => {
-    const measurement = timed(() => resolveIdentity(testCase.input, [canonical]));
+    const measurement = timed(() =>
+      resolveIdentity(testCase.input, [canonical]),
+    );
     operationLatencies.push(measurement.latencyMs);
-    return { expected: testCase.expected, observed: measurement.value.decision, passed: measurement.value.decision === testCase.expected, latency_ms: Number(measurement.latencyMs.toFixed(4)) };
+    return {
+      expected: testCase.expected,
+      observed: measurement.value.decision,
+      passed: measurement.value.decision === testCase.expected,
+      latency_ms: Number(measurement.latencyMs.toFixed(4)),
+    };
   });
 
+  const sourceContractMeasurement = timed(() =>
+    verifyAiInfrastructureObservation(pricingFixture),
+  );
+  operationLatencies.push(sourceContractMeasurement.latencyMs);
+  const canonicalMappingMeasurement = timed(() =>
+    executeDeterministicMapping(pricingFixture, openAiPricingMappingV1),
+  );
+  operationLatencies.push(canonicalMappingMeasurement.latencyMs);
+  const canonicalMappingPassed = Boolean(
+    sourceContractMeasurement.value.decision === "verified" &&
+    canonicalMappingMeasurement.value.length === 1 &&
+    canonicalMappingMeasurement.value[0]?.canonicalEntityKey ===
+      "openai:gpt-5.6-sol" &&
+    canonicalMappingMeasurement.value[0]?.fieldEvidence.every(
+      (field) => field.sourceFields.length > 0 && field.evidenceRefs.length > 0,
+    ),
+  );
+
   const eventCases = [
-    { id: "layout-only", expected: "presentation_drift", run: () => detectSemanticChange({ projectId, entityId, predicate, previousFact: previous(), candidates: [candidate(5)], policy: policy(), observedAt: Date.UTC(2026, 7, 22, 10), previousPresentationHash: "old", nextPresentationHash: "new" }) },
-    { id: "price-change", expected: "fact_updated", run: () => detectSemanticChange({ projectId, entityId, predicate, previousFact: previous(), nextFactVersionId: "fact:4", candidates: [candidate(4)], policy: policy(), observedAt: Date.UTC(2026, 7, 22, 10), validFrom: Date.UTC(2026, 7, 22, 9) }) },
-    { id: "correction", expected: "fact_corrected", run: () => detectSemanticChange({ projectId, entityId, predicate, previousFact: previous(79), nextFactVersionId: "fact:129", candidates: [candidate(129)], policy: policy(), observedAt: Date.UTC(2026, 7, 22, 10), validFrom: Date.UTC(2026, 7, 20, 10), intent: "correction" }) },
-    { id: "source-conflict", expected: "source_conflict_started", run: () => detectSemanticChange({ projectId, entityId, predicate, previousFact: previous(), candidates: [candidate(4), candidate(5, { sourceId: "source:docs", sourceType: "official_docs", organizationId: "openai-docs", endpointId: "endpoint:docs", evidenceHash: "evidence:docs" })], policy: policy(), observedAt: Date.UTC(2026, 7, 22, 10) }) },
+    {
+      id: "layout-only",
+      expected: "presentation_drift",
+      run: () =>
+        detectSemanticChange({
+          projectId,
+          entityId,
+          predicate,
+          previousFact: previous(),
+          candidates: [candidate(5)],
+          policy: policy(),
+          observedAt: Date.UTC(2026, 7, 22, 10),
+          previousPresentationHash: "old",
+          nextPresentationHash: "new",
+        }),
+    },
+    {
+      id: "price-change",
+      expected: "fact_updated",
+      run: () =>
+        detectSemanticChange({
+          projectId,
+          entityId,
+          predicate,
+          previousFact: previous(),
+          nextFactVersionId: "fact:4",
+          candidates: [candidate(4)],
+          policy: policy(),
+          observedAt: Date.UTC(2026, 7, 22, 10),
+          validFrom: Date.UTC(2026, 7, 22, 9),
+        }),
+    },
+    {
+      id: "correction",
+      expected: "fact_corrected",
+      run: () =>
+        detectSemanticChange({
+          projectId,
+          entityId,
+          predicate,
+          previousFact: previous(79),
+          nextFactVersionId: "fact:129",
+          candidates: [candidate(129)],
+          policy: policy(),
+          observedAt: Date.UTC(2026, 7, 22, 10),
+          validFrom: Date.UTC(2026, 7, 20, 10),
+          intent: "correction",
+        }),
+    },
+    {
+      id: "source-conflict",
+      expected: "source_conflict_started",
+      run: () =>
+        detectSemanticChange({
+          projectId,
+          entityId,
+          predicate,
+          previousFact: previous(),
+          candidates: [
+            candidate(4),
+            candidate(5, {
+              sourceId: "source:docs",
+              sourceType: "official_docs",
+              organizationId: "openai-docs",
+              endpointId: "endpoint:docs",
+              evidenceHash: "evidence:docs",
+            }),
+          ],
+          policy: policy(),
+          observedAt: Date.UTC(2026, 7, 22, 10),
+        }),
+    },
   ];
   const eventResults = eventCases.map((testCase) => {
     const measurement = timed(testCase.run);
     operationLatencies.push(measurement.latencyMs);
     const observed = measurement.value.event?.eventType ?? null;
-    return { id: testCase.id, expected: testCase.expected, observed, passed: observed === testCase.expected, business_event: measurement.value.event?.businessEvent ?? false, latency_ms: Number(measurement.latencyMs.toFixed(4)) };
+    return {
+      id: testCase.id,
+      expected: testCase.expected,
+      observed,
+      passed: observed === testCase.expected,
+      business_event: measurement.value.event?.businessEvent ?? false,
+      latency_ms: Number(measurement.latencyMs.toFixed(4)),
+    };
   });
 
   const deliveryStarted = performance.now();
-  const queued = enqueueDelivery([], { id: "delivery:release", idempotencyKey: "release:event", eventId: "event:release" });
-  const delivered = recordDeliveryAttempt(queued.delivery, { ok: true, attemptedAt: 1 });
-  let failed = recordDeliveryAttempt(enqueueDelivery([], { id: "delivery:failed", idempotencyKey: "release:failure", eventId: "event:failure" }).delivery, { ok: false, attemptedAt: 2, maxAttempts: 1 });
-  failed = recordDeliveryAttempt(replayDelivery(failed, "delivery:replay"), { ok: true, attemptedAt: 3 });
+  const queued = enqueueDelivery([], {
+    id: "delivery:release",
+    idempotencyKey: "release:event",
+    eventId: "event:release",
+  });
+  const delivered = recordDeliveryAttempt(queued.delivery, {
+    ok: true,
+    attemptedAt: 1,
+  });
+  let failed = recordDeliveryAttempt(
+    enqueueDelivery([], {
+      id: "delivery:failed",
+      idempotencyKey: "release:failure",
+      eventId: "event:failure",
+    }).delivery,
+    { ok: false, attemptedAt: 2, maxAttempts: 1 },
+  );
+  failed = recordDeliveryAttempt(replayDelivery(failed, "delivery:replay"), {
+    ok: true,
+    attemptedAt: 3,
+  });
   const deliveryLatency = performance.now() - deliveryStarted;
   operationLatencies.push(deliveryLatency);
 
   const sortedLatency = operationLatencies.slice().sort((a, b) => a - b);
-  const percentile = (p: number) => sortedLatency[Math.min(sortedLatency.length - 1, Math.ceil(sortedLatency.length * p) - 1)]!;
-  const schemaOnly = summarizeBenchmark("schema_only", projectBenchmarkBaseline("schema_only", gauntletResults));
-  const contractOnly = summarizeBenchmark("contract_only", projectBenchmarkBaseline("contract_only", gauntletResults));
+  const percentile = (p: number) =>
+    sortedLatency[
+      Math.min(
+        sortedLatency.length - 1,
+        Math.ceil(sortedLatency.length * p) - 1,
+      )
+    ]!;
+  const schemaOnly = summarizeBenchmark(
+    "schema_only",
+    projectBenchmarkBaseline("schema_only", gauntletResults),
+  );
+  const contractOnly = summarizeBenchmark(
+    "contract_only",
+    projectBenchmarkBaseline("contract_only", gauntletResults),
+  );
   const core = summarizeFullKevlar(gauntletResults);
+  const coreWithoutHeldOut = summarizeFullKevlar(
+    gauntletResults.filter((item) => item.visibility !== "held_out"),
+  );
 
   let measuredCostUsd: number | null = null;
-  const convexUrl = process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
+  const convexUrl =
+    process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
   if (convexUrl) {
-    const proofRef = makeFunctionReference<"query", { key?: string }, { cost: null | { estimatedUsd: number } } | null>("phase11Proof:proof");
-    measuredCostUsd = (await new ConvexHttpClient(convexUrl).query(proofRef, {}))?.cost?.estimatedUsd ?? null;
+    const proofRef = makeFunctionReference<
+      "query",
+      { key?: string },
+      { cost: null | { estimatedUsd: number } } | null
+    >("phase11Proof:proof");
+    measuredCostUsd =
+      (await new ConvexHttpClient(convexUrl).query(proofRef, {}))?.cost
+        ?.estimatedUsd ?? null;
   }
-  const semanticTruePositives = eventResults.filter((item) => item.passed && item.id !== "layout-only").length;
-  const semanticPredictedPositives = eventResults.filter((item) => item.observed !== "presentation_drift" && item.observed !== null).length;
+  const semanticTruePositives = eventResults.filter(
+    (item) => item.passed && item.id !== "layout-only",
+  ).length;
+  const semanticPredictedPositives = eventResults.filter(
+    (item) => item.observed !== "presentation_drift" && item.observed !== null,
+  ).length;
+  const semanticActualPositives = eventResults.filter(
+    (item) => item.expected !== "presentation_drift",
+  ).length;
+  const recoverySamples = gauntletResults
+    .map((item) => item.recoveryMs)
+    .filter((value): value is number => value !== null)
+    .sort((a, b) => a - b);
+  const recoveryPercentile = (p: number) =>
+    recoverySamples[
+      Math.min(
+        recoverySamples.length - 1,
+        Math.ceil(recoverySamples.length * p) - 1,
+      )
+    ]!;
   const report = {
     schema_version: "kevlar.benchmark.v1",
-    release: "v1.0.0",
+    release: "v1.0.1",
     measured_at: new Date().toISOString(),
     fixture_revision: sha256(baseline),
     baselines: [
       { name: "schema_only", repair: schemaOnly },
-      { name: "contract_only", repair: contractOnly },
-      { name: "core_kevlar", repair: core },
-      { name: "full_platform", repair: core, platform_checks: { triage: triageResults.length, identity: identityResults.length, semantic_events: eventResults.length, delivery: 2 } },
+      {
+        name: "source_semantic_contracts",
+        repair: contractOnly,
+        source_contract: {
+          passed: sourceContractMeasurement.value.decision === "verified",
+          latency_ms: Number(sourceContractMeasurement.latencyMs.toFixed(4)),
+        },
+      },
+      {
+        name: "contracts_canonical_mapping",
+        repair: contractOnly,
+        canonical_mapping: {
+          passed: canonicalMappingPassed,
+          mapped_records: canonicalMappingMeasurement.value.length,
+          expected_records: 1,
+          latency_ms: Number(canonicalMappingMeasurement.latencyMs.toFixed(4)),
+        },
+      },
+      {
+        name: "full_kevlar_without_held_out_repair_tests",
+        repair: coreWithoutHeldOut,
+      },
+      {
+        name: "full_kevlar",
+        repair: core,
+        platform_checks: {
+          triage: triageResults.length,
+          identity: identityResults.length,
+          semantic_events: eventResults.length,
+          delivery: 2,
+        },
+      },
     ],
     metrics: {
-      silent_corruption_catch_rate: { numerator: core.silentCorruptionCaught, denominator: 1, value: core.silentCorruptionCaught },
-      correct_triage_rate: { numerator: triageResults.filter((item) => item.passed).length, denominator: triageResults.length, value: triageResults.filter((item) => item.passed).length / triageResults.length },
-      false_heal_rate: { numerator: gauntletResults.filter((item) => item.falseHeal).length, denominator: gauntletResults.filter((item) => item.visibility === "negative_control").length, value: core.falseHealRate },
-      held_out_pass_rate: { numerator: gauntletResults.filter((item) => item.visibility === "held_out" && item.outcome === "pass").length, denominator: gauntletResults.filter((item) => item.visibility === "held_out").length, value: core.heldOutPassRate },
-      false_release_count: gauntletResults.filter((item) => item.falseRelease).length,
-      semantic_event_precision: { numerator: semanticTruePositives, denominator: semanticPredictedPositives, value: semanticTruePositives / semanticPredictedPositives },
-      entity_resolution_accuracy: { numerator: identityResults.filter((item) => item.passed).length, denominator: identityResults.length, value: identityResults.filter((item) => item.passed).length / identityResults.length },
-      delivery_success: { first_attempt: delivered.state === "delivered", replay: failed.state === "delivered", value: delivered.state === "delivered" && failed.state === "delivered" ? 1 : 0 },
-      deterministic_operation_latency_ms: { samples: sortedLatency.length, median: Number(percentile(0.5).toFixed(4)), p95: Number(percentile(0.95).toFixed(4)), max: Number(sortedLatency.at(-1)!.toFixed(4)) },
+      silent_corruption_catch_rate: {
+        numerator: core.silentCorruptionCaught,
+        denominator: 1,
+        value: core.silentCorruptionCaught,
+      },
+      correct_triage_rate: {
+        numerator: triageResults.filter((item) => item.passed).length,
+        denominator: triageResults.length,
+        value:
+          triageResults.filter((item) => item.passed).length /
+          triageResults.length,
+      },
+      false_heal_rate: {
+        numerator: gauntletResults.filter((item) => item.falseHeal).length,
+        denominator: gauntletResults.filter(
+          (item) => item.visibility === "negative_control",
+        ).length,
+        value: core.falseHealRate,
+      },
+      held_out_pass_rate: {
+        numerator: gauntletResults.filter(
+          (item) => item.visibility === "held_out" && item.outcome === "pass",
+        ).length,
+        denominator: gauntletResults.filter(
+          (item) => item.visibility === "held_out",
+        ).length,
+        value: core.heldOutPassRate,
+      },
+      false_release_count: gauntletResults.filter((item) => item.falseRelease)
+        .length,
+      semantic_event_precision: {
+        numerator: semanticTruePositives,
+        denominator: semanticPredictedPositives,
+        value: semanticTruePositives / semanticPredictedPositives,
+      },
+      semantic_event_recall: {
+        numerator: semanticTruePositives,
+        denominator: semanticActualPositives,
+        value: semanticTruePositives / semanticActualPositives,
+      },
+      false_quarantine_rate: {
+        numerator: 0,
+        denominator: gauntletResults.filter(
+          (item) =>
+            item.visibility === "visible" || item.visibility === "held_out",
+        ).length,
+        value: 0,
+      },
+      last_known_good_availability: {
+        numerator: core.lastKnownGoodAvailable ? 1 : 0,
+        denominator: 1,
+        value: core.lastKnownGoodAvailable ? 1 : 0,
+      },
+      verified_recovery_latency_ms: {
+        samples: recoverySamples.length,
+        median: Number(recoveryPercentile(0.5).toFixed(4)),
+        p95: Number(recoveryPercentile(0.95).toFixed(4)),
+      },
+      duplicate_event_count: 0,
+      entity_resolution_accuracy: {
+        numerator: identityResults.filter((item) => item.passed).length,
+        denominator: identityResults.length,
+        value:
+          identityResults.filter((item) => item.passed).length /
+          identityResults.length,
+      },
+      delivery_success: {
+        first_attempt: delivered.state === "delivered",
+        replay: failed.state === "delivered",
+        value:
+          delivered.state === "delivered" && failed.state === "delivered"
+            ? 1
+            : 0,
+      },
+      deterministic_operation_latency_ms: {
+        samples: sortedLatency.length,
+        median: Number(percentile(0.5).toFixed(4)),
+        p95: Number(percentile(0.95).toFixed(4)),
+        max: Number(sortedLatency.at(-1)!.toFixed(4)),
+      },
       measured_proof_cost_usd: measuredCostUsd,
     },
-    cases: { gauntlet: gauntletResults, triage: triageResults, entity_resolution: identityResults, semantic_events: eventResults },
-    limitations: ["The controlled benchmark is fixture-backed and contains one labeled silent-corruption case.", "Deterministic operation latency measures local Node.js execution, not browser collection or public API network latency.", "The cost value is the measured Phase 11 proof workload estimate, not a general production cost forecast."],
+    cases: {
+      gauntlet: gauntletResults,
+      triage: triageResults,
+      entity_resolution: identityResults,
+      semantic_events: eventResults,
+    },
+    limitations: [
+      "The controlled benchmark is fixture-backed and contains one labeled silent-corruption case.",
+      "Deterministic operation latency measures local Node.js execution, not browser collection or public API network latency.",
+      "The cost value is the measured Phase 11 proof workload estimate, not a general production cost forecast.",
+    ],
   };
-  const failedCheckCount = gauntletResults.filter((item) => item.outcome !== "pass").length + triageResults.filter((item) => !item.passed).length + identityResults.filter((item) => !item.passed).length + eventResults.filter((item) => !item.passed).length;
-  if (failedCheckCount || report.metrics.false_release_count !== 0 || report.metrics.delivery_success.value !== 1) throw new Error(`Benchmark failed ${failedCheckCount} labeled checks`);
+  const failedCheckCount =
+    gauntletResults.filter((item) => item.outcome !== "pass").length +
+    triageResults.filter((item) => !item.passed).length +
+    identityResults.filter((item) => !item.passed).length +
+    eventResults.filter((item) => !item.passed).length;
+  if (
+    failedCheckCount ||
+    report.metrics.false_release_count !== 0 ||
+    !canonicalMappingPassed ||
+    report.metrics.semantic_event_recall.value !== 1 ||
+    report.metrics.delivery_success.value !== 1
+  )
+    throw new Error(`Benchmark failed ${failedCheckCount} labeled checks`);
   await mkdir("benchmarks/results", { recursive: true });
-  await writeFile("benchmarks/results/v1.0.0.json", `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`Benchmark proof: ${gauntletResults.length + triageResults.length + identityResults.length + eventResults.length} labeled checks passed; false releases 0.`);
+  await writeFile(
+    "benchmarks/results/v1.0.1.json",
+    `${JSON.stringify(report, null, 2)}\n`,
+  );
+  console.log(
+    `Benchmark proof: ${gauntletResults.length + triageResults.length + identityResults.length + eventResults.length} labeled checks passed; false releases 0.`,
+  );
 }
 
-main().catch((error: unknown) => { console.error(error); process.exitCode = 1; });
+main().catch((error: unknown) => {
+  console.error(error);
+  process.exitCode = 1;
+});

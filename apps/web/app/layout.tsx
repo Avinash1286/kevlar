@@ -30,7 +30,9 @@ export default function RootLayout({
       lang="en"
       className={`${sans.variable} ${mono.variable} ${serif.variable}`}
     >
-      <body><KevlarAuthProvider>{children}</KevlarAuthProvider></body>
+      <body>
+        <KevlarAuthProvider>{children}</KevlarAuthProvider>
+      </body>
     </html>
   );
 }

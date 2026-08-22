@@ -64,7 +64,10 @@ function buildHistory() {
     verifiedAt: october4,
     fieldState: "verified",
     releaseDecisionId: "release_price_correction",
-    provenance: { ...provenance, canonicalObservationId: "observation_price_correction" },
+    provenance: {
+      ...provenance,
+      canonicalObservationId: "observation_price_correction",
+    },
     intent: "correction",
     previousFactVersionId: mistaken.version.id,
     reason: "Independent evidence proved a decimal extraction error.",
@@ -82,7 +85,10 @@ function buildHistory() {
     verifiedAt: october11,
     fieldState: "verified",
     releaseDecisionId: "release_price_change",
-    provenance: { ...provenance, canonicalObservationId: "observation_price_change" },
+    provenance: {
+      ...provenance,
+      canonicalObservationId: "observation_price_change",
+    },
     intent: "real_change",
     previousFactVersionId: corrected.version.id,
     reason: "Provider published a new effective price.",
@@ -95,7 +101,9 @@ describe("Phase 7 append-only bitemporal history", () => {
     const { mistaken, corrected, changed } = buildHistory();
     expect(changed.history.versions).toHaveLength(3);
     expect(changed.history.versions[0].value).toBe(0.05);
-    expect(classifyFactTransition(corrected.transition!)).toBe("fact.corrected");
+    expect(classifyFactTransition(corrected.transition!)).toBe(
+      "fact.corrected",
+    );
     expect(classifyFactTransition(changed.transition!)).toBe("fact.changed");
     expect(mistaken.history.versions).toHaveLength(1);
     expect(corrected.history.versions).toHaveLength(2);
@@ -138,17 +146,30 @@ describe("Phase 7 append-only bitemporal history", () => {
 
   it("regenerates the current projection exactly and idempotently", () => {
     const { corrected, changed } = buildHistory();
-    const policies = [{
-      predicate: "model.input_price_usd_per_million_tokens",
-      freshnessMs: 7 * day,
-      sourceHealthy: true,
-      affectedSourceCount: 1,
-    }];
-    const current = regenerateCurrentFacts(changed.history, policies, october12);
+    const policies = [
+      {
+        predicate: "model.input_price_usd_per_million_tokens",
+        freshnessMs: 7 * day,
+        sourceHealthy: true,
+        affectedSourceCount: 1,
+      },
+    ];
+    const current = regenerateCurrentFacts(
+      changed.history,
+      policies,
+      october12,
+    );
     expect(current).toHaveLength(1);
     expect(current[0].factVersionId).toBe(changed.version.id);
     expect(current[0].state).toBe("released");
-    expect(assertCurrentFactsRegenerate(changed.history, current, policies, october12).matches).toBe(true);
+    expect(
+      assertCurrentFactsRegenerate(
+        changed.history,
+        current,
+        policies,
+        october12,
+      ).matches,
+    ).toBe(true);
 
     const duplicate = appendFactVersion(changed.history, {
       operationKey: "price:real-change",
@@ -180,53 +201,67 @@ describe("Phase 7 append-only bitemporal history", () => {
       operationKey: "price:retract-change",
       reason: "New source run was invalidated; keep prior verified fact.",
     });
-    const current = regenerateCurrentFacts(retracted.history, [{
-      predicate: "model.input_price_usd_per_million_tokens",
-      freshnessMs: day,
-      sourceHealthy: false,
-      affectedSourceCount: 1,
-    }], october12 + day);
+    const current = regenerateCurrentFacts(
+      retracted.history,
+      [
+        {
+          predicate: "model.input_price_usd_per_million_tokens",
+          freshnessMs: day,
+          sourceHealthy: false,
+          affectedSourceCount: 1,
+        },
+      ],
+      october12 + day,
+    );
     expect(current[0].factVersionId).toBe(corrected.version.id);
     expect(current[0].state).toBe("last_known_good");
     expect(current[0].stale).toBe(true);
   });
 
   it("withholds partially verified or quarantined fields from current facts", () => {
-    const result = appendFactVersion({ versions: [], transitions: [] }, {
-      operationKey: "model:status:quarantined",
-      projectId: "project_kevlar",
-      entityId: "model_openai_gpt_4o",
-      predicate: "model.status",
-      value: "retired",
-      validTimeSource: "observation_time",
-      transactionFrom: october3,
-      verifiedAt: october3,
-      fieldState: "quarantined",
-      releaseDecisionId: "release_status_withheld",
-      provenance,
-      intent: "initial",
-      reason: "Source field did not pass verification.",
-    });
+    const result = appendFactVersion(
+      { versions: [], transitions: [] },
+      {
+        operationKey: "model:status:quarantined",
+        projectId: "project_kevlar",
+        entityId: "model_openai_gpt_4o",
+        predicate: "model.status",
+        value: "retired",
+        validTimeSource: "observation_time",
+        transactionFrom: october3,
+        verifiedAt: october3,
+        fieldState: "quarantined",
+        releaseDecisionId: "release_status_withheld",
+        provenance,
+        intent: "initial",
+        reason: "Source field did not pass verification.",
+      },
+    );
     expect(result.version.state).toBe("withheld");
     expect(regenerateCurrentFacts(result.history, [], october4)).toEqual([]);
   });
 
   it("requires a complete provenance path for every fact", () => {
-    expect(() => appendFactVersion({ versions: [], transitions: [] }, {
-      operationKey: "missing:evidence",
-      projectId: "project_kevlar",
-      entityId: "product_nova",
-      predicate: "offer.price.amount",
-      value: 129,
-      unit: "USD",
-      validTimeSource: "observation_time",
-      transactionFrom: october3,
-      verifiedAt: october3,
-      fieldState: "verified",
-      releaseDecisionId: "release_product_fixture",
-      provenance: { ...provenance, evidenceRefs: [] },
-      intent: "initial",
-      reason: "Fixture backfill.",
-    })).toThrow(/evidence references/i);
+    expect(() =>
+      appendFactVersion(
+        { versions: [], transitions: [] },
+        {
+          operationKey: "missing:evidence",
+          projectId: "project_kevlar",
+          entityId: "product_nova",
+          predicate: "offer.price.amount",
+          value: 129,
+          unit: "USD",
+          validTimeSource: "observation_time",
+          transactionFrom: october3,
+          verifiedAt: october3,
+          fieldState: "verified",
+          releaseDecisionId: "release_product_fixture",
+          provenance: { ...provenance, evidenceRefs: [] },
+          intent: "initial",
+          reason: "Fixture backfill.",
+        },
+      ),
+    ).toThrow(/evidence references/i);
   });
 });

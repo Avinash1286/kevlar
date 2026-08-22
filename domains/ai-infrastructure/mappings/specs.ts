@@ -45,14 +45,22 @@ export const openAiPricingMappingV1: DeterministicMappingSpec = {
       source: "input_price.amount",
       transforms: [{ name: "rename" }],
       required: true,
-      evidencePaths: ["input_price.currency", "input_price.denominator", "input_price.original"],
+      evidencePaths: [
+        "input_price.currency",
+        "input_price.denominator",
+        "input_price.original",
+      ],
     },
     {
       target: "model.output_price_usd_per_million_tokens",
       source: "output_price.amount",
       transforms: [{ name: "rename" }],
       required: true,
-      evidencePaths: ["output_price.currency", "output_price.denominator", "output_price.original"],
+      evidencePaths: [
+        "output_price.currency",
+        "output_price.denominator",
+        "output_price.original",
+      ],
     },
   ],
 };

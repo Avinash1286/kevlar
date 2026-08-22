@@ -5,9 +5,14 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Password({
       profile(params) {
-        const email = String(params.email ?? "").trim().toLowerCase();
-        if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error("A valid email is required");
-        const name = String(params.name ?? email).trim().slice(0, 120);
+        const email = String(params.email ?? "")
+          .trim()
+          .toLowerCase();
+        if (!/^\S+@\S+\.\S+$/.test(email))
+          throw new Error("A valid email is required");
+        const name = String(params.name ?? email)
+          .trim()
+          .slice(0, 120);
         return { email, name };
       },
       validatePasswordRequirements(password) {

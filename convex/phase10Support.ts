@@ -20,12 +20,10 @@ export function assertPhase10Text(
 
 export function assertHttpsUrl(value: string): void {
   const url = new URL(value);
-  if (
-    url.protocol !== "https:" ||
-    url.username !== "" ||
-    url.password !== ""
-  )
-    throw new Error("Webhook endpoint must be an HTTPS URL without credentials");
+  if (url.protocol !== "https:" || url.username !== "" || url.password !== "")
+    throw new Error(
+      "Webhook endpoint must be an HTTPS URL without credentials",
+    );
 }
 
 export function assertSha256(value: string, name: string): void {
@@ -41,7 +39,10 @@ export async function sha256(value: string): Promise<string> {
     .join("")}`;
 }
 
-export async function hmacSha256(secret: string, value: string): Promise<string> {
+export async function hmacSha256(
+  secret: string,
+  value: string,
+): Promise<string> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
@@ -50,7 +51,11 @@ export async function hmacSha256(secret: string, value: string): Promise<string>
     false,
     ["sign"],
   );
-  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(value));
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(value),
+  );
   return `v1=${Array.from(new Uint8Array(signature))
     .map((item) => item.toString(16).padStart(2, "0"))
     .join("")}`;

@@ -1,7 +1,20 @@
 {
   "schema_version": "phase9.fleet-gauntlet.v1",
-  "required_mutation_kinds": ["structural", "semantic_decoy", "rendering", "identity", "unit"],
-  "activation_stages": ["trigger", "source_fixtures", "held_out", "live_subset", "shadow", "active"],
+  "required_mutation_kinds": [
+    "structural",
+    "semantic_decoy",
+    "rendering",
+    "identity",
+    "unit"
+  ],
+  "activation_stages": [
+    "trigger",
+    "source_fixtures",
+    "held_out",
+    "live_subset",
+    "shadow",
+    "active"
+  ],
   "automatic_stop": {
     "critical_failures": 1,
     "false_events": 1,

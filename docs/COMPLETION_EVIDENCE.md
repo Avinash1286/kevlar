@@ -10,11 +10,11 @@ Audit date: **2026-08-22**.
 
 Evidence snapshot:
 
-- [`benchmarks/results/v1.0.0.json`](../benchmarks/results/v1.0.0.json) records
+- [`benchmarks/results/v1.0.1.json`](../benchmarks/results/v1.0.1.json) records
   24/24 controlled checks and zero false releases.
-- [`benchmarks/results/v1.0.0-e2e.json`](../benchmarks/results/v1.0.0-e2e.json)
-  records seven passing full-flow assertions and 12/12 healthy production pages.
-- [`benchmarks/results/v1.0.0-load.json`](../benchmarks/results/v1.0.0-load.json)
+- [`benchmarks/results/v1.0.1-e2e.json`](../benchmarks/results/v1.0.1-e2e.json)
+  records seven passing full-flow assertions and 17/17 healthy production pages.
+- [`benchmarks/results/v1.0.1-load.json`](../benchmarks/results/v1.0.1-load.json)
   records 80/80 successful production requests.
 - The release workspace passed `pnpm test`, `pnpm typecheck`, and `pnpm build`.
 - A strict credential-pattern scan of every Git patch, tracked files, and the
@@ -25,7 +25,7 @@ Evidence snapshot:
   [operator console](https://kevlar-web.vercel.app). The five governed provider
   pages were also publicly readable; the OpenAI pricing URL redirects to its
   current public pricing page.
-- Release tag [`v1.0.0`](https://github.com/Avinash1286/kevlar/releases/tag/v1.0.0)
+- Release tag [`v1.0.1`](https://github.com/Avinash1286/kevlar/releases/tag/v1.0.1)
   and the application rollback procedure in [`RECOVERY.md`](RECOVERY.md#application-release-rollback)
   exist.
 
@@ -38,7 +38,7 @@ Status values are **Proven**, **External**, **Manual**, and **Open**.
 | Fixture is publicly reachable                  | Proven | Live [`/product-pricing/nova`](https://kevlar-fixture-lab.vercel.app/product-pricing/nova) returned `200`; implementation is [`page.tsx`](../apps/fixture-lab/app/product-pricing/nova/page.tsx).                                                                                                       |
 | Bright Data runs a custom collector            | Proven | Stable [`c_mt3utzwt29hbznvax9`](../collectors/product-pricing/nova/collector-id.txt), reviewed [`interaction.js`](../collectors/product-pricing/nova/interaction.js), [`parser.js`](../collectors/product-pricing/nova/parser.js), and [collector notes](../collectors/product-pricing/nova/README.md). |
 | Structured extraction occurs in Scraper Studio | Proven | The verified provider preview used the source-controlled interaction/parser pair; the boundary and API sequence are recorded in [`BRIGHT_DATA.md`](BRIGHT_DATA.md).                                                                                                                                     |
-| Raw output reaches Convex                      | Proven | [`runs:ingestBaseline`](../convex/runs.ts), [`semanticGate:ingestObservation`](../convex/semanticGate.ts), and the Phase 4 proof ID in the [live E2E result](../benchmarks/results/v1.0.0-e2e.json).                                                                                                    |
+| Raw output reaches Convex                      | Proven | [`runs:ingestBaseline`](../convex/runs.ts), [`semanticGate:ingestObservation`](../convex/semanticGate.ts), and the Phase 4 proof ID in the [live E2E result](../benchmarks/results/v1.0.1-e2e.json).                                                                                                    |
 | Evidence references are persisted              | Proven | Evidence insertion is enforced by [`semanticGate.ts`](../convex/semanticGate.ts) and exposed by [`phase4Queries.ts`](../convex/phase4Queries.ts).                                                                                                                                                       |
 | Collector ID and schemas are documented        | Proven | [`collector-id.txt`](../collectors/product-pricing/nova/collector-id.txt), [`input-schema.json`](../collectors/product-pricing/nova/input-schema.json), and [`output-schema.json`](../collectors/product-pricing/nova/output-schema.json).                                                              |
 | Baseline is reproducible from a clean clone    | Proven | [Clean setup](../README.md#clean-setup), [`Makefile`](../Makefile), [`demo-reset.ts`](../scripts/demo-reset.ts), lockfile, and the passing release build/test snapshot above.                                                                                                                           |
@@ -72,15 +72,15 @@ Status values are **Proven**, **External**, **Manual**, and **Open**.
 
 | Requirement                                             | Status | Evidence                                                                                                                                                                                                                                         |
 | ------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Triggering failure is fixed                             | Proven | The certified Phase 4 flow is recorded by `repair_certificate_available: true` in the [E2E artifact](../benchmarks/results/v1.0.0-e2e.json) and implemented by [`run-phase4-core.ts`](../scripts/run-phase4-core.ts).                            |
-| Four visible cases pass                                 | Proven | M1–M4 pass in [`v1.0.0.json`](../benchmarks/results/v1.0.0.json).                                                                                                                                                                                |
+| Triggering failure is fixed                             | Proven | The certified Phase 4 flow is recorded by `repair_certificate_available: true` in the [E2E artifact](../benchmarks/results/v1.0.1-e2e.json) and implemented by [`run-phase4-core.ts`](../scripts/run-phase4-core.ts).                            |
+| Four visible cases pass                                 | Proven | M1–M4 pass in [`v1.0.1.json`](../benchmarks/results/v1.0.1.json).                                                                                                                                                                                |
 | Two held-out cases pass                                 | Proven | H1–H2 pass in the same raw benchmark.                                                                                                                                                                                                            |
 | Two negative controls get no-heal behavior              | Proven | N1 is quarantined and N2 is `do_not_heal` in the same raw benchmark.                                                                                                                                                                             |
 | No critical field is promoted before certification      | Proven | Release gating is tested by [`certification.test.ts`](../tests/unit/certification.test.ts) and persisted by [`phase4Certification.ts`](../convex/phase4Certification.ts).                                                                        |
 | Last-known-good remains active during failure           | Proven | Raw benchmark baselines record `lastKnownGoodAvailable: true`; semantic-contract tests assert `$129` remains served.                                                                                                                             |
 | Same Collector ID before and after repair is documented | Proven | The stable ID and workflow are recorded in the [Nova collector README](../collectors/product-pricing/nova/README.md); the certificate schema requires `same_id_before_after: true` in [`certification`](../packages/certification/src/index.ts). |
 | Certificate is generated from measured results          | Proven | [`certification.test.ts`](../tests/unit/certification.test.ts), raw benchmark cases, and the live Phase 4 proof ID bind the certificate to measured results.                                                                                     |
-| Full flow works from `make demo-reset`                  | Proven | [`Makefile`](../Makefile), [`demo-reset.ts`](../scripts/demo-reset.ts), [`run-phase4-core.ts`](../scripts/run-phase4-core.ts), and all seven live E2E assertions.                                                                                |
+| Full provider-backed flow works from `make demo-reset`  | Open   | [`demo-reset.ts`](../scripts/demo-reset.ts) resets fixture state only. The deterministic repair suites and existing deployed proof pass, but a fresh provider self-heal/approval/certification replay remains account-bound.                     |
 
 ## Definition of Done
 
@@ -88,11 +88,11 @@ Status values are **Proven**, **External**, **Manual**, and **Open**.
 
 | Requirement                                           | Status   | Evidence                                                                                                                                                                                        |
 | ----------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fixture and repair workflow work from reset           | Proven   | Week 1/4 evidence above.                                                                                                                                                                        |
+| Fixture and complete provider repair work from reset  | Open     | Fixture reset is automated; the fresh Bright Data self-heal, approval, and certification replay remains provider-bound.                                                                         |
 | Incident and certificate pages are accessible         | Proven   | [`incidents/[id]`](../apps/web/app/incidents/%5Bid%5D/page.tsx), [`certificates/[slug]`](../apps/web/app/certificates/%5Bslug%5D/page.tsx), and the E2E certificate assertion.                  |
 | Core trust-kernel tests pass                          | Proven   | [`semantic-contracts.test.ts`](../tests/unit/semantic-contracts.test.ts), [`triage.test.ts`](../tests/unit/triage.test.ts), and [`certification.test.ts`](../tests/unit/certification.test.ts). |
 | Verified price uses the product-pricing abstraction   | Proven   | [`semantic-contracts`](../packages/semantic-contracts/src/index.ts), Nova fixture, and [`released-fact.json`](../samples/released-fact.json).                                                   |
-| Release rollback tag and procedure exist              | Proven   | Tag `v1.0.0` and the Vercel/Convex-safe procedure in [`RECOVERY.md`](RECOVERY.md#application-release-rollback).                                                                                 |
+| Release rollback tag and procedure exist              | Proven   | Tag `v1.0.1` and the Vercel/Convex-safe procedure in [`RECOVERY.md`](RECOVERY.md#application-release-rollback).                                                                                 |
 | Structured extraction occurs inside Scraper Studio    | Proven   | Week 1 provider-preview and collector-source evidence above.                                                                                                                                    |
 | A new vertical collector completes a real self-heal   | External | The two new Anthropic collectors were activated by Bright Data but failed Kevlar schema certification; see [`HACKATHON_SUBMISSION.md`](HACKATHON_SUBMISSION.md#how-scraper-studio-is-central).  |
 | Same-ID repair is demonstrated                        | Proven   | Nova same-ID evidence above.                                                                                                                                                                    |
@@ -116,7 +116,7 @@ Status values are **Proven**, **External**, **Manual**, and **Open**.
 | External IDs and aliases are preserved              | Proven   | [`phase6Identity.ts`](../convex/phase6Identity.ts) and Phase 6 tests.                                                                                                                                   |
 | Ambiguous matches enter review                      | Proven   | Phase 6 benchmark/test expected `needs_review`.                                                                                                                                                         |
 | Merge and split are audited and reversible          | Proven   | Reversal assertion in Phase 6 tests and [`phase6Identity.ts`](../convex/phase6Identity.ts).                                                                                                             |
-| Entity-resolution benchmark is committed            | Proven   | Three labelled cases in [`v1.0.0.json`](../benchmarks/results/v1.0.0.json).                                                                                                                             |
+| Entity-resolution benchmark is committed            | Proven   | Three labelled cases in [`v1.0.1.json`](../benchmarks/results/v1.0.1.json).                                                                                                                             |
 
 ### Facts, history, semantic CDC, and reconciliation
 
@@ -132,7 +132,7 @@ Status values are **Proven**, **External**, **Manual**, and **Open**.
 | Real fact changes emit deterministic events      | Proven | Phase 8 exact-one-event test.                                                                                                |
 | Duplicate runs do not duplicate events           | Proven | Stable-ID retry assertion in Phase 8 tests.                                                                                  |
 | Corrections and retractions work                 | Proven | Correction/retraction assertions and [`phase8Cdc.ts`](../convex/phase8Cdc.ts).                                               |
-| Event precision and recall are measured          | Proven | Labelled semantic-event section in [`v1.0.0.json`](../benchmarks/results/v1.0.0.json).                                       |
+| Event precision and recall are measured          | Proven | Labelled semantic-event section in [`v1.0.1.json`](../benchmarks/results/v1.0.1.json).                                       |
 | Events link to evidence and release policy       | Proven | [`phase9-evidence-fleet.test.ts`](../tests/unit/phase9-evidence-fleet.test.ts) and deployed E2E assertion.                   |
 | Predicate-specific authority works               | Proven | Phase 8 equivalence/authority tests and [`phase8Policies.ts`](../convex/phase8Policies.ts).                                  |
 | Conflicts are explicit                           | Proven | Phase 8 source-conflict test and [`/conflicts`](../apps/web/app/conflicts/page.tsx).                                         |
@@ -179,14 +179,15 @@ Status values are **Proven**, **External**, **Manual**, and **Open**.
 | Runbooks exist                                                | Proven | Six committed files in [`docs/runbooks`](runbooks).                                                                                                                                                                                                           |
 | Replay is implemented and labelled                            | Proven | [`phase10Deliveries.ts`](../convex/phase10Deliveries.ts), Phase 10 replay tests, and [`API.md`](API.md).                                                                                                                                                      |
 | Critical alerts are configured                                | Proven | Runbook-linked chaos alert test and [`OPERATIONS.md`](OPERATIONS.md).                                                                                                                                                                                         |
-| Evidence export and backup procedures work                    | Proven | [`phase12Recovery.ts`](../convex/phase12Recovery.ts), [`phase12.test.ts`](../convex/phase12.test.ts), and [`RECOVERY.md`](RECOVERY.md).                                                                                                                       |
+| Evidence export and backup procedures work                    | Proven | A fresh development snapshot export succeeded on 2026-08-22; [`phase12Recovery.ts`](../convex/phase12Recovery.ts), [`phase12.test.ts`](../convex/phase12.test.ts), and [`RECOVERY.md`](RECOVERY.md) cover manifests and verification.                         |
+| Isolated restore drill succeeds                               | Open   | No Preview Deploy Key is available and preview creation is billing-gated. Same-project manifest verification is not represented as a restore; the exact throwaway restore procedure is in [`RECOVERY.md`](RECOVERY.md#restore-drill).                         |
 | Usage and cost units are visible                              | Proven | [`operations/page.tsx`](../apps/web/app/operations/page.tsx) and Phase 11 proof.                                                                                                                                                                              |
 
 ### Presentation
 
 | Requirement                                    | Status | Evidence                                                                                                                                                      |
 | ---------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Demo briefly shows Kevlar Core                 | Proven | [`kevlar-core-v1.0.0.webm`](../artifacts/demo/kevlar-core-v1.0.0.webm) and route sequence in [`record-release-demos.ts`](../scripts/record-release-demos.ts). |
+| Demo briefly shows Kevlar Core                 | Proven | [`kevlar-core-v1.0.1.webm`](../artifacts/demo/kevlar-core-v1.0.1.webm) and route sequence in [`record-release-demos.ts`](../scripts/record-release-demos.ts). |
 | Demo shows a multi-source entity               | Proven | Full-platform recording visits `/sources` and `/entities`.                                                                                                    |
 | Demo distinguishes page drift from fact change | Proven | Full-platform recording visits `/history` and `/events`; Phase 8 labels the cases.                                                                            |
 | Demo shows self-healing and certification      | Proven | Core recording visits `/gauntlet`, `/fleet/repairs`, and `/evidence`.                                                                                         |
@@ -214,8 +215,12 @@ Status values are **Proven**, **External**, **Manual**, and **Open**.
 - Promote Convex only if a production deployment is desired. The release is
   intentionally proven against `dev:veracious-eagle-977`; production promotion
   is not claimed.
-- Add narration, upload the under-three-minute demo to YouTube as public or
-  unlisted, and verify it while signed out.
+- Upload the narrated, captioned under-three-minute demo to YouTube as public
+  or unlisted, and verify it while signed out.
+- Restore a fresh snapshot into a different throwaway preview deployment and
+  query the critical records once a Preview Deploy Key is available.
+- Replay the complete Nova provider self-heal/approval/certification flow from
+  `make demo-reset` if a fresh end-to-end provider rehearsal is required.
 - Enter identity, ratings, and feedback, then submit the official form.
 
 ### Genuinely open repository work

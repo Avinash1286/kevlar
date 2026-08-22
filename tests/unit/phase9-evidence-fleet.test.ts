@@ -166,13 +166,33 @@ describe("Phase 9 evidence graph and fleet repair", () => {
       subjectType: "event",
       subjectId: "evt_price_changed",
       artifacts: [
-        { name: "event.json", mediaType: "application/json", payload: { after: 4 } },
-        { name: "fact-before.json", mediaType: "application/json", payload: { value: 5 } },
-        { name: "fact-after.json", mediaType: "application/json", payload: { value: 4 } },
+        {
+          name: "event.json",
+          mediaType: "application/json",
+          payload: { after: 4 },
+        },
+        {
+          name: "fact-before.json",
+          mediaType: "application/json",
+          payload: { value: 5 },
+        },
+        {
+          name: "fact-after.json",
+          mediaType: "application/json",
+          payload: { value: 4 },
+        },
       ],
       archiveRefs: [
-        { kind: "screenshot", ref: "nova_page.png", digest: "sha256:screenshot" },
-        { kind: "warc", ref: "warc://run_openai_pricing", digest: "sha256:warc" },
+        {
+          kind: "screenshot",
+          ref: "nova_page.png",
+          digest: "sha256:screenshot",
+        },
+        {
+          kind: "warc",
+          ref: "warc://run_openai_pricing",
+          digest: "sha256:warc",
+        },
       ],
       createdAt: now,
     });
@@ -185,7 +205,10 @@ describe("Phase 9 evidence graph and fleet repair", () => {
   it("calculates a stable deduplicated incident blast radius", () => {
     const radius = calculateBlastRadius({
       incidentId: "incident:nova",
-      fields: ["product.purchase_price.amount", "product.purchase_price.amount"],
+      fields: [
+        "product.purchase_price.amount",
+        "product.purchase_price.amount",
+      ],
       entities: ["nova-headphones"],
       facts: ["fact:129"],
       events: ["evt:price"],
@@ -208,8 +231,15 @@ describe("Phase 9 evidence graph and fleet repair", () => {
   });
 
   it("cannot activate after only the trigger page passes", () => {
-    const started = beginRepairCanary({ repairId: "repair:nova", startedAt: now, affectedEventIds: [] });
-    const triggerPassed = recordCanaryResult(started, passingResult("trigger")).canary;
+    const started = beginRepairCanary({
+      repairId: "repair:nova",
+      startedAt: now,
+      affectedEventIds: [],
+    });
+    const triggerPassed = recordCanaryResult(
+      started,
+      passingResult("trigger"),
+    ).canary;
     expect(triggerPassed.currentStage).toBe("source_fixtures");
     expect(() => activateRepairCanary(triggerPassed, now + 1)).toThrow(
       "including held-out tests",
@@ -219,7 +249,9 @@ describe("Phase 9 evidence graph and fleet repair", () => {
   it("requires held-out fleet tests before full release", () => {
     const canary = activeCanary();
     expect(canary.status).toBe("active");
-    expect(canary.results.some((result) => result.stage === "held_out")).toBe(true);
+    expect(canary.results.some((result) => result.stage === "held_out")).toBe(
+      true,
+    );
     expect(canary.withheldEventIds).toEqual([]);
   });
 
@@ -234,7 +266,9 @@ describe("Phase 9 evidence graph and fleet repair", () => {
       passingResult("trigger", { passed: false, criticalFailures: 1 }),
     ).canary;
     expect(failed.status).toBe("rolled_back");
-    expect(failed.automaticStopReason).toBe("trigger_activation_threshold_failed");
+    expect(failed.automaticStopReason).toBe(
+      "trigger_activation_threshold_failed",
+    );
     expect(failed.withheldEventIds).toEqual(["evt:unsafe"]);
   });
 
@@ -243,7 +277,11 @@ describe("Phase 9 evidence graph and fleet repair", () => {
     expect(gauntlet.passed).toBe(true);
     expect(gauntlet.heldOutPassed).toBe(true);
     expect(gauntlet.productPricingRegressionPassed).toBe(true);
-    expect(gauntlet.benchmark).toMatchObject({ cases: 5, passed: 5, falseEvents: 0 });
+    expect(gauntlet.benchmark).toMatchObject({
+      cases: 5,
+      passed: 5,
+      falseEvents: 0,
+    });
   });
 
   it("fails certification when emitted-event behavior is wrong", () => {
@@ -262,7 +300,13 @@ describe("Phase 9 evidence graph and fleet repair", () => {
       projectId,
       subjectType: "repair",
       subjectId: "repair:nova",
-      artifacts: [{ name: "repair-certificate.json", mediaType: "application/json", payload: { status: "certified" } }],
+      artifacts: [
+        {
+          name: "repair-certificate.json",
+          mediaType: "application/json",
+          payload: { status: "certified" },
+        },
+      ],
       createdAt: now,
     });
     const certificate = extendRepairCertificate({

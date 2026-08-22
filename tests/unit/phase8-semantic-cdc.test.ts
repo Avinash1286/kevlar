@@ -41,9 +41,7 @@ function candidate(
   };
 }
 
-function policy(
-  overrides: Partial<ReleasePolicy> = {},
-): ReleasePolicy {
+function policy(overrides: Partial<ReleasePolicy> = {}): ReleasePolicy {
   return {
     id: "policy:official-pricing:v1",
     predicate,
@@ -79,13 +77,9 @@ function previous(value = 5): ReleasedFact {
 
 describe("Phase 8 semantic CDC and reconciliation", () => {
   it("applies predicate-specific equivalence instead of a global tolerance", () => {
-    expect(
-      valuesEquivalent(
-        5,
-        5.00004,
-        PHASE8_FIELD_RULES[predicate]!,
-      ),
-    ).toBe(true);
+    expect(valuesEquivalent(5, 5.00004, PHASE8_FIELD_RULES[predicate]!)).toBe(
+      true,
+    );
     expect(
       valuesEquivalent(
         128_000,
@@ -257,9 +251,7 @@ describe("Phase 8 semantic CDC and reconciliation", () => {
         value: "GPT 4 Omni",
         valueHash: sha256("GPT 4 Omni"),
       },
-      candidates: [
-        candidate("GPT-4o", { predicate: "model.display_name" }),
-      ],
+      candidates: [candidate("GPT-4o", { predicate: "model.display_name" })],
       policy: namePolicy,
       observedAt: Date.UTC(2026, 7, 22, 10),
       intent: "rename",
@@ -326,10 +318,7 @@ describe("Phase 8 semantic CDC and reconciliation", () => {
       validFrom: Date.UTC(2026, 7, 19, 9),
       intent: "correction",
     }).event!;
-    const store = appendChangeEvent(
-      { events: [], conflicts: [] },
-      bad,
-    ).store;
+    const store = appendChangeEvent({ events: [], conflicts: [] }, bad).store;
     const result = retractAndCorrectEvent(store, {
       eventId: bad.eventId,
       correctedEvent: corrected,

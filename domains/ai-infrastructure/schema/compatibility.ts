@@ -53,10 +53,7 @@ function sameValues(left: string[] | undefined, right: string[] | undefined) {
   return JSON.stringify(sorted(left)) === JSON.stringify(sorted(right));
 }
 
-function push(
-  changes: CompatibilityChange[],
-  change: CompatibilityChange,
-) {
+function push(changes: CompatibilityChange[], change: CompatibilityChange) {
   changes.push(change);
 }
 
@@ -68,17 +65,23 @@ export function classifySchemaCompatibility(
     throw new Error("Schema revisions must belong to the same registry entry.");
   }
   if (next.revision <= previous.revision) {
-    throw new Error("Schema revisions are immutable and must increase monotonically.");
+    throw new Error(
+      "Schema revisions are immutable and must increase monotonically.",
+    );
   }
 
   const changes: CompatibilityChange[] = [];
-  const previousByPath = new Map(previous.fields.map((field) => [field.path, field]));
+  const previousByPath = new Map(
+    previous.fields.map((field) => [field.path, field]),
+  );
   const nextByPath = new Map(next.fields.map((field) => [field.path, field]));
 
   for (const field of previous.fields) {
     const candidate = nextByPath.get(field.path);
     if (!candidate) {
-      const renamed = next.fields.find((item) => item.aliases?.includes(field.path));
+      const renamed = next.fields.find((item) =>
+        item.aliases?.includes(field.path),
+      );
       if (renamed) {
         push(changes, {
           field: field.path,
@@ -121,8 +124,12 @@ export function classifySchemaCompatibility(
         reason: `Canonical unit changed from ${field.unit} to ${candidate.unit}; an explicit migration is required.`,
       });
     }
-    if (field.required !== candidate.required || field.nullable !== candidate.nullable) {
-      const relaxed = (!candidate.required || candidate.nullable) &&
+    if (
+      field.required !== candidate.required ||
+      field.nullable !== candidate.nullable
+    ) {
+      const relaxed =
+        (!candidate.required || candidate.nullable) &&
         (field.required || !field.nullable);
       push(changes, {
         field: field.path,
@@ -133,23 +140,31 @@ export function classifySchemaCompatibility(
           : "Nullability or requiredness became stricter.",
       });
     }
-    if (field.minimum !== candidate.minimum || field.maximum !== candidate.maximum) {
+    if (
+      field.minimum !== candidate.minimum ||
+      field.maximum !== candidate.maximum
+    ) {
       const widened =
         (candidate.minimum === undefined ||
-          (field.minimum !== undefined && candidate.minimum <= field.minimum)) &&
+          (field.minimum !== undefined &&
+            candidate.minimum <= field.minimum)) &&
         (candidate.maximum === undefined ||
           (field.maximum !== undefined && candidate.maximum >= field.maximum));
       push(changes, {
         field: field.path,
         kind: "constraint_changed",
         classification: widened ? "backward_compatible" : "breaking",
-        reason: widened ? "Numeric range was widened." : "Numeric range was narrowed.",
+        reason: widened
+          ? "Numeric range was widened."
+          : "Numeric range was narrowed.",
       });
     }
     if (!sameValues(field.enumValues, candidate.enumValues)) {
       const previousValues = new Set(field.enumValues ?? []);
       const nextValues = new Set(candidate.enumValues ?? []);
-      const widened = [...previousValues].every((value) => nextValues.has(value));
+      const widened = [...previousValues].every((value) =>
+        nextValues.has(value),
+      );
       push(changes, {
         field: field.path,
         kind: widened ? "enum_widened" : "enum_narrowed",
@@ -164,19 +179,24 @@ export function classifySchemaCompatibility(
         field: field.path,
         kind: "evidence_policy_changed",
         classification: "policy_migration",
-        reason: "Evidence support requirements changed and require policy migration.",
+        reason:
+          "Evidence support requirements changed and require policy migration.",
       });
     }
   }
 
   for (const field of next.fields) {
-    if (previousByPath.has(field.path) || field.aliases?.some((alias) => previousByPath.has(alias))) {
+    if (
+      previousByPath.has(field.path) ||
+      field.aliases?.some((alias) => previousByPath.has(alias))
+    ) {
       continue;
     }
     push(changes, {
       field: field.path,
       kind: "field_added",
-      classification: field.required && !field.nullable ? "breaking" : "backward_compatible",
+      classification:
+        field.required && !field.nullable ? "breaking" : "backward_compatible",
       reason:
         field.required && !field.nullable
           ? "A required non-nullable field was added."
@@ -184,7 +204,9 @@ export function classifySchemaCompatibility(
     });
   }
 
-  const classification = changes.some((change) => change.classification === "breaking")
+  const classification = changes.some(
+    (change) => change.classification === "breaking",
+  )
     ? "breaking"
     : changes.some((change) => change.classification === "policy_migration")
       ? "policy_migration"

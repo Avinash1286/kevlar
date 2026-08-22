@@ -52,7 +52,9 @@ export const persistApiKey = internalMutation({
       throw new Error("scopes must contain 1-20 entries");
     const duplicate = await ctx.db
       .query("apiKeys")
-      .withIndex("by_operationKey", (q) => q.eq("operationKey", args.operationKey))
+      .withIndex("by_operationKey", (q) =>
+        q.eq("operationKey", args.operationKey),
+      )
       .unique();
     if (duplicate) return duplicate;
     const hashOwner = await ctx.db
@@ -101,7 +103,9 @@ export const persistWebhookEndpoint = internalMutation({
     assertPhase10Text(args.secretRef, "secretRef", 250);
     const duplicate = await ctx.db
       .query("webhookEndpoints")
-      .withIndex("by_operationKey", (q) => q.eq("operationKey", args.operationKey))
+      .withIndex("by_operationKey", (q) =>
+        q.eq("operationKey", args.operationKey),
+      )
       .unique();
     if (duplicate) {
       if (!duplicate.activeSecretVersionId)
@@ -146,7 +150,10 @@ export const persistWebhookEndpoint = internalMutation({
     });
     return {
       endpoint: (await ctx.db.get("webhookEndpoints", endpointId))!,
-      secretVersion: (await ctx.db.get("webhookSecretVersions", secretVersionId))!,
+      secretVersion: (await ctx.db.get(
+        "webhookSecretVersions",
+        secretVersionId,
+      ))!,
     };
   },
 });
@@ -166,11 +173,16 @@ export const persistSecretRotation = internalMutation({
     await requireProjectRole(ctx, endpoint.projectId, ["owner", "admin"]);
     const duplicate = await ctx.db
       .query("webhookSecretVersions")
-      .withIndex("by_operationKey", (q) => q.eq("operationKey", args.operationKey))
+      .withIndex("by_operationKey", (q) =>
+        q.eq("operationKey", args.operationKey),
+      )
       .unique();
     if (duplicate) return duplicate;
     const current = endpoint.activeSecretVersionId
-      ? await ctx.db.get("webhookSecretVersions", endpoint.activeSecretVersionId)
+      ? await ctx.db.get(
+          "webhookSecretVersions",
+          endpoint.activeSecretVersionId,
+        )
       : null;
     const now = Date.now();
     if (current)
@@ -199,7 +211,10 @@ export const persistSecretRotation = internalMutation({
       action: "phase10.webhook_secret.rotated",
       targetType: "webhook_endpoint",
       targetId: String(endpoint._id),
-      payload: { secretRef: args.secretRef, version: (current?.version ?? 0) + 1 },
+      payload: {
+        secretRef: args.secretRef,
+        version: (current?.version ?? 0) + 1,
+      },
       createdAt: now,
     });
     return (await ctx.db.get("webhookSecretVersions", id))!;
@@ -220,21 +235,32 @@ export const persistSubscription = internalMutation({
     await requireProjectRole(ctx, args.projectId, ["owner", "admin"]);
     const duplicate = await ctx.db
       .query("filteredSubscriptions")
-      .withIndex("by_operationKey", (q) => q.eq("operationKey", args.operationKey))
+      .withIndex("by_operationKey", (q) =>
+        q.eq("operationKey", args.operationKey),
+      )
       .unique();
     if (duplicate) return duplicate;
     if (args.channel === "webhook") {
       if (!args.webhookEndpointId)
         throw new Error("Webhook subscriptions require an endpoint");
-      const endpoint = await ctx.db.get("webhookEndpoints", args.webhookEndpointId);
-      if (!endpoint || endpoint.projectId !== args.projectId || endpoint.status !== "active")
+      const endpoint = await ctx.db.get(
+        "webhookEndpoints",
+        args.webhookEndpointId,
+      );
+      if (
+        !endpoint ||
+        endpoint.projectId !== args.projectId ||
+        endpoint.status !== "active"
+      )
         throw new Error("Active same-project webhook endpoint required");
     }
     for (const values of [
       args.filters.eventTypes,
       args.filters.entityTypes,
       args.filters.predicates,
-    ]) if (values.length > 50) throw new Error("Each filter supports at most 50 values");
+    ])
+      if (values.length > 50)
+        throw new Error("Each filter supports at most 50 values");
     const now = Date.now();
     const id = await ctx.db.insert("filteredSubscriptions", {
       ...args,
@@ -267,7 +293,9 @@ export const persistContract = internalMutation({
   handler: async (ctx, args) => {
     const duplicate = await ctx.db
       .query("apiContracts")
-      .withIndex("by_operationKey", (q) => q.eq("operationKey", args.operationKey))
+      .withIndex("by_operationKey", (q) =>
+        q.eq("operationKey", args.operationKey),
+      )
       .unique();
     if (duplicate) return duplicate;
     const existing = await ctx.db

@@ -76,7 +76,12 @@ export function addProvenanceNode(
   );
   if (existing) return { graph, node: existing, duplicate: true };
   const node: ProvenanceNode = {
-    id: sha256(["provenance-node", input.projectId, input.nodeType, input.refId]),
+    id: sha256([
+      "provenance-node",
+      input.projectId,
+      input.nodeType,
+      input.refId,
+    ]),
     projectId: input.projectId,
     nodeType: input.nodeType,
     refId: input.refId,
@@ -184,7 +189,10 @@ export function buildEvidenceBundle(input: {
   if (new Set(names).size !== names.length)
     throw new Error("Evidence bundle artifact names must be unique.");
   const artifacts = input.artifacts
-    .map((artifact) => ({ ...structuredClone(artifact), digest: sha256(artifact.payload) }))
+    .map((artifact) => ({
+      ...structuredClone(artifact),
+      digest: sha256(artifact.payload),
+    }))
     .sort((left, right) => left.name.localeCompare(right.name));
   const archiveRefs = [...(input.archiveRefs ?? [])].sort((left, right) =>
     left.ref.localeCompare(right.ref),
@@ -194,13 +202,23 @@ export function buildEvidenceBundle(input: {
     projectId: input.projectId,
     subjectType: input.subjectType,
     subjectId: input.subjectId,
-    artifacts: artifacts.map(({ name, mediaType, digest }) => ({ name, mediaType, digest })),
+    artifacts: artifacts.map(({ name, mediaType, digest }) => ({
+      name,
+      mediaType,
+      digest,
+    })),
     archiveRefs,
   };
   const manifestDigest = sha256(manifest);
   return {
     ...manifest,
-    bundleId: sha256(["evidence-bundle", input.projectId, input.subjectType, input.subjectId, manifestDigest]),
+    bundleId: sha256([
+      "evidence-bundle",
+      input.projectId,
+      input.subjectType,
+      input.subjectId,
+      manifestDigest,
+    ]),
     artifacts,
     manifestDigest,
     createdAt: input.createdAt,
@@ -292,7 +310,7 @@ export function beginRepairCanary(input: {
   repairId: string;
   startedAt: number;
   affectedEventIds: string[];
-}) : RepairCanary {
+}): RepairCanary {
   return {
     id: sha256(["repair-canary", input.repairId]),
     repairId: input.repairId,
@@ -350,16 +368,23 @@ export function recordCanaryResult(
   };
 }
 
-export function activateRepairCanary(canary: RepairCanary, activatedAt: number) {
+export function activateRepairCanary(
+  canary: RepairCanary,
+  activatedAt: number,
+) {
   const passedStages = new Set(
-    canary.results.filter((result) => result.passed).map((result) => result.stage),
+    canary.results
+      .filter((result) => result.passed)
+      .map((result) => result.stage),
   );
   if (
     canary.status !== "canary" ||
     canary.currentStage !== "active" ||
     !canaryStages.every((stage) => passedStages.has(stage))
   )
-    throw new Error("All canary stages, including held-out tests, must pass before activation.");
+    throw new Error(
+      "All canary stages, including held-out tests, must pass before activation.",
+    );
   return {
     ...canary,
     status: "active" as const,
@@ -369,11 +394,7 @@ export function activateRepairCanary(canary: RepairCanary, activatedAt: number) 
 }
 
 export type FleetMutationKind =
-  | "structural"
-  | "semantic_decoy"
-  | "rendering"
-  | "identity"
-  | "unit";
+  "structural" | "semantic_decoy" | "rendering" | "identity" | "unit";
 
 export type FleetMutationCase = {
   id: string;
@@ -409,7 +430,11 @@ export function runFleetGauntlet(
     "identity",
     "unit",
   ];
-  if (!requiredKinds.every((kind) => cases.some((item) => item.mutationKind === kind)))
+  if (
+    !requiredKinds.every((kind) =>
+      cases.some((item) => item.mutationKind === kind),
+    )
+  )
     throw new Error("Fleet Gauntlet must cover every required mutation kind.");
   const results = cases.map((testCase) => {
     const observed = evaluate(testCase);
@@ -429,7 +454,10 @@ export function runFleetGauntlet(
     results.every((result) => result.passed) &&
     heldOutPassed &&
     productPricingRegressionPassed;
-  const totalDurationMs = results.reduce((sum, result) => sum + result.durationMs, 0);
+  const totalDurationMs = results.reduce(
+    (sum, result) => sum + result.durationMs,
+    0,
+  );
   return {
     results,
     passed,
@@ -438,8 +466,10 @@ export function runFleetGauntlet(
     benchmark: {
       cases: results.length,
       passed: results.filter((result) => result.passed).length,
-      falseEvents: results.filter((result) => !result.eventAssertionPassed).length,
-      meanDurationMs: results.length === 0 ? 0 : totalDurationMs / results.length,
+      falseEvents: results.filter((result) => !result.eventAssertionPassed)
+        .length,
+      meanDurationMs:
+        results.length === 0 ? 0 : totalDurationMs / results.length,
       digest: sha256(results.map((result) => result.digest)),
     },
   };
@@ -456,14 +486,22 @@ export function extendRepairCertificate(input: {
   if (!verifyEvidenceBundle(input.evidenceBundle))
     throw new Error("Extended certificate requires a valid evidence bundle.");
   if (!input.gauntlet.passed || input.canary.status !== "active")
-    throw new Error("Extended certificate requires a passing fleet gauntlet and active canary.");
+    throw new Error(
+      "Extended certificate requires a passing fleet gauntlet and active canary.",
+    );
   const extension = {
-    affected_canonical_fields: [...new Set(input.affectedCanonicalFields)].sort(),
+    affected_canonical_fields: [
+      ...new Set(input.affectedCanonicalFields),
+    ].sort(),
     affected_entity_count: new Set(input.affectedEntityIds).size,
     evidence_bundle_id: input.evidenceBundle.bundleId,
     evidence_manifest_digest: input.evidenceBundle.manifestDigest,
     fleet_gauntlet_digest: input.gauntlet.benchmark.digest,
     canary_id: input.canary.id,
   };
-  return { ...structuredClone(input.certificate), fleet_extension: extension, digest: sha256(extension) };
+  return {
+    ...structuredClone(input.certificate),
+    fleet_extension: extension,
+    digest: sha256(extension),
+  };
 }

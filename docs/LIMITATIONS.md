@@ -11,7 +11,7 @@
 - Password authentication is used because the installed `@convex-dev/auth` release does not support WebAuthn/passkeys. Organizations should add their preferred enterprise identity provider before broad production use.
 - Bright Data collector creation, self-healing availability, and code approval remain account-scoped Scraper Studio operations. Kevlar can run, inspect, triage, and certify them but cannot bypass provider authorization or guarantee the provider workflow is available.
 - Raw evidence retention is bounded. A retained digest can prove that an artifact changed, but cannot reconstruct content after the artifact itself expires.
-- The API is REST-first, the SDK is TypeScript-only, and MCP is intentionally read-only. GraphQL and write-capable agent tools are outside v1.0.0.
-- Backups are manifest-verified exports. The release proves restoration against a throwaway development target; it does not claim continuous cross-region disaster recovery.
+- The API is REST-first, the SDK is TypeScript-only, and MCP is intentionally read-only. GraphQL and write-capable agent tools are outside v1.0.1.
+- A fresh development snapshot export succeeded, and backup manifests are verified against the source project. An actual import/query drill in a different throwaway deployment is still open because this account has no Preview Deploy Key and preview creation is billing-gated. The release does not claim proven restoration or continuous cross-region disaster recovery.
 - AI suggestions are fallible and non-authoritative. The AI router consumes only released events and still requires review; it is not an autonomous production configuration controller.
 - Vercel serves the web and API surface while the proven Convex data target is a development deployment. A production Convex promotion requires a separate, explicit deployment decision.

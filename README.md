@@ -2,7 +2,7 @@
 
 **The changing web, verified before it reaches your systems.**
 
-Kevlar v1.0.0 is a repair-certification firewall and verified live-web intelligence platform. Bright Data custom collectors acquire and self-heal public sources; Kevlar keeps every row, repair, fact, and event behind deterministic contracts, independent evidence, explicit release policy, and human review where impact requires it.
+Kevlar v1.0.1 is a repair-certification firewall and verified live-web intelligence platform. Bright Data custom collectors acquire and self-heal public sources; Kevlar keeps every row, repair, fact, and event behind deterministic contracts, independent evidence, explicit release policy, and human review where impact requires it.
 
 Production operator console: <https://kevlar-web.vercel.app>
 
@@ -21,9 +21,9 @@ Production operator console: <https://kevlar-web.vercel.app>
 4. Bright Data proposes a repair. Kevlar requires evidence, review, four visible mutations, two held-out mutations, and two negative controls before release.
 5. A released fact carries history, evidence, freshness, and its certificate into REST, SDK, MCP, webhooks, and the reviewed AI-router consumer.
 
-## Measured v1.0.0 result
+## Measured v1.0.1 result
 
-The committed controlled benchmark passed 24/24 labeled checks with 0 false releases. Its single labeled silent-corruption case was caught, both held-out cases passed, both negative controls avoided false healing, all 9 triage cases were classified correctly, all 3 identity cases matched their labels, and all 3 predicted semantic events were correct. These are fixture-backed release measurements, not population-level accuracy claims. See [the report](docs/BENCHMARK.md) and [raw result](benchmarks/results/v1.0.0.json).
+The committed controlled benchmark passed 24/24 labeled checks with 0 false releases. Its single labeled silent-corruption case was caught, both held-out cases passed, both negative controls avoided false healing, all 9 triage cases were classified correctly, all 3 identity cases matched their labels, and all 3 predicted semantic events were correct. These are fixture-backed release measurements, not population-level accuracy claims. See [the report](docs/BENCHMARK.md) and [raw result](benchmarks/results/v1.0.1.json).
 
 ## Architecture
 

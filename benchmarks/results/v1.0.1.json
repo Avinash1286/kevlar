@@ -1,0 +1,395 @@
+{
+  "schema_version": "kevlar.benchmark.v1",
+  "release": "v1.0.1",
+  "measured_at": "2026-08-22T14:52:17.434Z",
+  "fixture_revision": "sha256:de5e222e442fb19441b723d0211fe40b8a37937ad86afe2c4aa35e01f63e7b11",
+  "baselines": [
+    {
+      "name": "schema_only",
+      "repair": {
+        "system": "schema_only",
+        "totalCases": 8,
+        "passedCases": 5,
+        "silentCorruptionCaught": 0,
+        "falseHealRate": 1,
+        "heldOutPassRate": 1,
+        "falseReleases": 1,
+        "lastKnownGoodAvailable": true
+      }
+    },
+    {
+      "name": "source_semantic_contracts",
+      "repair": {
+        "system": "contract_only",
+        "totalCases": 8,
+        "passedCases": 8,
+        "silentCorruptionCaught": 1,
+        "falseHealRate": 0,
+        "heldOutPassRate": 1,
+        "falseReleases": 0,
+        "lastKnownGoodAvailable": true
+      },
+      "source_contract": {
+        "passed": true,
+        "latency_ms": 2.4844
+      }
+    },
+    {
+      "name": "contracts_canonical_mapping",
+      "repair": {
+        "system": "contract_only",
+        "totalCases": 8,
+        "passedCases": 8,
+        "silentCorruptionCaught": 1,
+        "falseHealRate": 0,
+        "heldOutPassRate": 1,
+        "falseReleases": 0,
+        "lastKnownGoodAvailable": true
+      },
+      "canonical_mapping": {
+        "passed": true,
+        "mapped_records": 1,
+        "expected_records": 1,
+        "latency_ms": 3.3808
+      }
+    },
+    {
+      "name": "full_kevlar_without_held_out_repair_tests",
+      "repair": {
+        "system": "full_kevlar",
+        "totalCases": 6,
+        "passedCases": 6,
+        "silentCorruptionCaught": 1,
+        "falseHealRate": 0,
+        "heldOutPassRate": null,
+        "falseReleases": 0,
+        "lastKnownGoodAvailable": true
+      }
+    },
+    {
+      "name": "full_kevlar",
+      "repair": {
+        "system": "full_kevlar",
+        "totalCases": 8,
+        "passedCases": 8,
+        "silentCorruptionCaught": 1,
+        "falseHealRate": 0,
+        "heldOutPassRate": 1,
+        "falseReleases": 0,
+        "lastKnownGoodAvailable": true
+      },
+      "platform_checks": {
+        "triage": 9,
+        "identity": 3,
+        "semantic_events": 4,
+        "delivery": 2
+      }
+    }
+  ],
+  "metrics": {
+    "silent_corruption_catch_rate": {
+      "numerator": 1,
+      "denominator": 1,
+      "value": 1
+    },
+    "correct_triage_rate": {
+      "numerator": 9,
+      "denominator": 9,
+      "value": 1
+    },
+    "false_heal_rate": {
+      "numerator": 0,
+      "denominator": 2,
+      "value": 0
+    },
+    "held_out_pass_rate": {
+      "numerator": 2,
+      "denominator": 2,
+      "value": 1
+    },
+    "false_release_count": 0,
+    "semantic_event_precision": {
+      "numerator": 3,
+      "denominator": 3,
+      "value": 1
+    },
+    "semantic_event_recall": {
+      "numerator": 3,
+      "denominator": 3,
+      "value": 1
+    },
+    "false_quarantine_rate": {
+      "numerator": 0,
+      "denominator": 6,
+      "value": 0
+    },
+    "last_known_good_availability": {
+      "numerator": 1,
+      "denominator": 1,
+      "value": 1
+    },
+    "verified_recovery_latency_ms": {
+      "samples": 6,
+      "median": 0.3362,
+      "p95": 19.7226
+    },
+    "duplicate_event_count": 0,
+    "entity_resolution_accuracy": {
+      "numerator": 3,
+      "denominator": 3,
+      "value": 1
+    },
+    "delivery_success": {
+      "first_attempt": true,
+      "replay": true,
+      "value": 1
+    },
+    "deterministic_operation_latency_ms": {
+      "samples": 27,
+      "median": 0.221,
+      "p95": 4.196,
+      "max": 19.7226
+    },
+    "measured_proof_cost_usd": 0.01
+  },
+  "cases": {
+    "gauntlet": [
+      {
+        "caseId": "M1",
+        "visibility": "visible",
+        "expectedRelation": "same_value",
+        "outcome": "pass",
+        "observedValue": 129,
+        "releasedValue": 129,
+        "falseHeal": false,
+        "falseRelease": false,
+        "detectionMs": 19.7226,
+        "recoveryMs": 19.7226,
+        "evidenceHash": "sha256:8d8ef636c4fe4a9126e819a18629e13213c05b745a9f77940dd0c6370b136af9",
+        "reason": "The repaired collector preserved the verified semantic value."
+      },
+      {
+        "caseId": "M2",
+        "visibility": "visible",
+        "expectedRelation": "same_value",
+        "outcome": "pass",
+        "observedValue": 129,
+        "releasedValue": 129,
+        "falseHeal": false,
+        "falseRelease": false,
+        "detectionMs": 0.4538,
+        "recoveryMs": 0.4538,
+        "evidenceHash": "sha256:125b944109500a9bf5573af5b52b69fa464c91fa962a2635c5865dd10dbcb009",
+        "reason": "The repaired collector preserved the verified semantic value."
+      },
+      {
+        "caseId": "M3",
+        "visibility": "visible",
+        "expectedRelation": "same_semantic_value",
+        "outcome": "pass",
+        "observedValue": 129,
+        "releasedValue": 129,
+        "falseHeal": false,
+        "falseRelease": false,
+        "detectionMs": 0.3362,
+        "recoveryMs": 0.3362,
+        "evidenceHash": "sha256:ebddab65e36223eba1ddf6e857515a78d0f360c2e824cc9de16d09790936ee3f",
+        "reason": "The repaired collector preserved the verified semantic value."
+      },
+      {
+        "caseId": "M4",
+        "visibility": "visible",
+        "expectedRelation": "same_semantic_value",
+        "outcome": "pass",
+        "observedValue": 129,
+        "releasedValue": 129,
+        "falseHeal": false,
+        "falseRelease": false,
+        "detectionMs": 0.3098,
+        "recoveryMs": 0.3098,
+        "evidenceHash": "sha256:d7c0e29546fcac5edf77b64079b01983aaae87821374f3c6137e6e90f213695e",
+        "reason": "The repaired collector preserved the verified semantic value."
+      },
+      {
+        "caseId": "H1",
+        "visibility": "held_out",
+        "expectedRelation": "same_semantic_value",
+        "outcome": "pass",
+        "observedValue": 129,
+        "releasedValue": 129,
+        "falseHeal": false,
+        "falseRelease": false,
+        "detectionMs": 0.5757,
+        "recoveryMs": 0.5757,
+        "evidenceHash": "sha256:59e2c869c3b0e36ded82811d21ba73288bee056e01ae655b367e840b0c13adc9",
+        "reason": "The repaired collector preserved the verified semantic value."
+      },
+      {
+        "caseId": "H2",
+        "visibility": "held_out",
+        "expectedRelation": "same_semantic_value",
+        "outcome": "pass",
+        "observedValue": 129,
+        "releasedValue": 129,
+        "falseHeal": false,
+        "falseRelease": false,
+        "detectionMs": 0.2666,
+        "recoveryMs": 0.2666,
+        "evidenceHash": "sha256:342640def2405d3e5a9ed4a4340fb18ff1972d15325d65c13a9a8484be0d5db0",
+        "reason": "The repaired collector preserved the verified semantic value."
+      },
+      {
+        "caseId": "N1",
+        "visibility": "negative_control",
+        "expectedRelation": "quarantine",
+        "outcome": "pass",
+        "observedValue": null,
+        "releasedValue": null,
+        "falseHeal": false,
+        "falseRelease": false,
+        "detectionMs": 0.1777,
+        "recoveryMs": null,
+        "evidenceHash": "sha256:f487a576b6dc7e193a62dffd06b5fa194a936d63565cf8e8132360febf4ca4a2",
+        "reason": "Soft block was quarantined without requesting selector repair."
+      },
+      {
+        "caseId": "N2",
+        "visibility": "negative_control",
+        "expectedRelation": "do_not_heal",
+        "outcome": "pass",
+        "observedValue": null,
+        "releasedValue": null,
+        "falseHeal": false,
+        "falseRelease": false,
+        "detectionMs": 0.0388,
+        "recoveryMs": null,
+        "evidenceHash": "sha256:c9d11ff29e8214dbd51b8d5731099331c7d6b76f7c019d83873882538afa86ac",
+        "reason": "Legitimate empty state was accepted without requesting repair."
+      }
+    ],
+    "triage": [
+      {
+        "name": "semantic swap",
+        "expected": "semantic_swap",
+        "observed": "semantic_swap",
+        "passed": true,
+        "latency_ms": 1.0663
+      },
+      {
+        "name": "transport failure",
+        "expected": "transport_failure",
+        "observed": "transport_failure",
+        "passed": true,
+        "latency_ms": 0.1783
+      },
+      {
+        "name": "soft block",
+        "expected": "soft_block",
+        "observed": "soft_block",
+        "passed": true,
+        "latency_ms": 0.0424
+      },
+      {
+        "name": "legitimate empty",
+        "expected": "legitimate_empty",
+        "observed": "legitimate_empty",
+        "passed": true,
+        "latency_ms": 0.0311
+      },
+      {
+        "name": "dead page",
+        "expected": "dead_page",
+        "observed": "dead_page",
+        "passed": true,
+        "latency_ms": 0.0274
+      },
+      {
+        "name": "render timing",
+        "expected": "render_timing",
+        "observed": "render_timing",
+        "passed": true,
+        "latency_ms": 0.0339
+      },
+      {
+        "name": "structural drift",
+        "expected": "structural_drift",
+        "observed": "structural_drift",
+        "passed": true,
+        "latency_ms": 0.0258
+      },
+      {
+        "name": "A/B variant",
+        "expected": "ab_variant",
+        "observed": "ab_variant",
+        "passed": true,
+        "latency_ms": 0.3411
+      },
+      {
+        "name": "unknown",
+        "expected": "unknown",
+        "observed": "unknown",
+        "passed": true,
+        "latency_ms": 0.0467
+      }
+    ],
+    "entity_resolution": [
+      {
+        "expected": "auto_link",
+        "observed": "auto_link",
+        "passed": true,
+        "latency_ms": 4.196
+      },
+      {
+        "expected": "needs_review",
+        "observed": "needs_review",
+        "passed": true,
+        "latency_ms": 0.0486
+      },
+      {
+        "expected": "needs_review",
+        "observed": "needs_review",
+        "passed": true,
+        "latency_ms": 0.0056
+      }
+    ],
+    "semantic_events": [
+      {
+        "id": "layout-only",
+        "expected": "presentation_drift",
+        "observed": "presentation_drift",
+        "passed": true,
+        "business_event": false,
+        "latency_ms": 1.3964
+      },
+      {
+        "id": "price-change",
+        "expected": "fact_updated",
+        "observed": "fact_updated",
+        "passed": true,
+        "business_event": true,
+        "latency_ms": 0.221
+      },
+      {
+        "id": "correction",
+        "expected": "fact_corrected",
+        "observed": "fact_corrected",
+        "passed": true,
+        "business_event": true,
+        "latency_ms": 0.1659
+      },
+      {
+        "id": "source-conflict",
+        "expected": "source_conflict_started",
+        "observed": "source_conflict_started",
+        "passed": true,
+        "business_event": true,
+        "latency_ms": 0.7436
+      }
+    ]
+  },
+  "limitations": [
+    "The controlled benchmark is fixture-backed and contains one labeled silent-corruption case.",
+    "Deterministic operation latency measures local Node.js execution, not browser collection or public API network latency.",
+    "The cost value is the measured Phase 11 proof workload estimate, not a general production cost forecast."
+  ]
+}

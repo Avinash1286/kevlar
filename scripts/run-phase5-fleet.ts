@@ -36,22 +36,40 @@ const sourceSpecs = {
 } as const;
 
 type SourceKey = keyof typeof sourceSpecs;
-type Catalog = {
-  sources: Array<{ _id: string; key: string }>;
-  endpoints: Array<{ _id: string; sourceId: string; url: string }>;
-  bindings: Array<{
-    _id: string;
-    sourceId?: string;
-    collectorId: string;
-    lifecycleStatus: string;
-  }>;
+type FleetBinding = {
+  sourceId: string;
+  endpointId: string;
+  collectorId: string;
+  bindingId: string;
+  policyReady: boolean;
 };
 
-const catalogQuery = makeFunctionReference<
-  "query",
-  { domainPackKey?: string },
-  Catalog
->("phase5Queries:catalog");
+const seedCatalogMutation = makeFunctionReference<
+  "mutation",
+  { ingestKey: string; regressionCollectorPlatformId?: string },
+  { domainPackId: string; sourceIds: string[]; regressionBound: boolean }
+>("phase5Catalog:seedCatalog");
+const resolveFleetBindingMutation = makeFunctionReference<
+  "mutation",
+  {
+    ingestKey: string;
+    sourceKey: SourceKey;
+    collectorPlatformId: string;
+  },
+  FleetBinding
+>("phase5Catalog:resolveFleetBinding");
+const activateVerifiedAnthropicPolicyMutation = makeFunctionReference<
+  "mutation",
+  {
+    ingestKey: string;
+    sourceKey: "anthropic-pricing" | "anthropic-models";
+    collectorPlatformId: string;
+    verificationSnapshotId: string;
+    verifiedRowCount: 1;
+    operationKey: string;
+  },
+  { reviewId: string; authorityIds: string[]; duplicate: boolean }
+>("phase5Catalog:activateVerifiedAnthropicPolicy");
 const certifyAction = makeFunctionReference<
   "action",
   {
@@ -126,6 +144,28 @@ function isSourceKey(value: string | undefined): value is SourceKey {
   return Boolean(value && value in sourceSpecs);
 }
 
+function isAnthropicActivationSource(
+  value: SourceKey,
+): value is "anthropic-pricing" | "anthropic-models" {
+  return value === "anthropic-pricing" || value === "anthropic-models";
+}
+
+function parseArguments() {
+  const [sourceKey, ...options] = process.argv.slice(2);
+  if (!isSourceKey(sourceKey)) {
+    throw new Error(
+      "Usage: run-phase5-fleet <source-key> [--activate-policy <verified-snapshot-id>]",
+    );
+  }
+  if (options.length === 0)
+    return { sourceKey, verificationSnapshotId: undefined };
+  if (options.length !== 2 || options[0] !== "--activate-policy" || !options[1])
+    throw new Error(
+      "Usage: run-phase5-fleet <source-key> [--activate-policy <verified-snapshot-id>]",
+    );
+  return { sourceKey, verificationSnapshotId: options[1] };
+}
+
 async function collect(runtime: BrightDataRuntime, url: string) {
   const { snapshotId } = await runtime.triggerDevelopment({ url });
   console.log(JSON.stringify({ event: "triggered", snapshotId }));
@@ -155,10 +195,7 @@ async function collect(runtime: BrightDataRuntime, url: string) {
 }
 
 async function main() {
-  const key = process.argv[2];
-  if (!isSourceKey(key)) {
-    throw new Error("Usage: run-phase5-fleet <source-key>");
-  }
+  const { sourceKey: key, verificationSnapshotId } = parseArguments();
   const apiKey = process.env.BRIGHT_DATA_API_KEY;
   const convexUrl = process.env.CONVEX_URL;
   const ingestKey = process.env.KEVLAR_BASELINE_INGEST_KEY;
@@ -173,29 +210,59 @@ async function main() {
     collectorId: spec.collectorId,
   });
   const convex = new ConvexHttpClient(convexUrl);
-  const catalog = await convex.query(catalogQuery, {
-    domainPackKey: "ai-infrastructure",
+  await convex.mutation(seedCatalogMutation, { ingestKey });
+  let resolved = await convex.mutation(resolveFleetBindingMutation, {
+    ingestKey,
+    sourceKey: key,
+    collectorPlatformId: spec.collectorId,
   });
-  const source = catalog.sources.find((item) => item.key === key);
-  if (!source) throw new Error(`Source ${key} is not seeded`);
-  const endpoint = catalog.endpoints.find(
-    (item) => item.sourceId === source._id && item.url === spec.url,
-  );
-  const pendingBinding = catalog.bindings.find(
-    (item) =>
-      item.sourceId === source._id && item.lifecycleStatus !== "disabled",
-  );
-  if (!endpoint || !pendingBinding) {
-    throw new Error(`Source ${key} is missing endpoint or collector binding`);
+  if (!resolved.policyReady) {
+    if (!verificationSnapshotId) {
+      throw new Error(
+        `Source ${key} is still pending policy approval. First run phase5:verify, then rerun with --activate-policy <verified-snapshot-id>.`,
+      );
+    }
+    if (!isAnthropicActivationSource(key)) {
+      throw new Error(
+        `Source ${key} cannot use the restricted Anthropic activation path`,
+      );
+    }
+    const activation = await convex.mutation(
+      activateVerifiedAnthropicPolicyMutation,
+      {
+        ingestKey,
+        sourceKey: key,
+        collectorPlatformId: spec.collectorId,
+        verificationSnapshotId,
+        verifiedRowCount: 1,
+        operationKey: `phase5:${key}:policy:${verificationSnapshotId}`,
+      },
+    );
+    console.log(JSON.stringify({ event: "policy_activated", key, activation }));
+    resolved = await convex.mutation(resolveFleetBindingMutation, {
+      ingestKey,
+      sourceKey: key,
+      collectorPlatformId: spec.collectorId,
+    });
+    if (!resolved.policyReady)
+      throw new Error(`Source ${key} policy activation did not become ready`);
   }
+  console.log(
+    JSON.stringify({
+      event: "binding_resolved",
+      key,
+      bindingId: resolved.bindingId,
+      policyReady: resolved.policyReady,
+    }),
+  );
 
   const collected = await collect(runtime, spec.url);
   const operationRoot = `phase5:${key}:${collected.snapshotId}`;
   const certification = await convex.action(certifyAction, {
     ingestKey,
-    sourceId: source._id,
-    endpointId: endpoint._id,
-    collectorId: pendingBinding.collectorId,
+    sourceId: resolved.sourceId,
+    endpointId: resolved.endpointId,
+    collectorId: resolved.collectorId,
     sourceUrl: spec.url,
     brightDataJobId: collected.snapshotId,
     rawObservation: collected.rawObservation,
@@ -208,9 +275,9 @@ async function main() {
   }
   const binding = await convex.mutation(bindMutation, {
     ingestKey,
-    sourceId: source._id,
-    endpointId: endpoint._id,
-    collectorId: pendingBinding.collectorId,
+    sourceId: resolved.sourceId,
+    endpointId: resolved.endpointId,
+    collectorId: resolved.collectorId,
     sourceCertificationId: certification.sourceCertificationId,
     activate: true,
     operationKey: `${operationRoot}:bind`,

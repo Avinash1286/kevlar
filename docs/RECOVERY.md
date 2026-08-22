@@ -13,19 +13,38 @@ Kevlar backup manifests contain a content digest, source deployment, schema revi
 
 Project deletion is owner/admin-only, idempotent, and bounded. It tombstones the project, disables service access, redacts raw evidence and row payloads in batches, and retains only hashes, certificates/events required for audit, security decisions, and the deletion tombstone. Retention runs use configured policy windows and leave a count/digest audit record.
 
-The v1.0.0 release proof validates a manifest against the development deployment and executes deletion only against a disposable project.
+The v1.0.1 release proof validates a manifest against the development deployment,
+successfully exports a fresh source snapshot, and executes deletion only against
+a disposable project. It does **not** import that snapshot into a different
+deployment: this account has no Preview Deploy Key, and preview creation is
+billing-gated. Same-project digest verification is not a restore drill.
+
+When a Preview Deploy Key is available, complete the isolated drill with:
+
+1. `npx convex export --deployment veracious-eagle-977 --path backup-<date>.zip`.
+2. Announce the throwaway target, then run
+   `npx convex deploy --preview-create restore-drill-<date>` using the preview key.
+3. Run
+   `npx convex import backup-<date>.zip --deployment restore-drill-<date> --replace --yes`.
+4. Compare critical-table counts and query a certificate, current fact, fact
+   history row, semantic event, evidence bundle, and source record in both
+   deployments. A zero-row or mismatched restore fails the drill.
+5. Save only a redacted count/digest report, let the preview expire, and delete
+   every local snapshot copy. A production restore additionally requires a new
+   production-target confirmation and must disclose post-snapshot write loss.
 
 ## Application release rollback
 
-Release tag `v1.0.0` is the immutable code rollback point. Rolling back the web
+Release tag `v1.0.1` is the current immutable code rollback point; `v1.0.0` remains the original complete baseline. Rolling back the web
 application re-points the Vercel production alias to a previously built artifact;
 it does not rewrite Convex data or Git history.
 
 1. Stop promotions and record the incident, current production deployment URL,
    commit, and operator.
-2. Run `vercel ls` and `vercel inspect <known-good-deployment-url>` from
-   `apps/web`. Confirm that the candidate is `READY`, belongs to the Kevlar web
-   project, and corresponds to tag `v1.0.0` or another explicitly approved
+2. Run `vercel ls` and `vercel inspect <known-good-deployment-url>` from the
+   repository root, where `.vercel/project.json` links the project. Confirm that
+   the candidate is `READY`, belongs to the Kevlar web
+   project, and corresponds to tag `v1.0.1`, `v1.0.0`, or another explicitly approved
    release.
 3. Run `vercel rollback <known-good-deployment-url>`. The equivalent dashboard
    action is **Deployments → known-good deployment → Promote to Production**.
@@ -36,9 +55,9 @@ it does not rewrite Convex data or Git history.
 5. Inspect Vercel error logs for the rolled-back deployment and record the
    deployment URL, verification result, and rollback reason in the incident.
 
-The v1.0.0 Convex proof targets only `dev:veracious-eagle-977`; no production
+The v1.0.1 Convex proof targets only `dev:veracious-eagle-977`; no production
 Convex deployment is part of this release. Do not attempt a destructive schema
 rollback. If the development backend must be reconstructed, create a fresh
-development/preview deployment from tag `v1.0.0`, restore the newest verified
+development/preview deployment from tag `v1.0.1`, restore the newest verified
 manifest into that isolated target, run the restore checks above, and switch the
 web environment only after explicit target confirmation and a passing preview.

@@ -58,6 +58,7 @@ import type * as phase5Fairness from "../phase5Fairness.js";
 import type * as phase5Fleet from "../phase5Fleet.js";
 import type * as phase5Ingest from "../phase5Ingest.js";
 import type * as phase5IngestSupport from "../phase5IngestSupport.js";
+import type * as phase5PublicRead from "../phase5PublicRead.js";
 import type * as phase5Queries from "../phase5Queries.js";
 import type * as phase5Validators from "../phase5Validators.js";
 import type * as phase6Canonical from "../phase6Canonical.js";
@@ -148,6 +149,7 @@ declare const fullApi: ApiFromModules<{
   phase5Fleet: typeof phase5Fleet;
   phase5Ingest: typeof phase5Ingest;
   phase5IngestSupport: typeof phase5IngestSupport;
+  phase5PublicRead: typeof phase5PublicRead;
   phase5Queries: typeof phase5Queries;
   phase5Validators: typeof phase5Validators;
   phase6Canonical: typeof phase6Canonical;

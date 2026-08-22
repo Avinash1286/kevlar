@@ -53,12 +53,22 @@ async function trustFor(
     )
   ).filter((item): item is Doc<"canonicalObservations"> => item !== null);
   return {
-    state: current.state === "released" ? "released" as const : current.state === "stale" ? "stale" as const : "last_known_good" as const,
-    servingLabel: current.servingLabel === "verified" ? "verified" as const : "last_known_good" as const,
+    state:
+      current.state === "released"
+        ? ("released" as const)
+        : current.state === "stale"
+          ? ("stale" as const)
+          : ("last_known_good" as const),
+    servingLabel:
+      current.servingLabel === "verified"
+        ? ("verified" as const)
+        : ("last_known_good" as const),
     verifiedAt: current.lastVerifiedAt,
     freshnessDeadline: current.freshnessDeadline,
     stale: current.state === "stale",
-    supportingSourceCount: new Set(observations.map((item) => String(item.sourceId))).size,
+    supportingSourceCount: new Set(
+      observations.map((item) => String(item.sourceId)),
+    ).size,
     evidenceCount: version.evidenceRefs.length,
     certificateId: version.certificateId ?? null,
     uncertainty: version.evidenceRefs.length === 0 ? "missing_evidence" : null,
@@ -82,13 +92,17 @@ export const entities = internalQuery({
       .paginate(args.paginationOpts);
     return {
       ...result,
-      page: await Promise.all(result.page.map(async (entity) => ({
-        entity,
-        aliases: await ctx.db
-          .query("canonicalEntityAliases")
-          .withIndex("by_entityId_and_status", (q) => q.eq("entityId", entity._id).eq("status", "active"))
-          .take(20),
-      }))),
+      page: await Promise.all(
+        result.page.map(async (entity) => ({
+          entity,
+          aliases: await ctx.db
+            .query("canonicalEntityAliases")
+            .withIndex("by_entityId_and_status", (q) =>
+              q.eq("entityId", entity._id).eq("status", "active"),
+            )
+            .take(20),
+        })),
+      ),
     };
   },
 });
@@ -110,10 +124,24 @@ export const currentFacts = internalQuery({
       .paginate(args.paginationOpts);
     const page = [];
     for (const current of result.page) {
-      if (current.servingLabel === "unavailable" || current.state === "conflicted" || current.state === "retracted") continue;
+      if (
+        current.servingLabel === "unavailable" ||
+        current.state === "conflicted" ||
+        current.state === "retracted"
+      )
+        continue;
       const version = await ctx.db.get("factVersions", current.factVersionId);
-      if (!version || version.projectId !== args.projectId || version.state !== "released") continue;
-      page.push({ current, version, trust: await trustFor(ctx, current, version) });
+      if (
+        !version ||
+        version.projectId !== args.projectId ||
+        version.state !== "released"
+      )
+        continue;
+      page.push({
+        current,
+        version,
+        trust: await trustFor(ctx, current, version),
+      });
     }
     return { ...result, page };
   },
@@ -146,33 +174,43 @@ export const factHistory = internalQuery({
       .unique();
     const page = [];
     for (const version of result.page) {
-      if (version.state !== "released" && version.state !== "retracted") continue;
+      if (version.state !== "released" && version.state !== "retracted")
+        continue;
       const projection = current ?? {
         state: "stale" as const,
         servingLabel: "last_known_good" as const,
         lastVerifiedAt: version.transactionFrom,
         freshnessDeadline: version.transactionFrom,
       };
-      page.push({ version, trust: await trustFor(ctx, projection as Doc<"currentFacts">, version) });
+      page.push({
+        version,
+        trust: await trustFor(ctx, projection as Doc<"currentFacts">, version),
+      });
     }
     return { ...result, page };
   },
 });
 
 export const events = internalQuery({
-  args: { projectId: v.id("projects"), paginationOpts: paginationOptsValidator },
+  args: {
+    projectId: v.id("projects"),
+    paginationOpts: paginationOptsValidator,
+  },
   returns: paginationResultValidator(eventItemValidator),
   handler: async (ctx, args) => {
     const result = await ctx.db
       .query("changeEvents")
-      .withIndex("by_projectId_and_createdAt", (q) => q.eq("projectId", args.projectId))
+      .withIndex("by_projectId_and_createdAt", (q) =>
+        q.eq("projectId", args.projectId),
+      )
       .order("desc")
       .paginate(args.paginationOpts);
     const page = [];
     for (const event of result.page) {
       if (event.state !== "released") continue;
       const entity = await ctx.db.get("canonicalEntities", event.entityId);
-      if (entity) page.push({ event, entity, evidenceCount: event.evidenceRefs.length });
+      if (entity)
+        page.push({ event, entity, evidenceCount: event.evidenceRefs.length });
     }
     return { ...result, page };
   },
@@ -212,8 +250,12 @@ export const sourceHealth = internalQuery({
       .paginate(args.paginationOpts);
     const page = [];
     for (const source of result.page) {
-      const health = await ctx.db.query("sourceHealth").withIndex("by_sourceId", (q) => q.eq("sourceId", source._id)).unique();
-      if (!args.state || health?.state === args.state) page.push({ source, health });
+      const health = await ctx.db
+        .query("sourceHealth")
+        .withIndex("by_sourceId", (q) => q.eq("sourceId", source._id))
+        .unique();
+      if (!args.state || health?.state === args.state)
+        page.push({ source, health });
     }
     return { ...result, page };
   },
@@ -224,18 +266,41 @@ export const verification = internalQuery({
     projectId: v.id("projects"),
     factVersionId: v.id("factVersions"),
   },
-  returns: v.union(v.object({
-    fact: schema.doc("factVersions"),
-    evidence: v.array(schema.doc("evidence")),
-    observations: v.array(schema.doc("canonicalObservations")),
-    certificate: v.union(schema.doc("certificates"), v.null()),
-  }), v.null()),
+  returns: v.union(
+    v.object({
+      fact: schema.doc("factVersions"),
+      evidence: v.array(schema.doc("evidence")),
+      observations: v.array(schema.doc("canonicalObservations")),
+      certificate: v.union(schema.doc("certificates"), v.null()),
+    }),
+    v.null(),
+  ),
   handler: async (ctx, args) => {
     const fact = await ctx.db.get("factVersions", args.factVersionId);
-    if (!fact || fact.projectId !== args.projectId || (fact.state !== "released" && fact.state !== "retracted")) return null;
-    const evidence = (await Promise.all(fact.evidenceRefs.slice(0, 100).map((id) => ctx.db.get("evidence", id)))).filter((item): item is Doc<"evidence"> => item !== null);
-    const observations = (await Promise.all(fact.sourceObservationIds.slice(0, 50).map((id) => ctx.db.get("canonicalObservations", id)))).filter((item): item is Doc<"canonicalObservations"> => item !== null && item.trustState === "verified");
-    const certificate = fact.certificateId ? await ctx.db.get("certificates", fact.certificateId) : null;
+    if (
+      !fact ||
+      fact.projectId !== args.projectId ||
+      (fact.state !== "released" && fact.state !== "retracted")
+    )
+      return null;
+    const evidence = (
+      await Promise.all(
+        fact.evidenceRefs.slice(0, 100).map((id) => ctx.db.get("evidence", id)),
+      )
+    ).filter((item): item is Doc<"evidence"> => item !== null);
+    const observations = (
+      await Promise.all(
+        fact.sourceObservationIds
+          .slice(0, 50)
+          .map((id) => ctx.db.get("canonicalObservations", id)),
+      )
+    ).filter(
+      (item): item is Doc<"canonicalObservations"> =>
+        item !== null && item.trustState === "verified",
+    );
+    const certificate = fact.certificateId
+      ? await ctx.db.get("certificates", fact.certificateId)
+      : null;
     return { fact, evidence, observations, certificate };
   },
 });
@@ -245,7 +310,10 @@ export const certificate = internalQuery({
   returns: v.union(schema.doc("certificates"), v.null()),
   handler: async (ctx, args) => {
     const certificate = await ctx.db.get("certificates", args.certificateId);
-    return certificate?.projectId === args.projectId && certificate.status === "certified" ? certificate : null;
+    return certificate?.projectId === args.projectId &&
+      certificate.status === "certified"
+      ? certificate
+      : null;
   },
 });
 
@@ -257,16 +325,30 @@ export const mcpReleasedFacts = internalQuery({
   },
   returns: v.array(factItemValidator),
   handler: async (ctx, args) => {
-    if (args.predicates.length > 50) throw new Error("At most 50 predicates are supported");
+    if (args.predicates.length > 50)
+      throw new Error("At most 50 predicates are supported");
     const entity = await ctx.db.get("canonicalEntities", args.entityId);
     if (!entity || entity.projectId !== args.projectId) return [];
-    const rows = await ctx.db.query("currentFacts").withIndex("by_entityId", (q) => q.eq("entityId", args.entityId)).take(100);
+    const rows = await ctx.db
+      .query("currentFacts")
+      .withIndex("by_entityId", (q) => q.eq("entityId", args.entityId))
+      .take(100);
     const result = [];
     for (const current of rows) {
-      if (args.predicates.length > 0 && !args.predicates.includes(current.predicate)) continue;
-      if (current.state !== "released" || current.servingLabel !== "verified") continue;
+      if (
+        args.predicates.length > 0 &&
+        !args.predicates.includes(current.predicate)
+      )
+        continue;
+      if (current.state !== "released" || current.servingLabel !== "verified")
+        continue;
       const version = await ctx.db.get("factVersions", current.factVersionId);
-      if (!version || version.state !== "released" || version.evidenceRefs.length === 0) continue;
+      if (
+        !version ||
+        version.state !== "released" ||
+        version.evidenceRefs.length === 0
+      )
+        continue;
       const trust = await trustFor(ctx, current, version);
       if (trust.supportingSourceCount < 1) continue;
       result.push({ current, version, trust });
