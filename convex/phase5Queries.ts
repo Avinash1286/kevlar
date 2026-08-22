@@ -1,6 +1,60 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import schema from "./schema";
+import {
+  publicFleetResultValidator,
+  readKevlarCoreFleet,
+} from "./phase5PublicRead";
+import { resolveKevlarReleaseProjectReadAccess } from "./phase11Auth";
+
+const publicAuthorityValidator = v.object({
+  _id: v.id("sourceAuthorities"),
+  sourceId: v.id("sources"),
+  predicate: v.string(),
+  authority: v.string(),
+  active: v.boolean(),
+});
+
+const publicReviewValidator = v.object({
+  _id: v.id("sourceReviews"),
+  sourceId: v.id("sources"),
+  decision: v.string(),
+  summary: v.string(),
+  createdAt: v.number(),
+});
+
+const publicCertificationValidator = v.object({
+  _id: v.id("sourceCertifications"),
+  sourceId: v.id("sources"),
+  endpointId: v.id("sourceEndpoints"),
+  status: v.string(),
+  contractVersion: v.string(),
+  createdAt: v.number(),
+});
+
+const publicBindingValidator = v.object({
+  _id: v.id("collectorBindings"),
+  sourceId: v.optional(v.id("sources")),
+  endpointId: v.optional(v.id("sourceEndpoints")),
+  bindingKind: v.string(),
+  lifecycleStatus: v.string(),
+  coreGateStatus: v.string(),
+  bypassCore: v.literal(false),
+});
+
+const publicScheduleValidator = v.object({
+  _id: v.id("schedulePolicies"),
+  bindingId: v.id("collectorBindings"),
+  intervalMs: v.number(),
+  jitterMs: v.number(),
+  maxConcurrency: v.number(),
+  dailyQuota: v.number(),
+  weight: v.number(),
+  baseBackoffMs: v.number(),
+  maxBackoffMs: v.number(),
+  failureThreshold: v.number(),
+  enabled: v.boolean(),
+});
 
 export const catalog = query({
   args: { domainPackKey: v.optional(v.string()) },
@@ -8,13 +62,25 @@ export const catalog = query({
     domainPack: v.union(schema.doc("domainPacks"), v.null()),
     sources: v.array(schema.doc("sources")),
     endpoints: v.array(schema.doc("sourceEndpoints")),
-    authorities: v.array(schema.doc("sourceAuthorities")),
-    reviews: v.array(schema.doc("sourceReviews")),
-    certifications: v.array(schema.doc("sourceCertifications")),
-    bindings: v.array(schema.doc("collectorBindings")),
-    schedules: v.array(schema.doc("schedulePolicies")),
+    authorities: v.array(publicAuthorityValidator),
+    reviews: v.array(publicReviewValidator),
+    certifications: v.array(publicCertificationValidator),
+    bindings: v.array(publicBindingValidator),
+    schedules: v.array(publicScheduleValidator),
   }),
   handler: async (ctx, args) => {
+    const project = await resolveKevlarReleaseProjectReadAccess(ctx);
+    if (!project)
+      return {
+        domainPack: null,
+        sources: [],
+        endpoints: [],
+        authorities: [],
+        reviews: [],
+        certifications: [],
+        bindings: [],
+        schedules: [],
+      };
     const domainPack = await ctx.db
       .query("domainPacks")
       .withIndex("by_key", (q) =>
@@ -49,7 +115,10 @@ export const catalog = query({
           .take(20),
       ),
     );
-    const sources = sourceGroups.flat().slice(0, 50);
+    const sources = sourceGroups
+      .flat()
+      .filter((source) => source.visibility === "public")
+      .slice(0, 50);
     const endpoints = (
       await Promise.all(
         sources.map((source) =>
@@ -63,6 +132,7 @@ export const catalog = query({
       )
     )
       .flat()
+      .filter((endpoint) => endpoint.public)
       .slice(0, 100);
     const authorities = (
       await Promise.all(
@@ -93,7 +163,7 @@ export const catalog = query({
     )
       .flat()
       .slice(0, 100);
-    const certifications = (
+    const certificationCandidates = (
       await Promise.all(
         sources.map((source) =>
           ctx.db
@@ -105,8 +175,26 @@ export const catalog = query({
             .take(10),
         ),
       )
-    )
-      .flat()
+    ).flat();
+    const collectors = await ctx.db
+      .query("collectors")
+      .withIndex("by_project", (q) => q.eq("projectId", project._id))
+      .take(100);
+    const collectorIds = new Set(collectors.map((collector) => collector._id));
+    const endpointIds = new Set(endpoints.map((endpoint) => endpoint._id));
+    const endpointById = new Map(
+      endpoints.map((endpoint) => [endpoint._id, endpoint] as const),
+    );
+    const sourceIds = new Set(sources.map((source) => source._id));
+    const certifications = certificationCandidates
+      .filter(
+        (certification) =>
+          collectorIds.has(certification.collectorId) &&
+          sourceIds.has(certification.sourceId) &&
+          endpointIds.has(certification.endpointId) &&
+          endpointById.get(certification.endpointId)?.sourceId ===
+            certification.sourceId,
+      )
       .slice(0, 100);
     const bindingStatuses = [
       "draft",
@@ -140,10 +228,19 @@ export const catalog = query({
       )
       .order("desc")
       .take(20);
-    const bindings = [...productionBindings, ...regressionBindings].slice(
-      0,
-      100,
-    );
+    const bindings = [...productionBindings, ...regressionBindings]
+      .filter(
+        (binding) =>
+          collectorIds.has(binding.collectorId) &&
+          ((!binding.sourceId && !binding.endpointId) ||
+            (binding.sourceId !== undefined &&
+              binding.endpointId !== undefined &&
+              sourceIds.has(binding.sourceId) &&
+              endpointIds.has(binding.endpointId) &&
+              endpointById.get(binding.endpointId)?.sourceId ===
+                binding.sourceId)),
+      )
+      .slice(0, 100);
     const schedules = (
       await Promise.all(
         bindings.map((binding) =>
@@ -158,88 +255,56 @@ export const catalog = query({
       domainPack,
       sources,
       endpoints,
-      authorities,
-      reviews,
-      certifications,
-      bindings,
-      schedules,
+      authorities: authorities.map((item) => ({
+        _id: item._id,
+        sourceId: item.sourceId,
+        predicate: item.predicate,
+        authority: item.authority,
+        active: item.active,
+      })),
+      reviews: reviews.map((item) => ({
+        _id: item._id,
+        sourceId: item.sourceId,
+        decision: item.decision,
+        summary: item.summary,
+        createdAt: item.createdAt,
+      })),
+      certifications: certifications.map((item) => ({
+        _id: item._id,
+        sourceId: item.sourceId,
+        endpointId: item.endpointId,
+        status: item.status,
+        contractVersion: item.contractVersion,
+        createdAt: item.createdAt,
+      })),
+      bindings: bindings.map((item) => ({
+        _id: item._id,
+        sourceId: item.sourceId,
+        endpointId: item.endpointId,
+        bindingKind: item.bindingKind,
+        lifecycleStatus: item.lifecycleStatus,
+        coreGateStatus: item.coreGateStatus,
+        bypassCore: item.bypassCore,
+      })),
+      schedules: schedules.map((item) => ({
+        _id: item._id,
+        bindingId: item.bindingId,
+        intervalMs: item.intervalMs,
+        jitterMs: item.jitterMs,
+        maxConcurrency: item.maxConcurrency,
+        dailyQuota: item.dailyQuota,
+        weight: item.weight,
+        baseBackoffMs: item.baseBackoffMs,
+        maxBackoffMs: item.maxBackoffMs,
+        failureThreshold: item.failureThreshold,
+        enabled: item.enabled,
+      })),
     };
   },
 });
 
 export const fleet = query({
   args: { now: v.number() },
-  returns: v.object({
-    due: v.array(schema.doc("fleetQueueItems")),
-    leased: v.array(schema.doc("fleetQueueItems")),
-    leases: v.array(schema.doc("fleetLeases")),
-    health: v.array(schema.doc("sourceHealth")),
-    observations: v.array(schema.doc("aiInfrastructureObservations")),
-  }),
-  handler: async (ctx, args) => {
-    const [
-      due,
-      leased,
-      leases,
-      healthy,
-      cooling,
-      failing,
-      verified,
-      quarantined,
-    ] = await Promise.all([
-      ctx.db
-        .query("fleetQueueItems")
-        .withIndex("by_state_and_dueAt", (q) =>
-          q.eq("state", "due").lte("dueAt", args.now),
-        )
-        .take(50),
-      ctx.db
-        .query("fleetQueueItems")
-        .withIndex("by_state_and_dueAt", (q) => q.eq("state", "leased"))
-        .take(50),
-      ctx.db
-        .query("fleetLeases")
-        .withIndex("by_status_and_expiresAt", (q) => q.eq("status", "active"))
-        .take(50),
-      ctx.db
-        .query("sourceHealth")
-        .withIndex("by_state_and_cooldownUntil", (q) =>
-          q.eq("state", "healthy"),
-        )
-        .take(50),
-      ctx.db
-        .query("sourceHealth")
-        .withIndex("by_state_and_cooldownUntil", (q) =>
-          q.eq("state", "cooling"),
-        )
-        .take(50),
-      ctx.db
-        .query("sourceHealth")
-        .withIndex("by_state_and_cooldownUntil", (q) =>
-          q.eq("state", "failing"),
-        )
-        .take(50),
-      ctx.db
-        .query("aiInfrastructureObservations")
-        .withIndex("by_trust_and_createdAt", (q) => q.eq("trust", "verified"))
-        .order("desc")
-        .take(25),
-      ctx.db
-        .query("aiInfrastructureObservations")
-        .withIndex("by_trust_and_createdAt", (q) =>
-          q.eq("trust", "quarantined"),
-        )
-        .order("desc")
-        .take(25),
-    ]);
-    return {
-      due,
-      leased,
-      leases,
-      health: [...healthy, ...cooling, ...failing],
-      observations: [...verified, ...quarantined]
-        .sort((a, b) => b.createdAt - a.createdAt)
-        .slice(0, 50),
-    };
-  },
+  returns: publicFleetResultValidator,
+  handler: async (ctx, args) => await readKevlarCoreFleet(ctx, args.now),
 });

@@ -7,6 +7,7 @@ import {
   incidentStateValidator,
 } from "./phase3Validators";
 import schema from "./schema";
+import { assertProjectScope, requireProjectReadAccess } from "./phase11Auth";
 
 const createIncidentResultValidator = v.object({
   incidentId: v.id("incidents"),
@@ -215,6 +216,7 @@ export const detail = query({
   handler: async (ctx, args) => {
     const incident = await ctx.db.get("incidents", args.incidentId);
     if (!incident) return null;
+    await requireProjectReadAccess(ctx, incident.projectId);
     const [
       failingRun,
       collector,
@@ -254,6 +256,14 @@ export const detail = query({
         .order("desc")
         .take(25),
     ]);
+    assertProjectScope(incident.projectId, [
+      failingRun,
+      collector,
+      latestTriage,
+      latestWorkflow,
+      latestReview,
+      ...modelCalls,
+    ]);
     return {
       incident,
       failingRun,
@@ -286,6 +296,7 @@ export const timeline = query({
   handler: async (ctx, args) => {
     const incident = await ctx.db.get("incidents", args.incidentId);
     if (!incident) return [];
+    await requireProjectReadAccess(ctx, incident.projectId);
     const [transitions, triage, workflows, modelCalls, reviews] =
       await Promise.all([
         ctx.db
@@ -324,6 +335,13 @@ export const timeline = query({
           .order("desc")
           .take(25),
       ]);
+    assertProjectScope(incident.projectId, [
+      ...transitions,
+      ...triage,
+      ...workflows,
+      ...modelCalls,
+      ...reviews,
+    ]);
 
     return [
       ...transitions.map((item) => ({

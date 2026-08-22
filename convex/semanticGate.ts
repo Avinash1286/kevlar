@@ -4,6 +4,10 @@ import {
   verifyProductPrice,
 } from "../packages/semantic-contracts/src/index";
 import { mutation, query } from "./_generated/server";
+import {
+  assertProjectScope,
+  resolveKevlarReleaseProjectReadAccess,
+} from "./phase11Auth";
 
 const evidenceItemValidator = v.object({
   kind: v.union(
@@ -241,10 +245,7 @@ export const feed = query({
   args: {},
   returns: v.any(),
   handler: async (ctx) => {
-    const project = await ctx.db
-      .query("projects")
-      .withIndex("by_slug", (q) => q.eq("slug", "kevlar-core"))
-      .unique();
+    const project = await resolveKevlarReleaseProjectReadAccess(ctx);
     if (!project) return null;
     const release = await ctx.db
       .query("fieldReleases")
@@ -268,6 +269,8 @@ export const feed = query({
         .withIndex("by_runId", (q) => q.eq("runId", release.runId))
         .first(),
     ]);
+    if (!run) throw new Error("Released field run is missing");
+    assertProjectScope(project._id, [release, run, ...violations, alert]);
     return { project, release, run, violations, alert };
   },
 });
@@ -277,10 +280,7 @@ export const projectStatus = query({
   returns: v.any(),
   handler: async (ctx, args) => {
     if (args.slug !== "kevlar-core") return null;
-    const project = await ctx.db
-      .query("projects")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
-      .unique();
+    const project = await resolveKevlarReleaseProjectReadAccess(ctx);
     if (!project) return null;
     const [release, contract] = await Promise.all([
       ctx.db
@@ -317,6 +317,14 @@ export const projectStatus = query({
         .query("rows")
         .withIndex("by_run", (q) => q.eq("runId", release.runId))
         .first(),
+    ]);
+    if (!run) throw new Error("Released field run is missing");
+    assertProjectScope(project._id, [
+      contract,
+      release,
+      run,
+      ...violations,
+      alert,
     ]);
     return { project, contract, release, run, violations, alert, row };
   },

@@ -2,6 +2,10 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import schema from "./schema";
+import {
+  publicFleetResultValidator,
+  readKevlarCoreFleet,
+} from "./phase5PublicRead";
 import { assertPhase5Text, requirePhase5IngestKey } from "./phase5Auth";
 import { isFairCandidateEligible, orderFairCandidates } from "./phase5Fairness";
 import {
@@ -389,81 +393,8 @@ export const recordOutcome = mutation({
   },
 });
 
-const dashboardReturns = v.object({
-  due: v.array(schema.doc("fleetQueueItems")),
-  leased: v.array(schema.doc("fleetQueueItems")),
-  leases: v.array(schema.doc("fleetLeases")),
-  health: v.array(schema.doc("sourceHealth")),
-  observations: v.array(schema.doc("aiInfrastructureObservations")),
-});
-
 export const dashboard = query({
   args: { now: v.number() },
-  returns: dashboardReturns,
-  handler: async (ctx, args) => {
-    const [
-      due,
-      leased,
-      leases,
-      healthy,
-      cooling,
-      failing,
-      verified,
-      quarantined,
-    ] = await Promise.all([
-      ctx.db
-        .query("fleetQueueItems")
-        .withIndex("by_state_and_dueAt", (q) =>
-          q.eq("state", "due").lte("dueAt", args.now),
-        )
-        .take(50),
-      ctx.db
-        .query("fleetQueueItems")
-        .withIndex("by_state_and_dueAt", (q) => q.eq("state", "leased"))
-        .take(50),
-      ctx.db
-        .query("fleetLeases")
-        .withIndex("by_status_and_expiresAt", (q) => q.eq("status", "active"))
-        .take(50),
-      ctx.db
-        .query("sourceHealth")
-        .withIndex("by_state_and_cooldownUntil", (q) =>
-          q.eq("state", "healthy"),
-        )
-        .take(50),
-      ctx.db
-        .query("sourceHealth")
-        .withIndex("by_state_and_cooldownUntil", (q) =>
-          q.eq("state", "cooling"),
-        )
-        .take(50),
-      ctx.db
-        .query("sourceHealth")
-        .withIndex("by_state_and_cooldownUntil", (q) =>
-          q.eq("state", "failing"),
-        )
-        .take(50),
-      ctx.db
-        .query("aiInfrastructureObservations")
-        .withIndex("by_trust_and_createdAt", (q) => q.eq("trust", "verified"))
-        .order("desc")
-        .take(25),
-      ctx.db
-        .query("aiInfrastructureObservations")
-        .withIndex("by_trust_and_createdAt", (q) =>
-          q.eq("trust", "quarantined"),
-        )
-        .order("desc")
-        .take(25),
-    ]);
-    return {
-      due,
-      leased,
-      leases,
-      health: [...healthy, ...cooling, ...failing],
-      observations: [...verified, ...quarantined]
-        .sort((a, b) => b.createdAt - a.createdAt)
-        .slice(0, 50),
-    };
-  },
+  returns: publicFleetResultValidator,
+  handler: async (ctx, args) => await readKevlarCoreFleet(ctx, args.now),
 });

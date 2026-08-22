@@ -166,6 +166,9 @@ const schema = defineSchema({
     ),
     createdAt: v.number(),
     updatedAt: v.number(),
+    publicReadStatus: v.optional(
+      v.union(v.literal("private"), v.literal("published")),
+    ),
     deletionState: v.optional(projectDeletionStateValidator),
     deletedAt: v.optional(v.number()),
   }).index("by_slug", ["slug"]),
@@ -2290,7 +2293,11 @@ const schema = defineSchema({
     createdAt: v.number(),
     resolvedAt: v.optional(v.number()),
   })
-    .index("by_organizationId_and_status_and_createdAt", ["organizationId", "status", "createdAt"])
+    .index("by_organizationId_and_status_and_createdAt", [
+      "organizationId",
+      "status",
+      "createdAt",
+    ])
     .index("by_operationKey", ["operationKey"]),
 
   operationsRunbooks: defineTable({
@@ -2364,13 +2371,21 @@ const schema = defineSchema({
     createdAt: v.number(),
   })
     .index("by_eventId", ["eventId"])
-    .index("by_projectId_and_status_and_createdAt", ["projectId", "status", "createdAt"])
+    .index("by_projectId_and_status_and_createdAt", [
+      "projectId",
+      "status",
+      "createdAt",
+    ])
     .index("by_operationKey", ["operationKey"]),
 
   chaosRuns: defineTable({
     organizationId: v.id("organizations"),
     projectId: v.id("projects"),
-    status: v.union(v.literal("running"), v.literal("passed"), v.literal("failed")),
+    status: v.union(
+      v.literal("running"),
+      v.literal("passed"),
+      v.literal("failed"),
+    ),
     operationKey: v.string(),
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
@@ -2462,7 +2477,10 @@ const schema = defineSchema({
     completedAt: v.optional(v.number()),
   })
     .index("by_projectId", ["projectId"])
-    .index("by_organizationId_and_requestedAt", ["organizationId", "requestedAt"])
+    .index("by_organizationId_and_requestedAt", [
+      "organizationId",
+      "requestedAt",
+    ])
     .index("by_operationKey", ["operationKey"]),
 
   backupRestoreManifests: defineTable({

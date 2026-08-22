@@ -1,13 +1,20 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import {
+  assertProjectScope,
+  resolveKevlarReleaseProjectReadAccess,
+} from "./phase11Auth";
 
 export const latestBaseline = query({
   args: {},
   returns: v.any(),
   handler: async (ctx) => {
+    const project = await resolveKevlarReleaseProjectReadAccess(ctx);
+    if (!project) return null;
     const run = await ctx.db
       .query("runs")
-      .withIndex("by_mode_and_startedAt", (q) => q.eq("mode", "baseline"))
+      .withIndex("by_project_started", (q) => q.eq("projectId", project._id))
+      .filter((q) => q.eq(q.field("mode"), "baseline"))
       .order("desc")
       .first();
     if (!run) return null;
@@ -23,6 +30,8 @@ export const latestBaseline = query({
         .take(100),
     ]);
     const collector = await ctx.db.get(run.collectorId);
+    if (!collector) throw new Error("Baseline collector is missing");
+    assertProjectScope(project._id, [run, collector, ...evidence]);
 
     return { run, row, evidence, collector };
   },

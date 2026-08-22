@@ -2,6 +2,34 @@ import { v } from "convex/values";
 import { query } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import schema from "./schema";
+import { assertProjectScope, requireProjectReadAccess } from "./phase11Auth";
+
+const publicSchemaRevisionValidator = v.object({
+  _id: v.id("canonicalSchemaRevisions"),
+  domain: v.string(),
+  revision: v.number(),
+  definition: v.any(),
+  definitionHash: v.string(),
+  createdAt: v.number(),
+});
+
+const publicSchemaStateValidator = v.object({
+  _id: v.id("canonicalSchemaRevisionStates"),
+  schemaRevisionId: v.id("canonicalSchemaRevisions"),
+  fromStatus: v.union(v.string(), v.null()),
+  toStatus: v.string(),
+  reason: v.string(),
+  createdAt: v.number(),
+});
+
+const publicSchemaCompatibilityValidator = v.object({
+  _id: v.id("canonicalSchemaCompatibility"),
+  fromRevisionId: v.id("canonicalSchemaRevisions"),
+  toRevisionId: v.id("canonicalSchemaRevisions"),
+  classification: v.string(),
+  reasons: v.array(v.string()),
+  createdAt: v.number(),
+});
 
 export const registry = query({
   args: {
@@ -9,9 +37,9 @@ export const registry = query({
     domain: v.optional(v.string()),
   },
   returns: v.object({
-    revisions: v.array(schema.doc("canonicalSchemaRevisions")),
-    states: v.array(schema.doc("canonicalSchemaRevisionStates")),
-    compatibility: v.array(schema.doc("canonicalSchemaCompatibility")),
+    revisions: v.array(publicSchemaRevisionValidator),
+    states: v.array(publicSchemaStateValidator),
+    compatibility: v.array(publicSchemaCompatibilityValidator),
   }),
   handler: async (ctx, args) => {
     let domainPackId = args.domainPackId;
@@ -68,7 +96,32 @@ export const registry = query({
     )
       .flat()
       .slice(0, 200);
-    return { revisions, states, compatibility };
+    return {
+      revisions: revisions.map((revision) => ({
+        _id: revision._id,
+        domain: revision.domain,
+        revision: revision.revision,
+        definition: revision.definition,
+        definitionHash: revision.definitionHash,
+        createdAt: revision.createdAt,
+      })),
+      states: states.map((state) => ({
+        _id: state._id,
+        schemaRevisionId: state.schemaRevisionId,
+        fromStatus: state.fromStatus,
+        toStatus: state.toStatus,
+        reason: state.reason,
+        createdAt: state.createdAt,
+      })),
+      compatibility: compatibility.map((item) => ({
+        _id: item._id,
+        fromRevisionId: item.fromRevisionId,
+        toRevisionId: item.toRevisionId,
+        classification: item.classification,
+        reasons: item.reasons,
+        createdAt: item.createdAt,
+      })),
+    };
   },
 });
 
@@ -93,9 +146,18 @@ export const mappings = query({
         .unique();
       projectId = project?._id;
     }
+    if (projectId) await requireProjectReadAccess(ctx, projectId);
     const directSpec = args.mappingSpecId
       ? await ctx.db.get("canonicalMappingSpecs", args.mappingSpecId)
       : null;
+    if (args.mappingSpecId && !directSpec)
+      return { specs: [], revisions: [], approvals: [], transitions: [] };
+    if (directSpec) {
+      if (projectId && directSpec.projectId !== projectId)
+        throw new Error("Cross-project data relationship");
+      projectId = directSpec.projectId;
+      await requireProjectReadAccess(ctx, projectId);
+    }
     const specs = directSpec
       ? [directSpec]
       : args.sourceId
@@ -114,6 +176,9 @@ export const mappings = query({
               .order("desc")
               .take(30)
           : [];
+    if (projectId) assertProjectScope(projectId, specs);
+    for (const specProjectId of new Set(specs.map((spec) => spec.projectId)))
+      await requireProjectReadAccess(ctx, specProjectId);
     const revisions = (
       await Promise.all(
         specs.map((spec) =>
@@ -187,7 +252,26 @@ export const identityGraph = query({
     const directEntity = args.entityId
       ? await ctx.db.get("canonicalEntities", args.entityId)
       : null;
-    if (directEntity) projectId = directEntity.projectId;
+    if (args.entityId && !directEntity) {
+      if (projectId) await requireProjectReadAccess(ctx, projectId);
+      return {
+        entities: [],
+        externalIds: [],
+        aliases: [],
+        lineage: [],
+        operations: [],
+        observations: [],
+        fields: [],
+        resolutions: [],
+        candidates: [],
+        decisions: [],
+      };
+    }
+    if (directEntity) {
+      if (projectId && directEntity.projectId !== projectId)
+        throw new Error("Cross-project data relationship");
+      projectId = directEntity.projectId;
+    }
     if (!projectId) {
       const project = await ctx.db
         .query("projects")
@@ -195,6 +279,20 @@ export const identityGraph = query({
         .unique();
       projectId = project?._id;
     }
+    if (!projectId)
+      return {
+        entities: [],
+        externalIds: [],
+        aliases: [],
+        lineage: [],
+        operations: [],
+        observations: [],
+        fields: [],
+        resolutions: [],
+        candidates: [],
+        decisions: [],
+      };
+    await requireProjectReadAccess(ctx, projectId);
     const entities = directEntity
       ? [directEntity]
       : projectId
@@ -387,6 +485,18 @@ export const identityGraph = query({
     )
       .flat()
       .slice(0, 200);
+    assertProjectScope(projectId, [
+      ...entities,
+      ...externalIds,
+      ...aliases,
+      ...lineage,
+      ...operations,
+      ...observations,
+      ...fields,
+      ...resolutions,
+      ...candidates,
+      ...decisions,
+    ]);
     return {
       entities,
       externalIds,
@@ -406,16 +516,7 @@ export const proof = query({
   args: { key: v.optional(v.string()) },
   returns: v.union(
     v.object({
-      proof: schema.doc("phase6Proofs"),
-      schemaRevision: schema.doc("canonicalSchemaRevisions"),
-      mappingRevisions: v.array(schema.doc("canonicalMappingRevisions")),
-      observations: v.array(schema.doc("canonicalObservations")),
-      observationFields: v.array(schema.doc("canonicalObservationFields")),
-      resolvedEntity: schema.doc("canonicalEntities"),
-      ambiguousCandidates: v.array(schema.doc("identityCandidates")),
-      decisions: v.array(schema.doc("identityReviewDecisions")),
-      operations: v.array(schema.doc("canonicalEntityOperations")),
-      lineage: v.array(schema.doc("canonicalEntityLineage")),
+      proof: v.object({ _id: v.id("phase6Proofs") }),
     }),
     v.null(),
   ),
@@ -427,6 +528,7 @@ export const proof = query({
       )
       .unique();
     if (!proof) return null;
+    await requireProjectReadAccess(ctx, proof.projectId);
     const [schemaRevision, resolvedEntity, mappingRevisions, observations] =
       await Promise.all([
         ctx.db.get("canonicalSchemaRevisions", proof.schemaRevisionId),
@@ -447,6 +549,18 @@ export const proof = query({
     const presentMappings = mappingRevisions.filter(
       (item): item is Doc<"canonicalMappingRevisions"> => item !== null,
     );
+    const mappingOwners = (
+      await Promise.all(
+        [
+          ...new Set(presentMappings.map((mapping) => mapping.mappingSpecId)),
+        ].map((id) => ctx.db.get("canonicalMappingSpecs", id)),
+      )
+    ).filter((item): item is Doc<"canonicalMappingSpecs"> => item !== null);
+    if (
+      mappingOwners.length !==
+      new Set(presentMappings.map((mapping) => mapping.mappingSpecId)).size
+    )
+      throw new Error("Phase 6 proof mapping owner is missing");
     const presentObservations = observations.filter(
       (item): item is Doc<"canonicalObservations"> => item !== null,
     );
@@ -503,17 +617,19 @@ export const proof = query({
         ),
       )
     ).flat();
-    return {
+    assertProjectScope(proof.projectId, [
       proof,
-      schemaRevision,
-      mappingRevisions: presentMappings,
-      observations: presentObservations,
-      observationFields: observationFields.flat(),
       resolvedEntity,
-      ambiguousCandidates: presentCandidates,
-      decisions,
-      operations: presentOperations,
-      lineage,
+      ...mappingOwners,
+      ...presentObservations,
+      ...observationFields.flat(),
+      ...presentCandidates,
+      ...decisions,
+      ...presentOperations,
+      ...lineage,
+    ]);
+    return {
+      proof: { _id: proof._id },
     };
   },
 });

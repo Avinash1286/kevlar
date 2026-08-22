@@ -1,6 +1,12 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
+import {
+  assertProjectScope,
+  requireProjectReadAccess,
+  resolveKevlarReleaseProjectReadAccess,
+} from "./phase11Auth";
 
 export const incidentCourtroom = query({
   args: { incidentId: v.id("incidents") },
@@ -19,6 +25,7 @@ export const incidentCourtroom = query({
   handler: async (ctx, args) => {
     const incident = await ctx.db.get("incidents", args.incidentId);
     if (!incident) return null;
+    await requireProjectReadAccess(ctx, incident.projectId);
     const [
       healAttempts,
       tribunalChecks,
@@ -70,6 +77,14 @@ export const incidentCourtroom = query({
         .order("desc")
         .take(50),
     ]);
+    assertProjectScope(incident.projectId, [
+      ...healAttempts,
+      ...tribunalChecks,
+      ...repairDecisions,
+      ...benchmarkRuns,
+      ...certificates,
+      ...evidenceLinks,
+    ]);
     return {
       incident,
       healAttempts,
@@ -103,8 +118,7 @@ export const certificateBySlug = query({
       .withIndex("by_publicSlug", (q) => q.eq("publicSlug", args.publicSlug))
       .unique();
     if (!certificate) return null;
-    const certificateProject = await ctx.db.get("projects", certificate.projectId);
-    if (certificateProject?.deletionState === "deleted") return null;
+    await requireProjectReadAccess(ctx, certificate.projectId);
     const [
       incident,
       collector,
@@ -137,6 +151,16 @@ export const certificateBySlug = query({
         )
         .take(20),
     ]);
+    assertProjectScope(certificate.projectId, [
+      certificate,
+      incident,
+      collector,
+      healAttempt,
+      benchmarkRun,
+      ...results,
+      ...tribunalChecks,
+      ...evidenceLinks,
+    ]);
     return {
       certificate,
       incident,
@@ -164,6 +188,16 @@ export const gauntlet = query({
         q.eq("catalogVersion", "core-v1"),
       )
       .take(8);
+    let projectId: Id<"projects"> | null = null;
+    if (args.incidentId) {
+      const incident = await ctx.db.get("incidents", args.incidentId);
+      if (!incident) throw new Error("Incident not found");
+      projectId = incident.projectId;
+      await requireProjectReadAccess(ctx, projectId);
+    } else {
+      const project = await resolveKevlarReleaseProjectReadAccess(ctx);
+      projectId = project?._id ?? null;
+    }
     const benchmarkRun = args.incidentId
       ? await ctx.db
           .query("benchmarkRuns")
@@ -172,11 +206,20 @@ export const gauntlet = query({
           )
           .order("desc")
           .first()
-      : await ctx.db
-          .query("benchmarkRuns")
-          .withIndex("by_startedAt")
-          .order("desc")
-          .first();
+      : projectId
+        ? await ctx.db
+            .query("benchmarkRuns")
+            .withIndex("by_startedAt")
+            .filter((q) => q.eq(q.field("projectId"), projectId))
+            .order("desc")
+            .first()
+        : null;
+    if (benchmarkRun) {
+      if (projectId && benchmarkRun.projectId !== projectId)
+        throw new Error("Cross-project data relationship");
+      projectId ??= benchmarkRun.projectId;
+      await requireProjectReadAccess(ctx, projectId);
+    }
     const results = benchmarkRun
       ? await ctx.db
           .query("benchmarkCaseResults")
@@ -185,6 +228,7 @@ export const gauntlet = query({
           )
           .take(16)
       : [];
+    if (projectId) assertProjectScope(projectId, [benchmarkRun, ...results]);
     return { catalog, benchmarkRun, results };
   },
 });

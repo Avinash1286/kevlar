@@ -3,6 +3,7 @@ import { query } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { phase9Limit } from "./phase9Support";
+import { assertProjectScope, requireProjectReadAccess } from "./phase11Auth";
 
 export const evidenceGraph = query({
   args: {
@@ -25,7 +26,11 @@ export const evidenceGraph = query({
     let root = args.rootNodeId
       ? await ctx.db.get("provenanceNodes", args.rootNodeId)
       : null;
-    if (!root && args.projectId)
+    if (root && args.projectId && root.projectId !== args.projectId)
+      throw new Error("Root node belongs to another project");
+    if (root) await requireProjectReadAccess(ctx, root.projectId);
+    if (!root && args.projectId) {
+      await requireProjectReadAccess(ctx, args.projectId);
       root = await ctx.db
         .query("provenanceNodes")
         .withIndex("by_projectId_and_nodeType_and_createdAt", (q) =>
@@ -33,12 +38,8 @@ export const evidenceGraph = query({
         )
         .order("desc")
         .first();
+    }
     if (!root) return { root: null, nodes: [], edges: [], truncated: false };
-    const rootProject = await ctx.db.get("projects", root.projectId);
-    if (rootProject?.deletionState === "deleted")
-      return { root: null, nodes: [], edges: [], truncated: false };
-    if (args.projectId && root.projectId !== args.projectId)
-      throw new Error("Root node belongs to another project");
     const nodeIds = new Set<Id<"provenanceNodes">>([root._id]);
     const edgeMap = new Map<Id<"provenanceEdges">, Doc<"provenanceEdges">>();
     let frontier: Id<"provenanceNodes">[] = [root._id];
@@ -81,6 +82,7 @@ export const evidenceGraph = query({
         [...nodeIds].map((id) => ctx.db.get("provenanceNodes", id)),
       )
     ).filter((item): item is Doc<"provenanceNodes"> => item !== null);
+    assertProjectScope(root.projectId, [root, ...nodes, ...edgeMap.values()]);
     return { root, nodes, edges: [...edgeMap.values()], truncated };
   },
 });
@@ -108,8 +110,7 @@ export const evidenceBundle = query({
           .withIndex("by_digest", (q) => q.eq("digest", args.digest!))
           .unique();
     if (!bundle) return null;
-    const bundleProject = await ctx.db.get("projects", bundle.projectId);
-    if (bundleProject?.deletionState === "deleted") return null;
+    await requireProjectReadAccess(ctx, bundle.projectId);
     const artifacts = await ctx.db
       .query("evidenceBundleArtifacts")
       .withIndex("by_bundleId_and_createdAt", (q) =>
@@ -125,6 +126,15 @@ export const evidenceBundle = query({
         ),
       )
     ).filter((item): item is Doc<"evidence"> => item !== null);
+    if (
+      artifacts.some(
+        (artifact) =>
+          artifact.projectId !== undefined &&
+          artifact.projectId !== bundle.projectId,
+      )
+    )
+      throw new Error("Cross-project data relationship");
+    assertProjectScope(bundle.projectId, [bundle, ...evidence]);
     return { bundle, artifacts, evidence };
   },
 });
@@ -146,6 +156,10 @@ export const blastRadius = query({
   handler: async (ctx, args) => {
     if (!args.incidentId && !args.assessmentId)
       throw new Error("incidentId or assessmentId is required");
+    const incident = args.incidentId
+      ? await ctx.db.get("incidents", args.incidentId)
+      : null;
+    if (args.incidentId && !incident) throw new Error("Incident not found");
     const assessment = args.assessmentId
       ? await ctx.db.get("blastRadiusAssessments", args.assessmentId)
       : await ctx.db
@@ -155,7 +169,13 @@ export const blastRadius = query({
           )
           .order("desc")
           .first();
-    if (!assessment) return null;
+    if (!assessment) {
+      if (incident) await requireProjectReadAccess(ctx, incident.projectId);
+      return null;
+    }
+    if (incident && incident.projectId !== assessment.projectId)
+      throw new Error("Cross-project data relationship");
+    await requireProjectReadAccess(ctx, assessment.projectId);
     const impacts = await ctx.db
       .query("blastRadiusImpacts")
       .withIndex("by_assessmentId_and_kind", (q) =>
@@ -177,6 +197,12 @@ export const blastRadius = query({
           )
           .take(200)
       : [];
+    assertProjectScope(assessment.projectId, [
+      incident,
+      assessment,
+      ...impacts,
+      tribunalContext,
+    ]);
     return { assessment, impacts, tribunalContext, tribunalItems };
   },
 });
@@ -194,6 +220,21 @@ const fleetValidator = v.object({
   certificates: v.array(schema.doc("extendedRepairCertificates")),
 });
 
+function emptyFleetResult() {
+  return {
+    canaries: [],
+    candidates: [],
+    stages: [],
+    eventHolds: [],
+    gauntletRuns: [],
+    suites: [],
+    cases: [],
+    results: [],
+    metrics: [],
+    certificates: [],
+  };
+}
+
 export const fleet = query({
   args: {
     incidentId: v.optional(v.id("incidents")),
@@ -204,14 +245,40 @@ export const fleet = query({
   returns: fleetValidator,
   handler: async (ctx, args) => {
     const limit = phase9Limit(args.limit, 50);
-    let incidentId = args.incidentId;
-    let selectedCanary = args.canaryRunId
+    const selectedIncident = args.incidentId
+      ? await ctx.db.get("incidents", args.incidentId)
+      : null;
+    const selectedCanary = args.canaryRunId
       ? await ctx.db.get("repairCanaryRuns", args.canaryRunId)
       : null;
-    let selectedGauntlet = args.gauntletRunId
+    const selectedGauntlet = args.gauntletRunId
       ? await ctx.db.get("fleetGauntletRuns", args.gauntletRunId)
       : null;
-    incidentId ??= selectedCanary?.incidentId ?? selectedGauntlet?.incidentId;
+    if (args.incidentId && !selectedIncident)
+      throw new Error("Incident not found");
+    if (args.canaryRunId && !selectedCanary)
+      throw new Error("Canary run not found");
+    if (args.gauntletRunId && !selectedGauntlet)
+      throw new Error("Gauntlet run not found");
+    let incidentId =
+      selectedIncident?._id ??
+      selectedCanary?.incidentId ??
+      selectedGauntlet?.incidentId;
+    let projectId =
+      selectedIncident?.projectId ??
+      selectedCanary?.projectId ??
+      selectedGauntlet?.projectId;
+    if (
+      (selectedCanary && selectedCanary.incidentId !== incidentId) ||
+      (selectedGauntlet && selectedGauntlet.incidentId !== incidentId)
+    )
+      throw new Error("Cross-project data relationship");
+    if (projectId)
+      assertProjectScope(projectId, [
+        selectedIncident,
+        selectedCanary,
+        selectedGauntlet,
+      ]);
     if (!incidentId) {
       const proof = await ctx.db
         .query("phase9Proofs")
@@ -220,20 +287,14 @@ export const fleet = query({
         )
         .unique();
       incidentId = proof?.incidentId;
+      projectId = proof?.projectId;
     }
-    if (!incidentId)
-      return {
-        canaries: [],
-        candidates: [],
-        stages: [],
-        eventHolds: [],
-        gauntletRuns: [],
-        suites: [],
-        cases: [],
-        results: [],
-        metrics: [],
-        certificates: [],
-      };
+    if (!incidentId || !projectId) return emptyFleetResult();
+    const owningIncident =
+      selectedIncident ?? (await ctx.db.get("incidents", incidentId));
+    if (!owningIncident) throw new Error("Incident not found");
+    assertProjectScope(projectId, [owningIncident]);
+    await requireProjectReadAccess(ctx, projectId);
     const canaries = selectedCanary
       ? [selectedCanary]
       : await ctx.db
@@ -318,6 +379,17 @@ export const fleet = query({
       )
       .order("desc")
       .take(limit);
+    assertProjectScope(projectId, [
+      selectedIncident,
+      owningIncident,
+      ...canaries,
+      ...candidates,
+      ...eventHolds,
+      ...gauntletRuns,
+      ...suites,
+      ...metrics,
+      ...certificates,
+    ]);
     return {
       canaries,
       candidates,
@@ -337,36 +409,10 @@ export const proof = query({
   args: { key: v.optional(v.string()) },
   returns: v.union(
     v.object({
-      proof: schema.doc("phase9Proofs"),
-      proofId: v.id("phase9Proofs"),
+      proof: v.object({ _id: v.id("phase9Proofs") }),
       incidentId: v.id("incidents"),
       evidenceBundleId: v.id("evidenceBundles"),
       rootNodeId: v.id("provenanceNodes"),
-      failedCanaryRunId: v.id("repairCanaryRuns"),
-      passedCanaryRunId: v.id("repairCanaryRuns"),
-      gauntletRunId: v.id("fleetGauntletRuns"),
-      extendedCertificateId: v.id("extendedRepairCertificates"),
-      bundle: schema.doc("evidenceBundles"),
-      blastRadius: schema.doc("blastRadiusAssessments"),
-      tribunalContext: schema.doc("repairTribunalContexts"),
-      failedCanary: schema.doc("repairCanaryRuns"),
-      passedCanary: schema.doc("repairCanaryRuns"),
-      gauntlet: schema.doc("fleetGauntletRuns"),
-      metrics: schema.doc("fleetBenchmarkMetrics"),
-      certificate: schema.doc("extendedRepairCertificates"),
-      releasedEventCount: v.number(),
-      navigableReleasedEventCount: v.number(),
-      evidenceNodeCount: v.number(),
-      evidenceEdgeCount: v.number(),
-      gauntletCaseCount: v.number(),
-      gauntletPassedCount: v.number(),
-      everyReleasedEventHasEvidencePath: v.boolean(),
-      repairActivationBeganWithCanary: v.boolean(),
-      triggerOnlyCannotActivate: v.boolean(),
-      heldOutBeforeFullRelease: v.boolean(),
-      failedRepairWithheldEvents: v.boolean(),
-      productFixtureRegressionPassed: v.boolean(),
-      allExitGatesPassed: v.boolean(),
     }),
     v.null(),
   ),
@@ -378,6 +424,7 @@ export const proof = query({
       )
       .unique();
     if (!proof) return null;
+    await requireProjectReadAccess(ctx, proof.projectId);
     const [
       bundle,
       blastRadius,
@@ -408,6 +455,7 @@ export const proof = query({
     const [
       metrics,
       phase8,
+      suite,
       graphNodes,
       graphEdges,
       failedHolds,
@@ -425,6 +473,7 @@ export const proof = query({
         .query("phase8Proofs")
         .withIndex("by_key", (q) => q.eq("key", "phase8:semantic-cdc-proof:v1"))
         .unique(),
+      ctx.db.get("fleetGauntletSuites", gauntlet.suiteId),
       ctx.db
         .query("provenanceNodes")
         .withIndex("by_projectId_and_nodeType_and_createdAt", (q) =>
@@ -462,7 +511,7 @@ export const proof = query({
         )
         .take(100),
     ]);
-    if (!metrics || !phase8)
+    if (!metrics || !phase8 || !suite)
       throw new Error("Phase 9 proof prerequisites are missing");
     const events = (
       await Promise.all(
@@ -470,7 +519,16 @@ export const proof = query({
       )
     ).filter((item): item is Doc<"changeEvents"> => item !== null);
     const released = events.filter((event) => event.state === "released");
-    let navigableReleasedEventCount = 0;
+    const caseIds = new Set(cases.map((item) => item._id));
+    if (
+      stages.some((stage) => stage.canaryRunId !== passedCanary._id) ||
+      cases.some((item) => item.suiteId !== suite._id) ||
+      results.some(
+        (result) =>
+          result.gauntletRunId !== gauntlet._id || !caseIds.has(result.caseId),
+      )
+    )
+      throw new Error("Cross-project data relationship");
     for (const event of released) {
       const node = await ctx.db
         .query("provenanceNodes")
@@ -485,75 +543,30 @@ export const proof = query({
           q.eq("fromNodeId", node._id),
         )
         .take(20);
-      if (edges.length > 0) navigableReleasedEventCount += 1;
+      assertProjectScope(proof.projectId, [node, ...edges]);
     }
-    const repairActivationBeganWithCanary =
-      passedCanary.status === "fully_released" &&
-      stages.some((stage) => stage.stage === "trigger_url");
-    const triggerOnlyCannotActivate = stages.some(
-      (stage) => stage.stage === "stored_fixtures" && stage.outcome === "pass",
-    );
-    const heldOutBeforeFullRelease = stages.some(
-      (stage) =>
-        stage.stage === "held_out_mutations" && stage.outcome === "pass",
-    );
-    const failedRepairWithheldEvents =
-      (failedCanary.status === "stopped" ||
-        failedCanary.status === "rolled_back") &&
-      failedHolds.length > 0;
-    const regressionCases = cases.filter(
-      (item) => item.archetype === "product_pricing_fixture",
-    );
-    const passedIds = new Set(
-      results
-        .filter((result) => result.outcome === "pass")
-        .map((result) => result.caseId),
-    );
-    const productFixtureRegressionPassed =
-      regressionCases.length > 0 &&
-      regressionCases.every((item) => passedIds.has(item._id));
-    const everyReleasedEventHasEvidencePath =
-      released.length > 0 && navigableReleasedEventCount === released.length;
-    const gates = [
-      everyReleasedEventHasEvidencePath,
-      repairActivationBeganWithCanary,
-      triggerOnlyCannotActivate,
-      heldOutBeforeFullRelease,
-      failedRepairWithheldEvents,
-      productFixtureRegressionPassed,
-    ];
-    return {
+    assertProjectScope(proof.projectId, [
       proof,
-      proofId: proof._id,
-      incidentId: proof.incidentId,
-      evidenceBundleId: proof.evidenceBundleId,
-      rootNodeId: proof.rootNodeId,
-      failedCanaryRunId: proof.failedCanaryRunId,
-      passedCanaryRunId: proof.passedCanaryRunId,
-      gauntletRunId: proof.gauntletRunId,
-      extendedCertificateId: proof.extendedCertificateId,
+      phase8,
       bundle,
       blastRadius,
       tribunalContext,
       failedCanary,
       passedCanary,
       gauntlet,
+      suite,
       metrics,
       certificate,
-      releasedEventCount: released.length,
-      navigableReleasedEventCount,
-      evidenceNodeCount: graphNodes.length,
-      evidenceEdgeCount: graphEdges.length,
-      gauntletCaseCount: cases.length,
-      gauntletPassedCount: results.filter((result) => result.outcome === "pass")
-        .length,
-      everyReleasedEventHasEvidencePath,
-      repairActivationBeganWithCanary,
-      triggerOnlyCannotActivate,
-      heldOutBeforeFullRelease,
-      failedRepairWithheldEvents,
-      productFixtureRegressionPassed,
-      allExitGatesPassed: gates.every(Boolean),
+      ...graphNodes,
+      ...graphEdges,
+      ...failedHolds,
+      ...events,
+    ]);
+    return {
+      proof: { _id: proof._id },
+      incidentId: proof.incidentId,
+      evidenceBundleId: proof.evidenceBundleId,
+      rootNodeId: proof.rootNodeId,
     };
   },
 });

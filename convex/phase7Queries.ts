@@ -8,6 +8,7 @@ import {
   MAX_FACT_VERSIONS_PER_KEY,
   selectBeliefAt,
 } from "./phase7Support";
+import { assertProjectScope, requireProjectReadAccess } from "./phase11Auth";
 
 function boundedLimit(value: number | undefined): number {
   const limit = value ?? 50;
@@ -34,6 +35,7 @@ export const timeline = query({
   handler: async (ctx, args) => {
     const entity = await ctx.db.get("canonicalEntities", args.entityId);
     if (!entity) return null;
+    await requireProjectReadAccess(ctx, entity.projectId);
     const limit = boundedLimit(args.limit);
     const currentFacts = args.predicate
       ? await ctx.db
@@ -91,6 +93,13 @@ export const timeline = query({
           .map((id) => ctx.db.get("factReleaseDecisions", id)),
       )
     ).filter((item): item is Doc<"factReleaseDecisions"> => item !== null);
+    assertProjectScope(entity.projectId, [
+      entity,
+      ...currentFacts,
+      ...versions,
+      ...relations,
+      ...decisions,
+    ]);
     return { entity, currentFacts, versions, relations, decisions };
   },
 });
@@ -126,6 +135,7 @@ export const history = query({
   handler: async (ctx, args) => {
     const entity = await ctx.db.get("canonicalEntities", args.entityId);
     if (!entity) return null;
+    await requireProjectReadAccess(ctx, entity.projectId);
     const versions = await ctx.db
       .query("factVersions")
       .withIndex("by_entityId_and_predicate_and_transactionFrom", (q) =>
@@ -202,6 +212,33 @@ export const history = query({
       )
       .order("desc")
       .take(100);
+    const [mappingSpec, bindingCollector] = await Promise.all([
+      mappingRevision
+        ? ctx.db.get("canonicalMappingSpecs", mappingRevision.mappingSpecId)
+        : null,
+      collectorBinding
+        ? ctx.db.get("collectors", collectorBinding.collectorId)
+        : null,
+    ]);
+    if (mappingRevision && !mappingSpec)
+      throw new Error("Mapping revision owner is missing");
+    if (collectorBinding && !bindingCollector)
+      throw new Error("Collector binding owner is missing");
+    assertProjectScope(entity.projectId, [
+      entity,
+      ...versions,
+      ...relations,
+      effectiveFactVersion,
+      decisionVersion,
+      decision,
+      ...observations,
+      ...fields,
+      ...evidence,
+      mappingSpec,
+      bindingCollector,
+      run,
+      certificate,
+    ]);
     return {
       entity,
       predicate: args.predicate,
@@ -224,19 +261,33 @@ export const history = query({
 });
 
 const proofResultValidator = v.object({
-  proof: schema.doc("phase7Proofs"),
-  policies: v.array(schema.doc("factFreshnessPolicies")),
-  facts: v.array(schema.doc("factVersions")),
-  relations: v.array(schema.doc("factVersionRelations")),
-  currentFacts: v.array(schema.doc("currentFacts")),
-  decisions: v.array(schema.doc("factReleaseDecisions")),
-  observations: v.array(schema.doc("canonicalObservations")),
-  fields: v.array(schema.doc("canonicalObservationFields")),
-  evidence: v.array(schema.doc("evidence")),
-  mappingRevisions: v.array(schema.doc("canonicalMappingRevisions")),
-  collectorBindings: v.array(schema.doc("collectorBindings")),
-  runs: v.array(schema.doc("runs")),
-  certificates: v.array(schema.doc("certificates")),
+  proof: v.object({ _id: v.id("phase7Proofs") }),
+  facts: v.array(
+    v.object({
+      _id: v.id("factVersions"),
+      entityId: v.id("canonicalEntities"),
+      predicate: v.string(),
+      value: v.any(),
+      validFrom: v.optional(v.number()),
+      validTimeSource: v.string(),
+      transactionFrom: v.number(),
+      changeKind: v.string(),
+    }),
+  ),
+  currentFacts: v.array(
+    v.object({
+      _id: v.id("currentFacts"),
+      entityId: v.id("canonicalEntities"),
+      predicate: v.string(),
+      factVersionId: v.id("factVersions"),
+      state: v.string(),
+      servingLabel: v.string(),
+      lastVerifiedAt: v.number(),
+      freshnessDeadline: v.number(),
+    }),
+  ),
+  observations: v.array(v.literal("redacted")),
+  evidence: v.array(v.literal("redacted")),
   projectionMatches: v.boolean(),
 });
 
@@ -251,6 +302,7 @@ export const proof = query({
       )
       .unique();
     if (!proof) return null;
+    await requireProjectReadAccess(ctx, proof.projectId);
     const [policies, facts, relations, currentFacts] = await Promise.all([
       Promise.all(
         proof.policyIds
@@ -332,6 +384,22 @@ export const proof = query({
         ),
       )
     ).filter((item): item is Doc<"collectorBindings"> => item !== null);
+    const [mappingOwners, collectorOwners] = await Promise.all([
+      Promise.all(
+        [...new Set(mappingRevisions.map((item) => item.mappingSpecId))].map(
+          (id) => ctx.db.get("canonicalMappingSpecs", id),
+        ),
+      ),
+      Promise.all(
+        [...new Set(collectorBindings.map((item) => item.collectorId))].map(
+          (id) => ctx.db.get("collectors", id),
+        ),
+      ),
+    ]);
+    if (mappingOwners.some((item) => item === null))
+      throw new Error("Phase 7 proof mapping owner is missing");
+    if (collectorOwners.some((item) => item === null))
+      throw new Error("Phase 7 proof collector owner is missing");
     const runs = (
       await Promise.all(
         [
@@ -396,20 +464,45 @@ export const proof = query({
         display?.state === current.state &&
         display.servingLabel === current.servingLabel;
     }
-    return {
+    assertProjectScope(proof.projectId, [
       proof,
-      policies: presentPolicies,
-      facts: presentFacts,
-      relations: presentRelations,
-      currentFacts: presentCurrent,
-      decisions,
-      observations,
-      fields,
-      evidence,
-      mappingRevisions,
-      collectorBindings,
-      runs,
-      certificates,
+      ...presentPolicies,
+      ...presentFacts,
+      ...presentRelations,
+      ...presentCurrent,
+      ...decisions,
+      ...observations,
+      ...fields,
+      ...evidence,
+      ...mappingOwners,
+      ...collectorOwners,
+      ...runs,
+      ...certificates,
+    ]);
+    return {
+      proof: { _id: proof._id },
+      facts: presentFacts.map((fact) => ({
+        _id: fact._id,
+        entityId: fact.entityId,
+        predicate: fact.predicate,
+        value: fact.value,
+        validFrom: fact.validFrom,
+        validTimeSource: fact.validTimeSource,
+        transactionFrom: fact.transactionFrom,
+        changeKind: fact.changeKind,
+      })),
+      currentFacts: presentCurrent.map((fact) => ({
+        _id: fact._id,
+        entityId: fact.entityId,
+        predicate: fact.predicate,
+        factVersionId: fact.factVersionId,
+        state: fact.state,
+        servingLabel: fact.servingLabel,
+        lastVerifiedAt: fact.lastVerifiedAt,
+        freshnessDeadline: fact.freshnessDeadline,
+      })),
+      observations: observations.map(() => "redacted" as const),
+      evidence: evidence.map(() => "redacted" as const),
       projectionMatches,
     };
   },

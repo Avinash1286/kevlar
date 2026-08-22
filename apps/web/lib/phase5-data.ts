@@ -42,10 +42,12 @@ export type SourceCatalogData = {
     sourceId: string;
     decision: string;
     summary: string;
+    createdAt: number;
   }>;
   bindings: Array<{
     _id: string;
     sourceId?: string;
+    endpointId?: string;
     bindingKind: string;
     lifecycleStatus: string;
     coreGateStatus: string;
@@ -54,19 +56,22 @@ export type SourceCatalogData = {
   certifications: Array<{
     _id: string;
     sourceId: string;
-    bindingId?: string;
+    endpointId: string;
     status: string;
-    evidenceHash: string;
-    brightDataJobId: string;
-    certifiedAt?: number;
+    contractVersion: string;
+    createdAt: number;
   }>;
   schedules: Array<{
     _id: string;
     bindingId: string;
     intervalMs: number;
+    jitterMs: number;
     maxConcurrency: number;
     dailyQuota: number;
     weight: number;
+    baseBackoffMs: number;
+    maxBackoffMs: number;
+    failureThreshold: number;
     enabled: boolean;
   }>;
 };
@@ -92,10 +97,10 @@ export type FleetData = {
     _id: string;
     sourceId: string;
     bindingId: string;
-    workerId: string;
     status: string;
     claimedAt: number;
     expiresAt: number;
+    releasedAt?: number;
   }>;
   health: Array<{
     _id: string;
@@ -104,17 +109,21 @@ export type FleetData = {
     consecutiveFailures: number;
     quotaUsed: number;
     totalClaims: number;
+    lastClaimedAt?: number;
     lastSuccessAt?: number;
-    lastError?: string;
+    lastFailureAt?: number;
+    updatedAt: number;
   }>;
   observations: Array<{
     _id: string;
     sourceId: string;
+    bindingId: string;
+    runId: string;
     sourceType: string;
-    sourceUrl: string;
     trust: string;
     evidenceHash: string;
     capturedAt: number;
+    createdAt: number;
   }>;
 };
 

@@ -7,7 +7,12 @@ import {
   onboardingStatusValidator,
   sourceApprovalValidator,
 } from "./phase5Validators";
-import { requireAnyAdministrativeRole } from "./phase11Auth";
+import {
+  requireAnyAdministrativeRole,
+  requireAuthUser,
+  requireProjectReadAccess,
+  requireProjectRole,
+} from "./phase11Auth";
 
 const sourceSpecs = [
   {
@@ -20,6 +25,7 @@ const sourceSpecs = [
     url: "https://openai.com/api/pricing/",
     host: "openai.com",
     pathPrefix: "/api/pricing",
+    initialApproval: "approved",
     predicates: [
       "model.input_price_usd_per_million_tokens",
       "model.output_price_usd_per_million_tokens",
@@ -34,6 +40,7 @@ const sourceSpecs = [
     url: "https://platform.openai.com/docs/models",
     host: "platform.openai.com",
     pathPrefix: "/docs/models",
+    initialApproval: "approved",
     predicates: [
       "model.provider_model_id",
       "model.display_name",
@@ -54,7 +61,44 @@ const sourceSpecs = [
     url: "https://docs.anthropic.com/en/release-notes/overview",
     host: "docs.anthropic.com",
     pathPrefix: "/en/release-notes",
+    initialApproval: "approved",
     predicates: ["notice.deprecation_date"],
+  },
+  {
+    key: "anthropic-pricing",
+    name: "Anthropic API pricing",
+    providerKey: "anthropic",
+    sourceType: "pricing",
+    collectorPlatformId: "c_mt4e7tgw1i46wxboqa",
+    url: "https://platform.claude.com/docs/en/about-claude/pricing",
+    host: "platform.claude.com",
+    pathPrefix: "/docs/en/about-claude/pricing",
+    initialApproval: "pending",
+    predicates: [
+      "model.input_price_usd_per_million_tokens",
+      "model.output_price_usd_per_million_tokens",
+    ],
+  },
+  {
+    key: "anthropic-models",
+    name: "Anthropic model catalog",
+    providerKey: "anthropic",
+    sourceType: "catalog",
+    collectorPlatformId: "c_mt4e811ufis8kdvlt",
+    url: "https://platform.claude.com/docs/en/about-claude/models/overview",
+    host: "platform.claude.com",
+    pathPrefix: "/docs/en/about-claude/models/overview",
+    initialApproval: "pending",
+    predicates: [
+      "model.provider_model_id",
+      "model.display_name",
+      "model.family",
+      "model.status",
+      "model.context_window_tokens",
+      "model.max_output_tokens",
+      "model.supports_tools",
+      "model.supports_structured_output",
+    ],
   },
 ] as const;
 
@@ -95,6 +139,7 @@ export const seedCatalog = mutation({
 
     const sourceIds = [];
     for (const spec of sourceSpecs) {
+      const approved = spec.initialApproval === "approved";
       let source = await ctx.db
         .query("sources")
         .withIndex("by_key", (q) => q.eq("key", spec.key))
@@ -108,8 +153,8 @@ export const seedCatalog = mutation({
           sourceType: spec.sourceType,
           official: true,
           visibility: "public",
-          approvalStatus: "approved",
-          lifecycleStatus: "active",
+          approvalStatus: spec.initialApproval,
+          lifecycleStatus: approved ? "active" : "onboarding",
           createdAt: now,
           updatedAt: now,
         });
@@ -130,7 +175,7 @@ export const seedCatalog = mutation({
           host: spec.host,
           pathPrefix: spec.pathPrefix,
           public: true,
-          approvalStatus: "approved",
+          approvalStatus: spec.initialApproval,
           createdAt: now,
           updatedAt: now,
         });
@@ -149,8 +194,10 @@ export const seedCatalog = mutation({
             sourceId: source._id,
             predicate,
             authority: "authoritative",
-            rationale: "Official provider-controlled public source.",
-            active: true,
+            rationale: approved
+              ? "Official provider-controlled public source."
+              : "Pending named-owner and source-terms approval.",
+            active: approved,
             operationKey: `phase5:seed:authority:${spec.key}:${predicate}`,
             createdAt: now,
             updatedAt: now,
@@ -164,8 +211,10 @@ export const seedCatalog = mutation({
       if (!review)
         await ctx.db.insert("sourceReviews", {
           sourceId: source._id,
-          decision: "approved",
-          summary: "Official public source and explicit predicates approved.",
+          decision: spec.initialApproval,
+          summary: approved
+            ? "Official public source and explicit predicates approved."
+            : "Provider-active collector is awaiting human source policy approval and a contract-valid Kevlar certification run.",
           reviewerId: "system:phase5-seed",
           operationKey: reviewKey,
           createdAt: now,
@@ -177,11 +226,17 @@ export const seedCatalog = mutation({
       if (!health)
         await ctx.db.insert("sourceHealth", {
           sourceId: source._id,
-          state: "healthy",
-          consecutiveFailures: 0,
+          state: approved ? "healthy" : "failing",
+          consecutiveFailures: approved ? 0 : 1,
           quotaDate: "uninitialized",
           quotaUsed: 0,
           totalClaims: 0,
+          ...(approved
+            ? {}
+            : {
+                lastError:
+                  "Provider run completed, but its output failed the committed Kevlar contract.",
+              }),
           updatedAt: now,
         });
       let collector = await ctx.db
@@ -305,7 +360,11 @@ export const seedCatalog = mutation({
         .order("desc")
         .take(10)
     ).find((event) => event.action === "phase5.catalog_seeded");
-    if (!priorAudit)
+    if (
+      !priorAudit ||
+      (priorAudit.payload as { sourceCount?: unknown }).sourceCount !==
+        sourceIds.length
+    )
       await ctx.db.insert("auditEvents", {
         actorType: "system",
         action: "phase5.catalog_seeded",
@@ -1235,16 +1294,65 @@ export const resetSourceHealth = mutation({
 export const sourceByKey = query({
   args: { key: v.string() },
   returns: v.union(schema.doc("sources"), v.null()),
-  handler: async (ctx, args) =>
-    await ctx.db
+  handler: async (ctx, args) => {
+    const source = await ctx.db
       .query("sources")
       .withIndex("by_key", (q) => q.eq("key", args.key))
-      .unique(),
+      .unique();
+    if (!source || source.visibility === "private") return null;
+    if (source.visibility === "authenticated") await requireAuthUser(ctx);
+    return source;
+  },
 });
 
 export const bindingById = query({
   args: { bindingId: v.id("collectorBindings") },
-  returns: v.union(schema.doc("collectorBindings"), v.null()),
-  handler: async (ctx, args) =>
-    await ctx.db.get("collectorBindings", args.bindingId),
+  returns: v.union(
+    v.object({
+      _id: v.id("collectorBindings"),
+      sourceId: v.optional(v.id("sources")),
+      endpointId: v.optional(v.id("sourceEndpoints")),
+      bindingKind: v.string(),
+      lifecycleStatus: v.string(),
+      coreGateStatus: v.string(),
+      bypassCore: v.literal(false),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const binding = await ctx.db.get("collectorBindings", args.bindingId);
+    if (!binding) return null;
+    const [collector, source, endpoint] = await Promise.all([
+      ctx.db.get("collectors", binding.collectorId),
+      binding.sourceId ? ctx.db.get("sources", binding.sourceId) : null,
+      binding.endpointId
+        ? ctx.db.get("sourceEndpoints", binding.endpointId)
+        : null,
+    ]);
+    if (!collector) throw new Error("Collector binding owner is missing");
+    const publiclyVisible =
+      source?.visibility === "public" &&
+      endpoint?.public === true &&
+      endpoint.sourceId === source._id;
+    if (publiclyVisible)
+      await requireProjectReadAccess(ctx, collector.projectId);
+    else
+      await requireProjectRole(ctx, collector.projectId, [
+        "owner",
+        "admin",
+        "operator",
+        "reviewer",
+        "developer",
+        "viewer",
+      ]);
+    return {
+      _id: binding._id,
+      sourceId: binding.sourceId,
+      endpointId: binding.endpointId,
+      bindingKind: binding.bindingKind,
+      lifecycleStatus: binding.lifecycleStatus,
+      coreGateStatus: binding.coreGateStatus,
+      bypassCore: binding.bypassCore,
+    };
+  },
 });

@@ -7,6 +7,7 @@ import {
   semanticEventTypeValidator,
   sourceConflictStatusValidator,
 } from "./phase8Validators";
+import { assertProjectScope, requireProjectReadAccess } from "./phase11Auth";
 
 function limitOf(value: number | undefined): number {
   const limit = value ?? 50;
@@ -26,6 +27,26 @@ export const events = query({
   returns: v.array(schema.doc("changeEvents")),
   handler: async (ctx, args) => {
     const limit = limitOf(args.limit);
+    let projectId = args.projectId;
+    if (args.entityId) {
+      const entity = await ctx.db.get("canonicalEntities", args.entityId);
+      if (!entity) {
+        if (projectId) await requireProjectReadAccess(ctx, projectId);
+        return [];
+      }
+      if (projectId && entity.projectId !== projectId)
+        throw new Error("Cross-project data relationship");
+      projectId = entity.projectId;
+    }
+    if (!projectId) {
+      const project = await ctx.db
+        .query("projects")
+        .withIndex("by_slug", (q) => q.eq("slug", "kevlar-core"))
+        .unique();
+      projectId = project?._id;
+    }
+    if (!projectId) return [];
+    await requireProjectReadAccess(ctx, projectId);
     let rows: Doc<"changeEvents">[];
     if (args.entityId)
       rows = await ctx.db
@@ -35,43 +56,23 @@ export const events = query({
         )
         .order("desc")
         .take(Math.min(limit * 3, 300));
-    else if (args.projectId && args.eventType)
+    else if (args.eventType)
       rows = await ctx.db
         .query("changeEvents")
         .withIndex("by_projectId_and_eventType_and_createdAt", (q) =>
-          q.eq("projectId", args.projectId!).eq("eventType", args.eventType!),
+          q.eq("projectId", projectId!).eq("eventType", args.eventType!),
         )
         .order("desc")
         .take(Math.min(limit * 3, 300));
-    else if (args.projectId)
+    else
       rows = await ctx.db
         .query("changeEvents")
         .withIndex("by_projectId_and_createdAt", (q) =>
-          q.eq("projectId", args.projectId!),
+          q.eq("projectId", projectId!),
         )
         .order("desc")
         .take(Math.min(limit * 3, 300));
-    else if (args.state)
-      rows = await ctx.db
-        .query("changeEvents")
-        .withIndex("by_state_and_createdAt", (q) => q.eq("state", args.state!))
-        .order("desc")
-        .take(Math.min(limit * 3, 300));
-    else {
-      const project = await ctx.db
-        .query("projects")
-        .withIndex("by_slug", (q) => q.eq("slug", "kevlar-core"))
-        .unique();
-      rows = project
-        ? await ctx.db
-            .query("changeEvents")
-            .withIndex("by_projectId_and_createdAt", (q) =>
-              q.eq("projectId", project._id),
-            )
-            .order("desc")
-            .take(Math.min(limit * 3, 300))
-        : [];
-    }
+    assertProjectScope(projectId, rows);
     return rows
       .filter(
         (row) =>
@@ -92,6 +93,26 @@ export const conflicts = query({
   returns: v.array(schema.doc("sourceConflicts")),
   handler: async (ctx, args) => {
     const limit = limitOf(args.limit);
+    let projectId = args.projectId;
+    if (args.entityId) {
+      const entity = await ctx.db.get("canonicalEntities", args.entityId);
+      if (!entity) {
+        if (projectId) await requireProjectReadAccess(ctx, projectId);
+        return [];
+      }
+      if (projectId && entity.projectId !== projectId)
+        throw new Error("Cross-project data relationship");
+      projectId = entity.projectId;
+    }
+    if (!projectId) {
+      const project = await ctx.db
+        .query("projects")
+        .withIndex("by_slug", (q) => q.eq("slug", "kevlar-core"))
+        .unique();
+      projectId = project?._id;
+    }
+    if (!projectId) return [];
+    await requireProjectReadAccess(ctx, projectId);
     let rows: Doc<"sourceConflicts">[];
     if (args.entityId)
       rows = await ctx.db
@@ -102,14 +123,6 @@ export const conflicts = query({
         .order("desc")
         .take(Math.min(limit * 3, 300));
     else {
-      let projectId = args.projectId;
-      if (!projectId) {
-        const project = await ctx.db
-          .query("projects")
-          .withIndex("by_slug", (q) => q.eq("slug", "kevlar-core"))
-          .unique();
-        projectId = project?._id;
-      }
       rows = projectId
         ? await ctx.db
             .query("sourceConflicts")
@@ -122,6 +135,7 @@ export const conflicts = query({
             .take(Math.min(limit * 3, 300))
         : [];
     }
+    assertProjectScope(projectId, rows);
     return rows
       .filter((row) => !args.status || row.status === args.status)
       .slice(0, limit);
@@ -176,6 +190,9 @@ export const courtroom = query({
         )
         .first();
     if (!event && !conflict) return null;
+    const projectId = event?.projectId ?? conflict!.projectId;
+    assertProjectScope(projectId, [event, conflict]);
+    await requireProjectReadAccess(ctx, projectId);
     const decisionId = event?.releaseDecisionId ?? conflict!.releaseDecisionId;
     const decision = await ctx.db.get("releaseDecisions", decisionId);
     const policy = decision
@@ -273,6 +290,20 @@ export const courtroom = query({
     const factVersions = [previousFact, nextFact].filter(
       (item): item is Doc<"factVersions"> => item !== null,
     );
+    assertProjectScope(projectId, [
+      event,
+      conflict,
+      decision,
+      policy,
+      ...observations,
+      ...fields,
+      ...evidence,
+      previousFact,
+      nextFact,
+      ...incomingRelations,
+      ...outgoingRelations,
+      ...relatedEvents,
+    ]);
     return {
       event,
       conflict,
@@ -299,21 +330,34 @@ export const proof = query({
   args: { key: v.optional(v.string()) },
   returns: v.union(
     v.object({
-      proof: schema.doc("phase8Proofs"),
-      policies: v.array(schema.doc("releasePolicies")),
-      policySources: v.array(schema.doc("releasePolicySources")),
-      decisions: v.array(schema.doc("releaseDecisions")),
-      events: v.array(schema.doc("changeEvents")),
-      conflicts: v.array(schema.doc("sourceConflicts")),
-      transitions: v.array(schema.doc("changeEventTransitions")),
-      relations: v.array(schema.doc("changeEventRelations")),
+      proof: v.object({ _id: v.id("phase8Proofs") }),
+      events: v.array(
+        v.object({
+          _id: v.id("changeEvents"),
+          eventId: v.string(),
+          eventType: v.string(),
+          state: v.string(),
+          businessEvent: v.boolean(),
+          predicate: v.optional(v.string()),
+          observedAt: v.number(),
+        }),
+      ),
+      conflicts: v.array(
+        v.object({
+          _id: v.id("sourceConflicts"),
+          entityId: v.id("canonicalEntities"),
+          predicate: v.string(),
+          status: v.string(),
+          candidateObservationIds: v.array(v.literal("redacted")),
+          releasedFactVersionId: v.optional(v.id("factVersions")),
+          reason: v.string(),
+          openedAt: v.number(),
+        }),
+      ),
       businessEventCount: v.number(),
-      presentationDriftCount: v.number(),
       layoutBusinessEventCount: v.number(),
       verifiedPriceEventCount: v.number(),
       quarantinedEventCount: v.number(),
-      blockedQuarantineCount: v.number(),
-      blockedAbsenceCount: v.number(),
       stableEventIds: v.boolean(),
     }),
     v.null(),
@@ -326,8 +370,10 @@ export const proof = query({
       )
       .unique();
     if (!proof) return null;
-    const [policyDocs, decisionDocs, eventDocs, conflictDocs] =
+    await requireProjectReadAccess(ctx, proof.projectId);
+    const [entity, policyDocs, decisionDocs, eventDocs, conflictDocs] =
       await Promise.all([
+        ctx.db.get("canonicalEntities", proof.entityId),
         Promise.all(
           proof.policyIds
             .slice(0, 20)
@@ -349,6 +395,7 @@ export const proof = query({
             .map((id) => ctx.db.get("sourceConflicts", id)),
         ),
       ]);
+    if (!entity) throw new Error("Phase 8 proof entity is missing");
     const policies = policyDocs.filter(
       (item): item is Doc<"releasePolicies"> => item !== null,
     );
@@ -397,19 +444,58 @@ export const proof = query({
         ),
       )
     ).flat();
-    return {
+    const policyIds = new Set(policies.map((policy) => policy._id));
+    const eventIds = new Set(events.map((event) => event._id));
+    if (policySources.some((item) => !policyIds.has(item.policyId)))
+      throw new Error("Cross-project data relationship");
+    if (transitions.some((item) => !eventIds.has(item.eventId)))
+      throw new Error("Cross-project data relationship");
+    const relatedEvents = await Promise.all(
+      [
+        ...new Set(
+          relations.flatMap((relation) => [
+            relation.fromEventId,
+            relation.toEventId,
+          ]),
+        ),
+      ].map((id) => ctx.db.get("changeEvents", id)),
+    );
+    if (relatedEvents.some((item) => item === null))
+      throw new Error("Phase 8 proof relation endpoint is missing");
+    assertProjectScope(proof.projectId, [
       proof,
-      policies,
-      policySources,
-      decisions,
-      events,
-      conflicts,
-      transitions,
-      relations,
+      entity,
+      ...policies,
+      ...decisions,
+      ...events,
+      ...conflicts,
+      ...relations,
+      ...relatedEvents,
+    ]);
+    return {
+      proof: { _id: proof._id },
+      events: events.map((event) => ({
+        _id: event._id,
+        eventId: event.eventId,
+        eventType: event.eventType,
+        state: event.state,
+        businessEvent: event.businessEvent,
+        predicate: event.predicate,
+        observedAt: event.observedAt,
+      })),
+      conflicts: conflicts.map((conflict) => ({
+        _id: conflict._id,
+        entityId: conflict.entityId,
+        predicate: conflict.predicate,
+        status: conflict.status,
+        candidateObservationIds: conflict.candidateObservationIds.map(
+          () => "redacted" as const,
+        ),
+        releasedFactVersionId: conflict.releasedFactVersionId,
+        reason: conflict.reason,
+        openedAt: conflict.openedAt,
+      })),
       businessEventCount: events.filter((event) => event.businessEvent).length,
-      presentationDriftCount: events.filter(
-        (event) => event.eventType === "presentation_drift",
-      ).length,
       layoutBusinessEventCount: events.filter(
         (event) =>
           event.eventType === "presentation_drift" && event.businessEvent,
@@ -427,12 +513,6 @@ export const proof = query({
             decision._id === event.releaseDecisionId &&
             decision.outcome === "blocked_quarantine",
         ),
-      ).length,
-      blockedQuarantineCount: decisions.filter(
-        (decision) => decision.outcome === "blocked_quarantine",
-      ).length,
-      blockedAbsenceCount: decisions.filter(
-        (decision) => decision.outcome === "blocked_absence",
       ).length,
       stableEventIds:
         new Set(events.map((event) => event.eventId)).size === events.length,

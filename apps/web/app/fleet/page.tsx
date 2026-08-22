@@ -92,7 +92,6 @@ export default async function FleetPage() {
             <span>{item.consecutiveFailures}</span>
             <span>{item.quotaUsed}</span>
             <span>{age(item.lastSuccessAt)}</span>
-            {item.lastError ? <p>{item.lastError}</p> : null}
           </article>
         ))}
         {health.length === 0 ? (

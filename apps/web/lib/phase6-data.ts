@@ -4,140 +4,162 @@ import { makeFunctionReference } from "convex/server";
 type BaseDoc = { _id: string; _creationTime?: number; createdAt?: number };
 
 export type RegistryData = {
-  revisions: Array<BaseDoc & {
-    domain: string;
-    revision: number;
-    definitionHash: string;
-    definition: unknown;
-  }>;
-  states: Array<BaseDoc & {
-    schemaRevisionId: string;
-    fromStatus: string | null;
-    toStatus: string;
-    actor: string;
-    reason: string;
-  }>;
-  compatibility: Array<BaseDoc & {
-    fromRevisionId: string;
-    toRevisionId: string;
-    classification: string;
-    reasons: string[];
-  }>;
+  revisions: Array<
+    BaseDoc & {
+      domain: string;
+      revision: number;
+      definitionHash: string;
+      definition: unknown;
+    }
+  >;
+  states: Array<
+    BaseDoc & {
+      schemaRevisionId: string;
+      fromStatus: string | null;
+      toStatus: string;
+      reason: string;
+    }
+  >;
+  compatibility: Array<
+    BaseDoc & {
+      fromRevisionId: string;
+      toRevisionId: string;
+      classification: string;
+      reasons: string[];
+    }
+  >;
 };
 
 export type MappingData = {
-  specs: Array<BaseDoc & {
-    sourceId: string;
-    key: string;
-    name: string;
-    entityType: string;
-  }>;
-  revisions: Array<BaseDoc & {
-    mappingSpecId: string;
-    revision: number;
-    sourceSchemaVersion: string;
-    canonicalSchemaRevisionId: string;
-    deterministic: true;
-    specification: unknown;
-    specificationHash: string;
-  }>;
-  approvals: Array<BaseDoc & {
-    mappingRevisionId: string;
-    decision: string;
-    actor: string;
-    reason: string;
-  }>;
-  transitions: Array<BaseDoc & {
-    mappingSpecId: string;
-    mappingRevisionId: string;
-    fromStatus: string | null;
-    toStatus: string;
-    actor: string;
-    reason: string;
-  }>;
+  specs: Array<
+    BaseDoc & {
+      sourceId: string;
+      key: string;
+      name: string;
+      entityType: string;
+    }
+  >;
+  revisions: Array<
+    BaseDoc & {
+      mappingSpecId: string;
+      revision: number;
+      sourceSchemaVersion: string;
+      canonicalSchemaRevisionId: string;
+      deterministic: true;
+      specification: unknown;
+      specificationHash: string;
+    }
+  >;
+  approvals: Array<
+    BaseDoc & {
+      mappingRevisionId: string;
+      decision: string;
+      actor: string;
+      reason: string;
+    }
+  >;
+  transitions: Array<
+    BaseDoc & {
+      mappingSpecId: string;
+      mappingRevisionId: string;
+      fromStatus: string | null;
+      toStatus: string;
+      actor: string;
+      reason: string;
+    }
+  >;
 };
 
 export type IdentityGraphData = {
-  entities: Array<BaseDoc & {
-    entityType: string;
-    canonicalKey: string;
-    displayName: string;
-    status: string;
-    mergedIntoId?: string;
-  }>;
-  externalIds: Array<BaseDoc & {
-    entityId: string;
-    namespace: string;
-    externalId: string;
-    status: string;
-  }>;
-  aliases: Array<BaseDoc & {
-    entityId: string;
-    aliasType: string;
-    value: string;
-    status: string;
-  }>;
-  lineage: Array<BaseDoc & {
-    fromEntityId: string;
-    toEntityId: string;
-    relationship: string;
-    status: string;
-    operationId: string;
-  }>;
-  operations: Array<BaseDoc & {
-    kind: string;
-    sourceEntityIds: string[];
-    targetEntityIds: string[];
-    reason: string;
-    actor: string;
-    reversalOfId?: string;
-  }>;
-  observations: Array<BaseDoc & {
-    sourceId: string;
-    sourceEntityKey: string;
-    entityType: string;
-    resolvedEntityId?: string;
-    trustState: string;
-    mappingRevisionId: string;
-  }>;
-  fields: Array<BaseDoc & {
-    observationId: string;
-    canonicalPath: string;
-    normalizedValue: unknown;
-    state: string;
-    sourcePaths: string[];
-    evidenceRefs: string[];
-    transform: { name: string; version: string; input: unknown };
-  }>;
+  entities: Array<
+    BaseDoc & {
+      entityType: string;
+      canonicalKey: string;
+      displayName: string;
+      status: string;
+      mergedIntoId?: string;
+    }
+  >;
+  externalIds: Array<
+    BaseDoc & {
+      entityId: string;
+      namespace: string;
+      externalId: string;
+      status: string;
+    }
+  >;
+  aliases: Array<
+    BaseDoc & {
+      entityId: string;
+      aliasType: string;
+      value: string;
+      status: string;
+    }
+  >;
+  lineage: Array<
+    BaseDoc & {
+      fromEntityId: string;
+      toEntityId: string;
+      relationship: string;
+      status: string;
+      operationId: string;
+    }
+  >;
+  operations: Array<
+    BaseDoc & {
+      kind: string;
+      sourceEntityIds: string[];
+      targetEntityIds: string[];
+      reason: string;
+      actor: string;
+      reversalOfId?: string;
+    }
+  >;
+  observations: Array<
+    BaseDoc & {
+      sourceId: string;
+      sourceEntityKey: string;
+      entityType: string;
+      resolvedEntityId?: string;
+      trustState: string;
+      mappingRevisionId: string;
+    }
+  >;
+  fields: Array<
+    BaseDoc & {
+      observationId: string;
+      canonicalPath: string;
+      normalizedValue: unknown;
+      state: string;
+      sourcePaths: string[];
+      evidenceRefs: string[];
+      transform: { name: string; version: string; input: unknown };
+    }
+  >;
   resolutions: Array<BaseDoc & Record<string, unknown>>;
-  candidates: Array<BaseDoc & {
-    observationId: string;
-    candidateEntityId: string;
-    score: number;
-    recommendation: string;
-    generatedBy: string;
-    explanation: string;
-    features: Array<{ name: string; score: number; detail: string }>;
-  }>;
-  decisions: Array<BaseDoc & {
-    candidateId: string;
-    decision: string;
-    actor: string;
-    reason: string;
-  }>;
+  candidates: Array<
+    BaseDoc & {
+      observationId: string;
+      candidateEntityId: string;
+      score: number;
+      recommendation: string;
+      generatedBy: string;
+      explanation: string;
+      features: Array<{ name: string; score: number; detail: string }>;
+    }
+  >;
+  decisions: Array<
+    BaseDoc & {
+      candidateId: string;
+      decision: string;
+      actor: string;
+      reason: string;
+    }
+  >;
 };
 
 export type Phase6ProofData = {
-  proof: BaseDoc & { key: string; resolvedEntityId: string };
-  schemaRevision: RegistryData["revisions"][number] | null;
-  mappingRevisions: MappingData["revisions"];
-  observations: IdentityGraphData["observations"];
-  observationFields: IdentityGraphData["fields"];
-  resolvedEntity: IdentityGraphData["entities"][number] | null;
-  ambiguousCandidates: IdentityGraphData["candidates"];
-  decisions: IdentityGraphData["decisions"];
-  operations: IdentityGraphData["operations"];
-  lineage: IdentityGraphData["lineage"];
+  proof: { _id: string };
 };
 
 const registryQuery = makeFunctionReference<
@@ -145,9 +167,11 @@ const registryQuery = makeFunctionReference<
   { domain?: string },
   RegistryData
 >("phase6Queries:registry");
-const mappingsQuery = makeFunctionReference<"query", Record<string, never>, MappingData>(
-  "phase6Queries:mappings",
-);
+const mappingsQuery = makeFunctionReference<
+  "query",
+  Record<string, never>,
+  MappingData
+>("phase6Queries:mappings");
 const identityGraphQuery = makeFunctionReference<
   "query",
   Record<string, never>,

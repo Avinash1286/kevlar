@@ -73,25 +73,31 @@ type FactDoc = BaseDoc & {
 };
 
 export type Phase8ProofData = {
-  proof: BaseDoc & {
-    key: string;
-    projectId?: string;
-    stableRetry?: boolean;
-    layoutBusinessEventCount?: number;
-    verifiedPriceEventCount?: number;
-  };
-  events: ChangeEventDoc[];
-  conflicts: SourceConflictDoc[];
-  policies?: PolicyDoc[];
-  decisions?: DecisionDoc[];
-  businessEventCount?: number;
-  blockedQuarantineCount?: number;
-  blockedAbsenceCount?: number;
-  presentationDriftCount?: number;
-  layoutBusinessEventCount?: number;
-  verifiedPriceEventCount?: number;
-  quarantinedEventCount?: number;
-  stableEventIds?: boolean;
+  proof: { _id: string };
+  events: Array<{
+    _id: string;
+    eventId: string;
+    eventType: string;
+    state: string;
+    businessEvent: boolean;
+    predicate?: string;
+    observedAt: number;
+  }>;
+  conflicts: Array<{
+    _id: string;
+    entityId: string;
+    predicate: string;
+    status: string;
+    candidateObservationIds: Array<"redacted">;
+    releasedFactVersionId?: string;
+    reason: string;
+    openedAt: number;
+  }>;
+  businessEventCount: number;
+  layoutBusinessEventCount: number;
+  verifiedPriceEventCount: number;
+  quarantinedEventCount: number;
+  stableEventIds: boolean;
 };
 
 export type CourtroomData = {
@@ -157,17 +163,21 @@ async function safeQuery<T>(run: (convex: ConvexHttpClient) => Promise<T>) {
 export const loadPhase8Proof = () =>
   safeQuery((convex) => convex.query(proofQuery, {}));
 
-export const loadEvents = (filters: {
-  entityId?: string;
-  eventType?: string;
-  state?: string;
-} = {}) =>
+export const loadEvents = (
+  filters: {
+    entityId?: string;
+    eventType?: string;
+    state?: string;
+  } = {},
+) =>
   safeQuery((convex) => convex.query(eventsQuery, { ...filters, limit: 100 }));
 
-export const loadConflicts = (filters: {
-  entityId?: string;
-  status?: string;
-} = {}) =>
+export const loadConflicts = (
+  filters: {
+    entityId?: string;
+    status?: string;
+  } = {},
+) =>
   safeQuery((convex) =>
     convex.query(conflictsQuery, { ...filters, limit: 100 }),
   );

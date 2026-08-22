@@ -15,7 +15,7 @@ import {
   requirePhase10IngestKey,
   subscriptionMatches,
 } from "./phase10Support";
-import { requireProjectRole } from "./phase11Auth";
+import { assertProjectScope, requireProjectRole } from "./phase11Auth";
 
 const enqueueResultValidator = v.object({
   delivery: schema.doc("webhookDeliveries"),
@@ -50,20 +50,32 @@ export const enqueue = mutation({
       "webhookEndpoints",
       subscription.webhookEndpointId,
     );
-    if (!endpoint || endpoint.status !== "active" || !endpoint.activeSecretVersionId)
+    if (
+      !endpoint ||
+      endpoint.status !== "active" ||
+      !endpoint.activeSecretVersionId
+    )
       throw new Error("Active webhook endpoint and secret are required");
     const event = args.eventId
       ? await ctx.db.get("changeEvents", args.eventId)
       : null;
     if (args.mode !== "test") {
-      if (!event || event.projectId !== subscription.projectId || event.state !== "released")
+      if (
+        !event ||
+        event.projectId !== subscription.projectId ||
+        event.state !== "released"
+      )
         throw new Error("Only released same-project events may be delivered");
       const entity = await ctx.db.get("canonicalEntities", event.entityId);
-      if (!entity || !subscriptionMatches(subscription, event, entity.entityType))
+      if (
+        !entity ||
+        !subscriptionMatches(subscription, event, entity.entityType)
+      )
         throw new Error("Event does not match subscription filters");
     }
     const eventExternalId = event?.eventId ?? args.syntheticEventId;
-    if (!eventExternalId) throw new Error("eventId or syntheticEventId is required");
+    if (!eventExternalId)
+      throw new Error("eventId or syntheticEventId is required");
     const idempotencyKey = deliveryIdempotencyKey(
       String(subscription._id),
       eventExternalId,
@@ -72,11 +84,17 @@ export const enqueue = mutation({
     );
     const duplicate = await ctx.db
       .query("webhookDeliveries")
-      .withIndex("by_idempotencyKey", (q) => q.eq("idempotencyKey", idempotencyKey))
+      .withIndex("by_idempotencyKey", (q) =>
+        q.eq("idempotencyKey", idempotencyKey),
+      )
       .unique();
     if (duplicate) return { delivery: duplicate, duplicate: true };
     const maxAttempts = args.maxAttempts ?? 6;
-    if (!Number.isSafeInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 10)
+    if (
+      !Number.isSafeInteger(maxAttempts) ||
+      maxAttempts < 1 ||
+      maxAttempts > 10
+    )
       throw new Error("maxAttempts must be an integer from 1-10");
     const now = Date.now();
     const id = await ctx.db.insert("webhookDeliveries", {
@@ -105,7 +123,10 @@ export const enqueue = mutation({
       payload: { eventExternalId, mode: args.mode, idempotencyKey },
       createdAt: now,
     });
-    return { delivery: (await ctx.db.get("webhookDeliveries", id))!, duplicate: false };
+    return {
+      delivery: (await ctx.db.get("webhookDeliveries", id))!,
+      duplicate: false,
+    };
   },
 });
 
@@ -177,15 +198,19 @@ export const recordAttempt = mutation({
         : args.outcome === "permanent_failure" || exhausted
           ? "dead_letter"
           : "retrying";
-    const retryDelays = [60_000, 300_000, 1_800_000, 7_200_000, 43_200_000, 86_400_000];
+    const retryDelays = [
+      60_000, 300_000, 1_800_000, 7_200_000, 43_200_000, 86_400_000,
+    ];
     await ctx.db.patch("webhookDeliveries", delivery._id, {
       status,
       attemptCount: attemptNumber,
       nextAttemptAt:
         status === "retrying"
-          ? now + retryDelays[Math.min(attemptNumber - 1, retryDelays.length - 1)]
+          ? now +
+            retryDelays[Math.min(attemptNumber - 1, retryDelays.length - 1)]
           : undefined,
-      completedAt: status === "delivered" || status === "dead_letter" ? now : undefined,
+      completedAt:
+        status === "delivered" || status === "dead_letter" ? now : undefined,
       updatedAt: now,
     });
     await ctx.db.insert("auditEvents", {
@@ -194,7 +219,12 @@ export const recordAttempt = mutation({
       action: "phase10.webhook_delivery.attempted",
       targetType: "webhook_delivery",
       targetId: String(delivery._id),
-      payload: { requestId: args.requestId, outcome: args.outcome, status, attempt: attemptNumber },
+      payload: {
+        requestId: args.requestId,
+        outcome: args.outcome,
+        status,
+        attempt: attemptNumber,
+      },
       createdAt: now,
     });
     return {
@@ -222,10 +252,15 @@ export const replay = mutation({
     requirePhase10IngestKey(args.ingestKey);
     const prior = await ctx.db
       .query("webhookReplayRequests")
-      .withIndex("by_operationKey", (q) => q.eq("operationKey", args.operationKey))
+      .withIndex("by_operationKey", (q) =>
+        q.eq("operationKey", args.operationKey),
+      )
       .unique();
     if (prior) {
-      const delivery = await ctx.db.get("webhookDeliveries", prior.replayDeliveryId);
+      const delivery = await ctx.db.get(
+        "webhookDeliveries",
+        prior.replayDeliveryId,
+      );
       if (!delivery) throw new Error("Replay delivery is missing");
       return { replay: prior, delivery, duplicate: true };
     }
@@ -240,26 +275,30 @@ export const replay = mutation({
     );
     const existing = await ctx.db
       .query("webhookDeliveries")
-      .withIndex("by_idempotencyKey", (q) => q.eq("idempotencyKey", idempotencyKey))
+      .withIndex("by_idempotencyKey", (q) =>
+        q.eq("idempotencyKey", idempotencyKey),
+      )
       .unique();
     const now = Date.now();
-    const replayDeliveryId = existing?._id ?? await ctx.db.insert("webhookDeliveries", {
-      projectId: source.projectId,
-      subscriptionId: source.subscriptionId,
-      endpointId: source.endpointId,
-      eventId: source.eventId,
-      eventExternalId: source.eventExternalId,
-      mode: "replay",
-      payload: source.payload,
-      payloadHash: source.payloadHash,
-      idempotencyKey,
-      status: "queued",
-      attemptCount: 0,
-      maxAttempts: source.maxAttempts,
-      nextAttemptAt: now,
-      createdAt: now,
-      updatedAt: now,
-    });
+    const replayDeliveryId =
+      existing?._id ??
+      (await ctx.db.insert("webhookDeliveries", {
+        projectId: source.projectId,
+        subscriptionId: source.subscriptionId,
+        endpointId: source.endpointId,
+        eventId: source.eventId,
+        eventExternalId: source.eventExternalId,
+        mode: "replay",
+        payload: source.payload,
+        payloadHash: source.payloadHash,
+        idempotencyKey,
+        status: "queued",
+        attemptCount: 0,
+        maxAttempts: source.maxAttempts,
+        nextAttemptAt: now,
+        createdAt: now,
+        updatedAt: now,
+      }));
     const replayId = await ctx.db.insert("webhookReplayRequests", {
       projectId: source.projectId,
       deliveryId: source._id,
@@ -274,7 +313,11 @@ export const replay = mutation({
       action: "phase10.webhook_delivery.replayed",
       targetType: "webhook_delivery",
       targetId: String(source._id),
-      payload: { replayDeliveryId, replayBatchKey: args.replayBatchKey, reason: args.reason },
+      payload: {
+        replayDeliveryId,
+        replayBatchKey: args.replayBatchKey,
+        reason: args.reason,
+      },
       createdAt: now,
     });
     return {
@@ -365,11 +408,24 @@ export const delivery = query({
     if (!delivery) return null;
     await requireProjectRole(ctx, delivery.projectId, deliveryReadRoles);
     const [attempts, endpoint, subscription] = await Promise.all([
-      ctx.db.query("webhookDeliveryAttempts").withIndex("by_deliveryId_and_attempt", (q) => q.eq("deliveryId", delivery._id)).take(10),
+      ctx.db
+        .query("webhookDeliveryAttempts")
+        .withIndex("by_deliveryId_and_attempt", (q) =>
+          q.eq("deliveryId", delivery._id),
+        )
+        .take(10),
       ctx.db.get("webhookEndpoints", delivery.endpointId),
       ctx.db.get("filteredSubscriptions", delivery.subscriptionId),
     ]);
     if (!endpoint || !subscription) return null;
+    if (
+      delivery.endpointId !== endpoint._id ||
+      delivery.subscriptionId !== subscription._id ||
+      subscription.webhookEndpointId !== endpoint._id ||
+      attempts.some((attempt) => attempt.deliveryId !== delivery._id)
+    )
+      throw new Error("Cross-project data relationship");
+    assertProjectScope(delivery.projectId, [delivery, endpoint, subscription]);
     return {
       delivery: {
         _id: delivery._id,

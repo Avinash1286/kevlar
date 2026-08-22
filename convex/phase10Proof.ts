@@ -11,8 +11,12 @@ import {
   sha256,
   signatureInput,
 } from "./phase10Support";
+import { phase10FilterValidator } from "./phase10Validators";
+import { assertProjectScope, requireProjectReadAccess } from "./phase11Auth";
 
-const persistProofRef = makeFunctionReference<"mutation">("phase10ProofSupport:persistProof");
+const persistProofRef = makeFunctionReference<"mutation">(
+  "phase10ProofSupport:persistProof",
+);
 
 export const seed = action({
   args: {
@@ -31,12 +35,17 @@ export const seed = action({
     assertPhase10Text(args.rawApiKey, "rawApiKey", 256);
     assertPhase10Text(args.rawWebhookSecret, "rawWebhookSecret", 256);
     if (args.rawApiKey.length < 24 || /\s/.test(args.rawApiKey))
-      throw new Error("rawApiKey must contain 24-256 non-whitespace characters");
+      throw new Error(
+        "rawApiKey must contain 24-256 non-whitespace characters",
+      );
     if (args.rawWebhookSecret.length < 24 || /\s/.test(args.rawWebhookSecret))
       throw new Error(
         "rawWebhookSecret must contain 24-256 non-whitespace characters",
       );
-    const rawBody = JSON.stringify({ id: "evt_phase10_proof", type: "fact.updated" });
+    const rawBody = JSON.stringify({
+      id: "evt_phase10_proof",
+      type: "fact.updated",
+    });
     const timestamp = 1_787_352_000;
     const input = signatureInput(timestamp, rawBody);
     const result = await ctx.runMutation(persistProofRef, {
@@ -65,31 +74,75 @@ const proofApiKeyValidator = v.object({
   rateLimitPerMinute: v.number(),
 });
 
+const proofSummaryValidator = v.object({ _id: v.id("phase10Proofs") });
+const proofSubscriptionValidator = v.object({
+  _id: v.id("filteredSubscriptions"),
+  name: v.string(),
+  status: v.string(),
+  filters: phase10FilterValidator,
+});
+const proofEndpointValidator = v.object({
+  _id: v.id("webhookEndpoints"),
+  name: v.string(),
+  status: v.string(),
+});
+const proofDeliveryValidator = v.object({
+  _id: v.id("webhookDeliveries"),
+  status: v.string(),
+  attemptCount: v.number(),
+});
+const proofContractValidator = v.object({
+  _id: v.id("apiContracts"),
+  identifier: v.string(),
+  version: v.string(),
+  kind: v.string(),
+  schemaHash: v.string(),
+  status: v.string(),
+});
+
 export const proof = query({
   args: { key: v.optional(v.string()) },
-  returns: v.union(v.object({
-    proof: schema.doc("phase10Proofs"),
-    apiKey: proofApiKeyValidator,
-    subscription: schema.doc("filteredSubscriptions"),
-    endpoint: schema.doc("webhookEndpoints"),
-    secretVersions: v.array(v.object({ id: v.id("webhookSecretVersions"), version: v.number(), status: v.string(), createdAt: v.number() })),
-    sourceDelivery: schema.doc("webhookDeliveries"),
-    sourceAttempts: v.array(schema.doc("webhookDeliveryAttempts")),
-    replayDelivery: schema.doc("webhookDeliveries"),
-    replayAttempts: v.array(schema.doc("webhookDeliveryAttempts")),
-    contracts: v.array(schema.doc("apiContracts")),
-    releasedFact: schema.doc("factVersions"),
-    duplicateDeliveryCount: v.number(),
-    duplicateSafe: v.boolean(),
-    dlqReplaySucceeded: v.boolean(),
-    hmacVerificationInputValid: v.boolean(),
-    schemaContractIdentifiers: v.array(v.string()),
-    mcpReleasedEvidenceAware: v.boolean(),
-  }), v.null()),
+  returns: v.union(
+    v.object({
+      proof: proofSummaryValidator,
+      apiKey: proofApiKeyValidator,
+      subscription: proofSubscriptionValidator,
+      endpoint: proofEndpointValidator,
+      secretVersions: v.array(
+        v.object({
+          id: v.id("webhookSecretVersions"),
+          version: v.number(),
+          status: v.string(),
+          createdAt: v.number(),
+        }),
+      ),
+      sourceDelivery: proofDeliveryValidator,
+      replayDelivery: proofDeliveryValidator,
+      contracts: v.array(proofContractValidator),
+      duplicateDeliveryCount: v.number(),
+      duplicateSafe: v.boolean(),
+      dlqReplaySucceeded: v.boolean(),
+      hmacVerificationInputValid: v.boolean(),
+      schemaContractIdentifiers: v.array(v.string()),
+      mcpReleasedEvidenceAware: v.boolean(),
+    }),
+    v.null(),
+  ),
   handler: async (ctx, args) => {
-    const proof = await ctx.db.query("phase10Proofs").withIndex("by_key", (q) => q.eq("key", args.key ?? PHASE10_PROOF_KEY)).unique();
+    const proof = await ctx.db
+      .query("phase10Proofs")
+      .withIndex("by_key", (q) => q.eq("key", args.key ?? PHASE10_PROOF_KEY))
+      .unique();
     if (!proof) return null;
-    const [key, subscription, endpoint, sourceDelivery, replayDelivery, releasedFact] = await Promise.all([
+    await requireProjectReadAccess(ctx, proof.projectId);
+    const [
+      key,
+      subscription,
+      endpoint,
+      sourceDelivery,
+      replayDelivery,
+      releasedFact,
+    ] = await Promise.all([
       ctx.db.get("apiKeys", proof.apiKeyId),
       ctx.db.get("filteredSubscriptions", proof.subscriptionId),
       ctx.db.get("webhookEndpoints", proof.endpointId),
@@ -97,34 +150,153 @@ export const proof = query({
       ctx.db.get("webhookDeliveries", proof.replayDeliveryId),
       ctx.db.get("factVersions", proof.releasedFactVersionId),
     ]);
-    if (!key || !subscription || !endpoint || !sourceDelivery || !replayDelivery || !releasedFact) return null;
-    const [secretVersionsRaw, sourceAttempts, replayAttempts, contracts, duplicateDeliveries] = await Promise.all([
-      Promise.all(proof.secretVersionIds.slice(0, 10).map((id) => ctx.db.get("webhookSecretVersions", id))),
-      ctx.db.query("webhookDeliveryAttempts").withIndex("by_deliveryId_and_attempt", (q) => q.eq("deliveryId", sourceDelivery._id)).take(10),
-      ctx.db.query("webhookDeliveryAttempts").withIndex("by_deliveryId_and_attempt", (q) => q.eq("deliveryId", replayDelivery._id)).take(10),
-      Promise.all(proof.contractIds.slice(0, 10).map((id) => ctx.db.get("apiContracts", id))),
-      ctx.db.query("webhookDeliveries").withIndex("by_idempotencyKey", (q) => q.eq("idempotencyKey", sourceDelivery.idempotencyKey)).take(3),
+    if (
+      !key ||
+      !subscription ||
+      !endpoint ||
+      !sourceDelivery ||
+      !replayDelivery ||
+      !releasedFact
+    )
+      return null;
+    const [
+      secretVersionsRaw,
+      sourceAttempts,
+      replayAttempts,
+      contracts,
+      duplicateDeliveries,
+    ] = await Promise.all([
+      Promise.all(
+        proof.secretVersionIds
+          .slice(0, 10)
+          .map((id) => ctx.db.get("webhookSecretVersions", id)),
+      ),
+      ctx.db
+        .query("webhookDeliveryAttempts")
+        .withIndex("by_deliveryId_and_attempt", (q) =>
+          q.eq("deliveryId", sourceDelivery._id),
+        )
+        .take(10),
+      ctx.db
+        .query("webhookDeliveryAttempts")
+        .withIndex("by_deliveryId_and_attempt", (q) =>
+          q.eq("deliveryId", replayDelivery._id),
+        )
+        .take(10),
+      Promise.all(
+        proof.contractIds
+          .slice(0, 10)
+          .map((id) => ctx.db.get("apiContracts", id)),
+      ),
+      ctx.db
+        .query("webhookDeliveries")
+        .withIndex("by_idempotencyKey", (q) =>
+          q.eq("idempotencyKey", sourceDelivery.idempotencyKey),
+        )
+        .take(3),
     ]);
-    const secretVersions = secretVersionsRaw.filter((item): item is Doc<"webhookSecretVersions"> => item !== null).map((item) => ({ id: item._id, version: item.version, status: item.status, createdAt: item.createdAt }));
-    const contractDocs = contracts.filter((item): item is Doc<"apiContracts"> => item !== null);
-    return {
+    const secretVersions = secretVersionsRaw
+      .filter((item): item is Doc<"webhookSecretVersions"> => item !== null)
+      .map((item) => ({
+        id: item._id,
+        version: item.version,
+        status: item.status,
+        createdAt: item.createdAt,
+      }));
+    const contractDocs = contracts.filter(
+      (item): item is Doc<"apiContracts"> => item !== null,
+    );
+    const secretVersionIds = new Set(
+      secretVersionsRaw.filter((item) => item !== null).map((item) => item._id),
+    );
+    if (
+      secretVersionsRaw.some(
+        (item) => item && item.endpointId !== endpoint._id,
+      ) ||
+      sourceAttempts.some(
+        (item) =>
+          item.deliveryId !== sourceDelivery._id ||
+          !secretVersionIds.has(item.secretVersionId),
+      ) ||
+      replayAttempts.some(
+        (item) =>
+          item.deliveryId !== replayDelivery._id ||
+          !secretVersionIds.has(item.secretVersionId),
+      ) ||
+      subscription.webhookEndpointId !== endpoint._id ||
+      sourceDelivery.subscriptionId !== subscription._id ||
+      replayDelivery.subscriptionId !== subscription._id ||
+      sourceDelivery.endpointId !== endpoint._id ||
+      replayDelivery.endpointId !== endpoint._id
+    )
+      throw new Error("Cross-project data relationship");
+    assertProjectScope(proof.projectId, [
       proof,
-      apiKey: { id: key._id, projectId: key.projectId, name: key.name, prefix: key.prefix, scopes: key.scopes, status: key.status, rateLimitPerMinute: key.rateLimitPerMinute },
+      key,
       subscription,
       endpoint,
-      secretVersions,
       sourceDelivery,
-      sourceAttempts,
       replayDelivery,
-      replayAttempts,
-      contracts: contractDocs,
       releasedFact,
+      ...duplicateDeliveries,
+    ]);
+    return {
+      proof: { _id: proof._id },
+      apiKey: {
+        id: key._id,
+        projectId: key.projectId,
+        name: key.name,
+        prefix: key.prefix,
+        scopes: key.scopes,
+        status: key.status,
+        rateLimitPerMinute: key.rateLimitPerMinute,
+      },
+      subscription: {
+        _id: subscription._id,
+        name: subscription.name,
+        status: subscription.status,
+        filters: subscription.filters,
+      },
+      endpoint: {
+        _id: endpoint._id,
+        name: endpoint.name,
+        status: endpoint.status,
+      },
+      secretVersions,
+      sourceDelivery: {
+        _id: sourceDelivery._id,
+        status: sourceDelivery.status,
+        attemptCount: sourceDelivery.attemptCount,
+      },
+      replayDelivery: {
+        _id: replayDelivery._id,
+        status: replayDelivery.status,
+        attemptCount: replayDelivery.attemptCount,
+      },
+      contracts: contractDocs.map((item) => ({
+        _id: item._id,
+        identifier: item.identifier,
+        version: item.version,
+        kind: item.kind,
+        schemaHash: item.schemaHash,
+        status: item.status,
+      })),
       duplicateDeliveryCount: duplicateDeliveries.length,
       duplicateSafe: duplicateDeliveries.length === 1,
-      dlqReplaySucceeded: sourceDelivery.status === "dead_letter" && replayDelivery.status === "delivered",
-      hmacVerificationInputValid: sourceAttempts.length === 1 && sourceAttempts[0].signatureInput.startsWith(`${sourceAttempts[0].signatureTimestamp}.`) && /^v1=[a-f0-9]{64}$/.test(sourceAttempts[0].signature),
+      dlqReplaySucceeded:
+        sourceDelivery.status === "dead_letter" &&
+        replayDelivery.status === "delivered",
+      hmacVerificationInputValid:
+        sourceAttempts.length === 1 &&
+        sourceAttempts[0].signatureInput.startsWith(
+          `${sourceAttempts[0].signatureTimestamp}.`,
+        ) &&
+        /^v1=[a-f0-9]{64}$/.test(sourceAttempts[0].signature),
       schemaContractIdentifiers: contractDocs.map((item) => item.identifier),
-      mcpReleasedEvidenceAware: releasedFact.state === "released" && releasedFact.evidenceRefs.length > 0 && releasedFact.sourceObservationIds.length > 0,
+      mcpReleasedEvidenceAware:
+        releasedFact.state === "released" &&
+        releasedFact.evidenceRefs.length > 0 &&
+        releasedFact.sourceObservationIds.length > 0,
     };
   },
 });

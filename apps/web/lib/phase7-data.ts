@@ -39,10 +39,30 @@ type RelationDoc = BaseDoc & {
   kind: string;
   reason: string;
 };
-type EntityDoc = BaseDoc & { canonicalKey: string; displayName: string; entityType: string; status: string };
-type DecisionDoc = BaseDoc & { outcome: string; reasonCodes: string[]; details: unknown };
-type ObservationDoc = BaseDoc & { sourceEntityKey: string; trustState: string; observedAt: number; mappingRevisionId: string };
-type FieldDoc = BaseDoc & { canonicalPath: string; sourcePaths: string[]; evidenceRefs: string[]; state: string; transform: { name: string; version: string } };
+type EntityDoc = BaseDoc & {
+  canonicalKey: string;
+  displayName: string;
+  entityType: string;
+  status: string;
+};
+type DecisionDoc = BaseDoc & {
+  outcome: string;
+  reasonCodes: string[];
+  details: unknown;
+};
+type ObservationDoc = BaseDoc & {
+  sourceEntityKey: string;
+  trustState: string;
+  observedAt: number;
+  mappingRevisionId: string;
+};
+type FieldDoc = BaseDoc & {
+  canonicalPath: string;
+  sourcePaths: string[];
+  evidenceRefs: string[];
+  state: string;
+  transform: { name: string; version: string };
+};
 
 export type TimelineData = {
   entity: EntityDoc;
@@ -70,19 +90,29 @@ export type HistoryData = {
   certificate: BaseDoc | null;
 };
 export type Phase7ProofData = {
-  proof: BaseDoc & { key: string; aiModelEntityId: string; productEntityId: string };
-  policies: Array<BaseDoc & { predicate: string; maxAgeMs: number; allowLastKnownGood: boolean; status: string }>;
-  facts: FactVersionDoc[];
-  relations: RelationDoc[];
-  currentFacts: CurrentFactDoc[];
-  decisions: DecisionDoc[];
-  observations: ObservationDoc[];
-  fields: FieldDoc[];
-  evidence: BaseDoc[];
-  mappingRevisions: BaseDoc[];
-  collectorBindings: BaseDoc[];
-  runs: BaseDoc[];
-  certificates: BaseDoc[];
+  proof: { _id: string };
+  facts: Array<{
+    _id: string;
+    entityId: string;
+    predicate: string;
+    value: unknown;
+    validFrom?: number;
+    validTimeSource: string;
+    transactionFrom: number;
+    changeKind: string;
+  }>;
+  currentFacts: Array<{
+    _id: string;
+    entityId: string;
+    predicate: string;
+    factVersionId: string;
+    state: string;
+    servingLabel: string;
+    lastVerifiedAt: number;
+    freshnessDeadline: number;
+  }>;
+  observations: Array<"redacted">;
+  evidence: Array<"redacted">;
   projectionMatches: boolean;
 };
 
@@ -93,12 +123,20 @@ const timelineQuery = makeFunctionReference<
 >("phase7Queries:timeline");
 const historyQuery = makeFunctionReference<
   "query",
-  { entityId: string; predicate: string; validAt?: number; believedAt?: number; limit?: number },
+  {
+    entityId: string;
+    predicate: string;
+    validAt?: number;
+    believedAt?: number;
+    limit?: number;
+  },
   HistoryData | null
 >("phase7Queries:history");
-const proofQuery = makeFunctionReference<"query", { key?: string }, Phase7ProofData | null>(
-  "phase7Queries:proof",
-);
+const proofQuery = makeFunctionReference<
+  "query",
+  { key?: string },
+  Phase7ProofData | null
+>("phase7Queries:proof");
 
 function client() {
   const url = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -107,14 +145,28 @@ function client() {
 async function safeQuery<T>(run: (convex: ConvexHttpClient) => Promise<T>) {
   const convex = client();
   if (!convex) return null;
-  try { return await run(convex); } catch { return null; }
+  try {
+    return await run(convex);
+  } catch {
+    return null;
+  }
 }
 
-export const loadPhase7Proof = () => safeQuery((convex) => convex.query(proofQuery, {}));
+export const loadPhase7Proof = () =>
+  safeQuery((convex) => convex.query(proofQuery, {}));
 export const loadEntityTimeline = (entityId: string, predicate?: string) =>
-  safeQuery((convex) => convex.query(timelineQuery, { entityId, ...(predicate ? { predicate } : {}), limit: 100 }));
+  safeQuery((convex) =>
+    convex.query(timelineQuery, {
+      entityId,
+      ...(predicate ? { predicate } : {}),
+      limit: 100,
+    }),
+  );
 export const loadFactHistory = (
   entityId: string,
   predicate: string,
   options: { validAt?: number; believedAt?: number } = {},
-) => safeQuery((convex) => convex.query(historyQuery, { entityId, predicate, ...options, limit: 100 }));
+) =>
+  safeQuery((convex) =>
+    convex.query(historyQuery, { entityId, predicate, ...options, limit: 100 }),
+  );
