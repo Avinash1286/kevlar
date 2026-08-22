@@ -6438,7 +6438,7 @@ Create immutable canonical observations and a historically correct fact store.
 - [x] Valid time and observation time are separately queryable.
 - [x] Stale last-known-good facts are labelled.
 - [x] Every current fact traces to a verified observation.
-- [ ] A corrected extraction is not misreported as a real provider change.
+- [x] A corrected extraction is not misreported as a real provider change.
 
 ---
 
