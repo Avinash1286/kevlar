@@ -2836,15 +2836,15 @@ type SourceDefinition = {
 Before activation:
 
 - [ ] Publicly reachable without authentication.
-- [ ] No personal or restricted information is required.
-- [ ] Host and paths are allowlisted.
-- [ ] Collection frequency is reasonable.
+- [x] No personal or restricted information is required.
+- [x] Host and paths are allowlisted.
+- [x] Collection frequency is reasonable.
 - [ ] Source usage and applicable terms have been reviewed.
-- [ ] Output fields are documented.
+- [x] Output fields are documented.
 - [ ] Evidence retention is appropriate.
 - [ ] A human owner is assigned.
-- [ ] The collector is custom and documented.
-- [ ] The source is not represented as more authoritative than it is.
+- [x] The collector is custom and documented.
+- [x] The source is not represented as more authoritative than it is.
 
 #### Authority is predicate-specific
 
@@ -8052,9 +8052,9 @@ Each ADR includes context, decision, alternatives, consequences, and reversal co
 
 #### Bright Data centrality
 
-- [ ] Every production source uses a documented custom Scraper Studio collector.
+- [x] Every production source uses a documented custom Scraper Studio collector.
 - [ ] Structured extraction occurs inside Scraper Studio.
-- [ ] Collector IDs are stored and visible.
+- [x] Collector IDs are stored and visible.
 - [ ] At least one new vertical collector completes a real Bright Data self-heal.
 - [ ] Same-ID repair is demonstrated where supported by the workflow.
 - [ ] Bright Data preview, approval, and version evidence are preserved.
@@ -8063,7 +8063,7 @@ Each ADR includes context, decision, alternatives, consequences, and reversal co
 #### Collector Mesh
 
 - [ ] At least 6 production-quality custom collectors are active.
-- [ ] At least 3 source archetypes are represented.
+- [x] At least 3 source archetypes are represented.
 - [ ] Source policies and owners are documented.
 - [ ] Schedules, budgets, pause, run-now, and replay work.
 - [ ] Collector fleet health is visible.
@@ -8543,23 +8543,23 @@ Do not use as the core implementation:
 
 - [ ] Team size is 1–4 and every member belongs to only one team.
 - [ ] Main code, final UI, custom collector, and implementation begin after kickoff.
-- [ ] Custom Scraper Studio Collector ID is documented.
-- [ ] No prebuilt Scrapers Library collector is in the core data path.
-- [ ] All target data is public and non-personal.
+- [x] Custom Scraper Studio Collector ID is documented.
+- [x] No prebuilt Scrapers Library collector is in the core data path.
+- [x] All target data is public and non-personal.
 - [ ] Fixture content is created by the team.
-- [ ] Public repository exists.
-- [ ] README is complete.
-- [ ] Raw structured collector output is committed.
-- [ ] Kevlar-enriched structured output is committed.
-- [ ] Demo video shows a working project.
-- [ ] AI coding tool use is disclosed.
+- [x] Public repository exists.
+- [x] README is complete.
+- [x] Raw structured collector output is committed.
+- [x] Kevlar-enriched structured output is committed.
+- [x] Demo video shows a working project.
+- [x] AI coding tool use is disclosed.
 - [ ] Team can explain the collector and all major subsystems.
-- [ ] Third-party dependencies and assets are attributed.
+- [x] Third-party dependencies and assets are attributed.
 - [ ] Secrets are absent from Git history.
 - [ ] Team ownership is agreed internally.
 - [ ] Submission is filed before the deadline.
 - [ ] Conduct and communication remain respectful.
-- [ ] No benchmark numbers are claimed until actually measured.
+- [x] No benchmark numbers are claimed until actually measured.
 
 ---
 

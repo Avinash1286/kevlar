@@ -74,9 +74,10 @@ Raw reports are in `benchmarks/results/`; public response examples are in `sampl
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md), [trust model](docs/TRUST.md), and [bitemporal model](docs/TEMPORAL.md)
+- [Architecture](docs/ARCHITECTURE.md), [decision records](docs/DECISIONS.md), [trust model](docs/TRUST.md), and [bitemporal model](docs/TEMPORAL.md)
 - [Bright Data integration](docs/BRIGHT_DATA.md), [API](docs/API.md), [SDK](docs/SDK.md), and [MCP](docs/MCP.md)
-- [Security](docs/SECURITY.md), [operations](docs/OPERATIONS.md), [recovery](docs/RECOVERY.md), and [limitations](docs/LIMITATIONS.md)
+- [Source governance](docs/SOURCE_GOVERNANCE.md), [security](docs/SECURITY.md), [operations](docs/OPERATIONS.md), [recovery](docs/RECOVERY.md), and [limitations](docs/LIMITATIONS.md)
 - [Release scope](docs/RELEASE_SCOPE.md), [benchmark](docs/BENCHMARK.md), [demo](docs/DEMO.md), and [release notes](docs/RELEASE_NOTES.md)
+- [AI coding-tool disclosure](AI_DISCLOSURE.md) and [third-party dependencies/assets](THIRD_PARTY_NOTICES.md)
 
 The complete twelve-phase product specification and exit-gate record is preserved in [complete_kevlar.md](complete_kevlar.md).
