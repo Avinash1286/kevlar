@@ -122,9 +122,6 @@ export default async function Home() {
           <Link className="repo-link" href="/release">
             v1.0.1 evidence →
           </Link>
-          <span className="quiet-label">
-            Week 12 of 12 · Complete measured release
-          </span>
         </div>
       </section>
 
