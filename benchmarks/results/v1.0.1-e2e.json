@@ -1,18 +1,24 @@
 {
   "schema_version": "kevlar.release-e2e.v1",
-  "measured_at": "2026-08-22T14:52:26.382Z",
+  "measured_at": "2026-08-23T17:18:16.165Z",
   "public_url": "https://kevlar-web.vercel.app",
   "pages": [
     {
       "path": "/",
       "status": 200,
-      "bytes": 20868,
+      "bytes": 20865,
+      "kevlarShell": true
+    },
+    {
+      "path": "/architecture",
+      "status": 200,
+      "bytes": 18857,
       "kevlarShell": true
     },
     {
       "path": "/gauntlet",
       "status": 200,
-      "bytes": 17405,
+      "bytes": 19464,
       "kevlarShell": true
     },
     {
