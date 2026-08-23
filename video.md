@@ -2,101 +2,34 @@
 
 This is the final recording script for a video lasting **1:55–2:00**. The first ten seconds establish the core idea, the next fifty seconds explain the project, and the final minute demonstrates the working system.
 
-Speak naturally at roughly 130–145 words per minute. Pause briefly when changing tabs so the judge can read the proof on screen.
+Speak naturally at roughly 138–142 words per minute. Pause briefly when changing tabs so the judge can read the proof on screen.
 
 Tell this as one continuous story, not as a feature list: Nova's price is misunderstood, Kevlar catches the silent mistake, Bright Data repairs the collector, and the Gauntlet proves the repair is safe.
 
-## Final timed script
+## Continuous narration — read this aloud
 
-### 0:00–0:10 — Meet the problem
+Read only these two paragraphs. The screen changes are in the separate cue sheet below so they do not interrupt your voice.
 
-**Screen:** Open the [production home page](https://kevlar-web.vercel.app). Keep the hero text and the Acquire → Persist → Verify → Release pipeline visible.
+### First minute — the project story
 
-**Action:** Do not scroll. Rest the cursor away from the heading.
+> “Kevlar verifies web data before release. Imagine you're tracking Nova headphones. They cost 129 dollars, or 10.75 a month. Then the site changes. The scraper doesn't crash; the JSON looks fine. It simply calls 10.75 the purchase price, and a normal pipeline is ready to announce a huge price drop. Kevlar is built for that moment. It sits between the changing web and everything that relies on it, treating each value as a claim, not a fact. Bright Data's custom Scraper Studio worker collects the page, visible text, JSON-LD, API data, and a screenshot. Kevlar asks: do those pieces tell the same story? If not, it quarantines the new value and keeps the trusted 129 available. Bright Data can propose a repair, but before it ships, the fix must pass human review, held-out tests, negative controls, and certification.”
 
-**Say:**
+### Second minute — the live demo story
 
-> “Kevlar verifies web data before release. Nova costs 129 dollars, but when a scraper reports its 10.75 monthly plan as the price, Kevlar stops it.”
+> “Now let me show you the journey. This is the custom Bright Data Browser worker behind Nova. Its interaction code opens the page and tags evidence; the parser turns it into a typed record. On a healthy run, the difference is clear: 129 dollars to buy, 10.75 a month. Visible text, JSON-LD, the public API response, and a screenshot stay attached. Then the page changes. Kevlar's trust feed receives 10.75 as the purchase price, recognizes financing, blocks the false alert, and keeps 129 as last-known-good. Bright Data proposes a fix, but Kevlar asks: did it learn, or did it memorize one page? The Gauntlet tests eight visible, held-out, and no-heal cases. Every one passes, with zero false releases. The whole path passes 24 controlled checks. Bright Data keeps collectors alive; Kevlar keeps released facts honest.”
 
-### 0:10–0:25 — The quiet failure
+## Screen cue sheet — do not read this aloud
 
-**Screen:** Show the first flowchart in [`1min.md`](1min.md) using a rendered Markdown preview.
-
-**Action:** Point first to the website and Bright Data nodes, then to the Kevlar release gate.
-
-**Say:**
-
-> “Nothing crashes; the JSON is valid. But a false price-drop alert is ready to ship. Kevlar sits in the middle and asks: does this number still mean purchase price?”
-
-### 0:25–0:42 — Follow the evidence
-
-**Screen:** Keep the main flowchart visible.
-
-**Action:** Follow the pass and fail branches with the cursor.
-
-**Say:**
-
-> “Bright Data's custom Browser worker collects the page and brings back typed fields, visible text, JSON-LD, API data, and a screenshot. Kevlar treats that bundle as evidence, not truth, and releases only verified facts to apps and AI.”
-
-### 0:42–1:00 — Build the safety net
-
-**Screen:** Scroll once to the repair-certification flowchart in [`1min.md`](1min.md).
-
-**Action:** Trace Bright Data repair → Tribunal → human approval → Gauntlet → certificate.
-
-**Say:**
-
-> “When those signals disagree, Kevlar quarantines 10.75 and keeps the last trusted 129 available. Bright Data proposes a repair, but it still faces human review, held-out tests, negative controls, and a certificate before anything ships.”
-
-### 1:00–1:12 — Start Nova's journey
-
-**Screen:** Bright Data → **Scrapers** → **kevlar-nova-product-pricing** → **Code** → **Interaction code**.
-
-**Action:** Keep the collector name and active status visible. Briefly point to `tag_script`, `tag_response`, `navigate`, and `tag_screenshot`; then click **Parser code**.
-
-**Say:**
-
-> “Let's follow Nova's journey. It begins inside our custom Bright Data Browser worker. The interaction code opens the page and tags the evidence; the parser turns it into a typed record.”
-
-### 1:12–1:24 — See the healthy truth
-
-**Screen:** Switch to the already-prepared Bright Data **Output** result. Do not start a new run during the recording.
-
-**Action:** Point to `product`, `independent_sources`, and `evidence`. Make `$129`, `$10.75/month`, both supporting `129` values, and `screenshot_ref` visible.
-
-**Say:**
-
-> “On a healthy run, the story is clear: 129 dollars to buy, 10.75 per month. Visible text, JSON-LD, the public API, and the screenshot all travel with the result.”
-
-### 1:24–1:41 — Watch the page change
-
-**Screen:** Open the live [Trust Feed](https://kevlar-web.vercel.app/feed).
-
-**Action:** Point in this order: **Observed by collector — $10.75**, **Released fact — $129.00**, **3 violations**, and **Alert consumer — blocked**.
-
-**Say:**
-
-> “Now the page changes. The collector brings back 10.75 as purchase price, yet nothing crashes. Kevlar spots the financing meaning, blocks the false alert, and keeps 129 clearly labelled as last-known-good.”
-
-### 1:41–1:53 — Prove the repair learned
-
-**Screen:** Open the live [Held-Out Gauntlet](https://kevlar-web.vercel.app/gauntlet).
-
-**Action:** Point across the four metrics: **8/8**, **100%**, **0 false heals**, and **0 false releases**. Briefly show held-out cases H1/H2 and negative controls N1/N2.
-
-**Say:**
-
-> “Bright Data proposes the fix, but Kevlar asks: did it learn, or just memorize one page? Eight Gauntlet cases answer that—all pass, with zero false releases.”
-
-### 1:53–2:00 — Finish the story
-
-**Screen:** Open the live [Release Evidence](https://kevlar-web.vercel.app/release).
-
-**Action:** Keep **24/24 labelled checks** and **0 false releases** visible. End the recording on this screen.
-
-**Say:**
-
-> “Twenty-four controlled checks prove the path. Bright Data keeps collectors alive; Kevlar keeps released facts honest.”
+| Approximate time | When you say                  | Screen                                                           | Silent action                                                               |
+| ---------------- | ----------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 0:00             | “Kevlar verifies web data…”   | [Production home](https://kevlar-web.vercel.app)                 | Keep the hero and Acquire → Persist → Verify → Release pipeline visible.    |
+| 0:08             | “Then the site changes…”      | Main flowchart in [`1min.md`](1min.md)                           | Trace the source, Bright Data collector, and Kevlar release gate.           |
+| 0:40             | “Kevlar asks: do those…”      | Repair flowchart in [`1min.md`](1min.md)                         | Trace quarantine → repair → human review → Gauntlet → certificate.          |
+| 1:00             | “Let me show you…”            | Bright Data → **Scrapers → kevlar-nova-product-pricing → Code**  | Show Interaction code, then Parser code.                                    |
+| 1:13             | “On a healthy run…”           | Prepared Bright Data **Output**                                  | Point to `product`, `independent_sources`, and `evidence`.                  |
+| 1:27             | “Then the page changes…”      | Live [Trust Feed](https://kevlar-web.vercel.app/feed)            | Point to observed `$10.75`, released `$129`, violations, and blocked alert. |
+| 1:40             | “Bright Data proposes a fix…” | Live [Held-Out Gauntlet](https://kevlar-web.vercel.app/gauntlet) | Show `8/8`, `100%`, zero false heals, and zero false releases.              |
+| 1:52             | “The whole path passes…”      | Live [Release Evidence](https://kevlar-web.vercel.app/release)   | End on `24/24` controlled checks and zero false releases.                   |
 
 ## Prepare the demo before recording
 
@@ -112,8 +45,8 @@ Tell this as one continuous story, not as a feature list: Nova's price is misund
 
 1. Open [`1min.md`](1min.md) in GitHub or a Markdown preview that renders Mermaid.
 2. Confirm both diagrams render before recording.
-3. Fit the first diagram to the screen for 0:10–0:42.
-4. Pre-scroll or use a second preview tab for the repair diagram at 0:42, so only one clean transition is needed.
+3. Fit the first diagram to the screen for 0:08–0:40.
+4. Pre-scroll or use a second preview tab for the repair diagram at 0:40, so only one clean transition is needed.
 
 ### 3. Collect the Bright Data proof
 

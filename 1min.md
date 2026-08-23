@@ -48,23 +48,11 @@ flowchart TB
   CANARY --> VERIFY["Return to normal verification"]
 ```
 
-## One-minute narration
+## Natural one-minute narration
 
-### 0:00–0:10 — Meet the problem
+Read this as one continuous story while moving from the main flowchart to the repair flowchart. Do not pause to announce the diagram sections.
 
-> “Kevlar verifies web data before release. Nova costs 129 dollars, but when a scraper reports its 10.75 monthly plan as the price, Kevlar stops it.”
-
-### 0:10–0:25 — The quiet failure
-
-> “Nothing crashes; the JSON is valid. But a false price-drop alert is ready to ship. Kevlar sits in the middle and asks: does this number still mean purchase price?”
-
-### 0:25–0:42 — Follow the evidence
-
-> “Bright Data's custom Browser worker collects the page and brings back typed fields, visible text, JSON-LD, API data, and a screenshot. Kevlar treats that bundle as evidence, not truth, and releases only verified facts to apps and AI.”
-
-### 0:42–1:00 — Build the safety net
-
-> “When those signals disagree, Kevlar quarantines 10.75 and keeps the last trusted 129 available. Bright Data proposes a repair, but it still faces human review, held-out tests, negative controls, and a certificate before anything ships.”
+> “Kevlar verifies web data before release. Imagine you're tracking Nova headphones. They cost 129 dollars, or 10.75 a month. Then the site changes. The scraper doesn't crash; the JSON looks fine. It simply calls 10.75 the purchase price, and a normal pipeline is ready to announce a huge price drop. Kevlar is built for that moment. It sits between the changing web and everything that relies on it, treating each value as a claim, not a fact. Bright Data's custom Scraper Studio worker collects the page, visible text, JSON-LD, API data, and a screenshot. Kevlar asks: do those pieces tell the same story? If not, it quarantines the new value and keeps the trusted 129 available. Bright Data can propose a repair, but before it ships, the fix must pass human review, held-out tests, negative controls, and certification.”
 
 ## Three ideas the judge should remember
 
