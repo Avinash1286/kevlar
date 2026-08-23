@@ -48,11 +48,13 @@ flowchart TB
   CANARY --> VERIFY["Return to normal verification"]
 ```
 
-## Natural one-minute narration
+## Use these diagrams in the voiceover video
 
-Read this as one continuous story while moving from the main flowchart to the repair flowchart. Do not pause to announce the diagram sections.
+- Record the **Core system flow** as Clip 2 for 21 seconds.
+- Record the **Repair-certification flow** as Clip 3 for 30 seconds.
+- Follow the exact cursor paths and voiceover in [`video.md`](video.md).
 
-> “Kevlar verifies web data before release. Imagine you're tracking Nova headphones. They cost 129 dollars, or 10.75 a month. Then the site changes. The scraper doesn't crash; the JSON looks fine. It simply calls 10.75 the purchase price, and a normal pipeline is ready to announce a huge price drop. Kevlar is built for that moment. It sits between the changing web and everything that relies on it, treating each value as a claim, not a fact. Bright Data's custom Scraper Studio worker collects the page, visible text, JSON-LD, API data, and a screenshot. Kevlar asks: do those pieces tell the same story? If not, it quarantines the new value and keeps the trusted 129 available. Bright Data can propose a repair, but before it ships, the fix must pass human review, held-out tests, negative controls, and certification.”
+The narration is centralized in `video.md` so there is only one script to rehearse and edit.
 
 ## Three ideas the judge should remember
 
