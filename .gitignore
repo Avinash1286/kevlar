@@ -30,3 +30,7 @@ collectors/**/create.log
 gauntlet/results/*.json
 
 .vercel
+
+# Next.js may regenerate repository-local agent guidance during development.
+# Keep those generated files out of the judge-facing source tree.
+apps/*/AGENTS.md

@@ -100,6 +100,6 @@ An integrity digest can detect content mismatch; it is not a digital signature o
 
 ## Deployment boundary
 
-Vercel hosts the public web and API surface. Convex provides the backend data and function runtime. Bright Data Scraper Studio remains the central acquisition and repair runtime. The v1.0.0 release evidence names the proven Convex development deployment; promoting a separate production deployment is an explicit operation outside that evidence.
+Vercel hosts the public web and API surface. Convex provides the backend data and function runtime. Bright Data Scraper Studio remains the central acquisition and repair runtime. The v1.0.1 release evidence names the proven Convex development deployment; promoting a separate production deployment is an explicit operation outside that evidence.
 
 See the [decision records](DECISIONS.md), [trust model](TRUST.md), [source governance](SOURCE_GOVERNANCE.md), and [temporal model](TEMPORAL.md) for the governing policies behind these boundaries.

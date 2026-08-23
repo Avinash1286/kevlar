@@ -16,15 +16,12 @@ Built for **Into the Scrape-Verse — WeMakeDevs × Bright Data**.
 
 ## Judge fast path
 
-| Review target                        | Link                                                                                                                                                                                       |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Live operator and developer console  | [kevlar-web.vercel.app](https://kevlar-web.vercel.app)                                                                                                                                     |
-| Narrated 45.44-second hackathon demo | [MP4](artifacts/demo/kevlar-hackathon-submission-v1.0.1.mp4) · [captions](artifacts/demo/kevlar-hackathon-submission-v1.0.1.en.srt)                                                        |
-| Immutable public release             | [v1.0.1](https://github.com/Avinash1286/kevlar/releases/tag/v1.0.1)                                                                                                                        |
-| Measured results                     | [benchmark report](docs/BENCHMARK.md) · [raw benchmark](benchmarks/results/v1.0.1.json) · [live E2E](benchmarks/results/v1.0.1-e2e.json) · [load run](benchmarks/results/v1.0.1-load.json) |
-| Requirement-by-requirement evidence  | [completion evidence](docs/COMPLETION_EVIDENCE.md)                                                                                                                                         |
-| Copy-ready submission material       | [hackathon submission pack](docs/HACKATHON_SUBMISSION.md)                                                                                                                                  |
-| Original twelve-phase specification  | [complete_kevlar.md](complete_kevlar.md)                                                                                                                                                   |
+| Review target                       | Link                                                                                                                                                                                       |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Live operator and developer console | [kevlar-web.vercel.app](https://kevlar-web.vercel.app)                                                                                                                                     |
+| Automated 45.44-second walkthrough  | [MP4](artifacts/demo/kevlar-hackathon-submission-v1.0.1.mp4) · [captions](artifacts/demo/kevlar-hackathon-submission-v1.0.1.en.srt)                                                        |
+| Immutable public release            | [v1.0.1](https://github.com/Avinash1286/kevlar/releases/tag/v1.0.1)                                                                                                                        |
+| Measured results                    | [benchmark report](docs/BENCHMARK.md) · [raw benchmark](benchmarks/results/v1.0.1.json) · [live E2E](benchmarks/results/v1.0.1-e2e.json) · [load run](benchmarks/results/v1.0.1-load.json) |
 
 ## Table of contents
 
@@ -704,24 +701,24 @@ A policy-pending Anthropic source can use the restricted `--activate-policy <ver
 
 ## Repository map
 
-| Path                                                         | Purpose                                                                                             |
-| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| [`apps/web`](apps/web)                                       | Next.js operator console, public release pages, and REST surface                                    |
-| [`apps/fixture-lab`](apps/fixture-lab)                       | Controlled Nova product-pricing source and mutation fixtures                                        |
-| [`collectors`](collectors)                                   | Scraper Studio schemas, interaction/parser code, source policies, IDs, and evidence                 |
-| [`packages/brightdata-runtime`](packages/brightdata-runtime) | Bright Data trigger, polling, response validation, and self-heal adapter                            |
-| [`packages/semantic-contracts`](packages/semantic-contracts) | Product-pricing semantic contracts and verification rules                                           |
-| [`packages/certification`](packages/certification)           | Gauntlet evaluation and Repair Certificate logic                                                    |
-| [`packages/api-contracts`](packages/api-contracts)           | Shared REST/SDK runtime contracts                                                                   |
-| [`packages/sdk`](packages/sdk)                               | In-repository TypeScript client                                                                     |
-| [`packages/mcp-server`](packages/mcp-server)                 | Read-only MCP tools for released intelligence                                                       |
-| [`packages/ai-router`](packages/ai-router)                   | Verified-event-only advisory router integration                                                     |
-| [`domains/ai-infrastructure`](domains/ai-infrastructure)     | Canonical schema, mappings, identity, and domain policies                                           |
-| [`convex`](convex)                                           | Backend schema, functions, workflows, authz, facts, events, evidence, and operations                |
-| [`tests`](tests)                                             | Unit, integration, security, tenant, trust, intelligence, and delivery tests                        |
-| [`scripts`](scripts)                                         | Phase proofs, release benchmarks, E2E/load runs, demo capture, and recovery helpers                 |
-| [`benchmarks/results`](benchmarks/results)                   | Committed raw release measurements                                                                  |
-| [`docs`](docs)                                               | Architecture, trust, Bright Data, API, operations, security, recovery, and submission documentation |
+| Path                                                         | Purpose                                                                                          |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| [`apps/web`](apps/web)                                       | Next.js operator console, public release pages, and REST surface                                 |
+| [`apps/fixture-lab`](apps/fixture-lab)                       | Controlled Nova product-pricing source and mutation fixtures                                     |
+| [`collectors`](collectors)                                   | Scraper Studio schemas, interaction/parser code, source policies, IDs, and evidence              |
+| [`packages/brightdata-runtime`](packages/brightdata-runtime) | Bright Data trigger, polling, response validation, and self-heal adapter                         |
+| [`packages/semantic-contracts`](packages/semantic-contracts) | Product-pricing semantic contracts and verification rules                                        |
+| [`packages/certification`](packages/certification)           | Gauntlet evaluation and Repair Certificate logic                                                 |
+| [`packages/api-contracts`](packages/api-contracts)           | Shared REST/SDK runtime contracts                                                                |
+| [`packages/sdk`](packages/sdk)                               | In-repository TypeScript client                                                                  |
+| [`packages/mcp-server`](packages/mcp-server)                 | Read-only MCP tools for released intelligence                                                    |
+| [`packages/ai-router`](packages/ai-router)                   | Verified-event-only advisory router integration                                                  |
+| [`domains/ai-infrastructure`](domains/ai-infrastructure)     | Canonical schema, mappings, identity, and domain policies                                        |
+| [`convex`](convex)                                           | Backend schema, functions, workflows, authz, facts, events, evidence, and operations             |
+| [`tests`](tests)                                             | Unit, integration, security, tenant, trust, intelligence, and delivery tests                     |
+| [`scripts`](scripts)                                         | Phase proofs, release benchmarks, E2E/load runs, demo capture, and recovery helpers              |
+| [`benchmarks/results`](benchmarks/results)                   | Committed raw release measurements                                                               |
+| [`docs`](docs)                                               | Architecture, trust, Bright Data, API, operations, security, recovery, and release documentation |
 
 ## Known boundaries
 
@@ -738,7 +735,6 @@ Kevlar is designed to make uncertainty explicit. v1.0.1 therefore documents thes
 - The public Vercel surface is production, while the proven Convex backend target is explicitly the development deployment `veracious-eagle-977`.
 - A fresh Convex snapshot export and same-project manifest/query verification succeeded. An import/query restore into a separate throwaway deployment remains open because no Preview Deploy Key is available and preview creation is billing-gated.
 - Bright Data IDE preview, save, activation, and self-heal approval are account-scoped. Kevlar cannot bypass provider authorization.
-- The submitter must still record the named source owner, source-terms review, retention appropriateness, eligibility attestations, final YouTube visibility, ratings, and official form submission.
 
 Read the full [limitations](docs/LIMITATIONS.md), [release scope](docs/RELEASE_SCOPE.md), [source governance policy](docs/SOURCE_GOVERNANCE.md), and [recovery boundary](docs/RECOVERY.md) before presenting or extending the release.
 
@@ -748,8 +744,8 @@ Read the full [limitations](docs/LIMITATIONS.md), [release scope](docs/RELEASE_S
 - Bright Data and governance: [integration](docs/BRIGHT_DATA.md), [source governance](docs/SOURCE_GOVERNANCE.md), and [pending collector activation](collectors/ai-infrastructure/ACTIVATE_ANTHROPIC_COLLECTORS.md)
 - Developer platform: [REST API](docs/API.md), [TypeScript SDK](docs/SDK.md), and [MCP](docs/MCP.md)
 - Operations: [security](docs/SECURITY.md), [operations](docs/OPERATIONS.md), [recovery](docs/RECOVERY.md), and [runbooks](docs/runbooks/)
-- Release proof: [benchmark](docs/BENCHMARK.md), [demo](docs/DEMO.md), [release notes](docs/RELEASE_NOTES.md), [release scope](docs/RELEASE_SCOPE.md), and [completion evidence](docs/COMPLETION_EVIDENCE.md)
-- Hackathon: [submission pack](docs/HACKATHON_SUBMISSION.md), [AI coding-tool disclosure](AI_DISCLOSURE.md), and [third-party dependencies/assets](THIRD_PARTY_NOTICES.md)
+- Release proof: [benchmark](docs/BENCHMARK.md), [verified walkthroughs](docs/DEMO.md), [release notes](docs/RELEASE_NOTES.md), and [release scope](docs/RELEASE_SCOPE.md)
+- Hackathon: [AI coding-tool disclosure](AI_DISCLOSURE.md) and [third-party dependencies/assets](THIRD_PARTY_NOTICES.md)
 
 ## Contributing and license
 

@@ -1,6 +1,6 @@
 # Contributing
 
-Kevlar is built phase by phase against the exit gates in `complete_kevlar.md`.
+Kevlar changes are evaluated against the documented release scope, trust model, and committed regression evidence.
 
 1. Create a short-lived branch from `main`.
 2. Keep pure trust logic in `packages/*` and provider/database boundaries in adapters.

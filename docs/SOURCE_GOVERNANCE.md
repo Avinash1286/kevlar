@@ -28,7 +28,7 @@ Technical metadata was reviewed against the repository on 2026-08-22. This is an
 | `anthropic-models`        | Observe official model identity, capability, endpoint, and limit statements              | `https://platform.claude.com/docs/en/about-claude/models/`   | Catalog; every 720 minutes; max 1 concurrent; quota 8/day                   | Bright Data active as `c_mt4e811ufis8kdvlt`; Kevlar certification pending  |
 | `nova-product-pricing`    | Exercise the controlled purchase-price semantic-regression and repair-certification path | `https://kevlar-fixture-lab.vercel.app/product-pricing/nova` | Controlled product-pricing fixture; initiated for proof and regression runs | Custom ID `c_mt3utzwt29hbznvax9` recorded and run evidence committed       |
 
-The operating owner role is **Kevlar source maintainer**. The hackathon submitter must record the responsible person's name and confirm applicable source terms before promoting either pending Anthropic collector into Kevlar's certified production fleet or materially changing any source policy.
+The operating owner role is **Kevlar source maintainer**. The project owner must record the responsible person's name and confirm applicable source terms before promoting either pending Anthropic collector into Kevlar's certified production fleet or materially changing any source policy.
 
 ## Fields and evidence
 

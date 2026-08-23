@@ -4,7 +4,6 @@ node_modules
 coverage
 playwright-report
 pnpm-lock.yaml
-complete_kevlar.md
 
 # Local Codex/Claude workspace instructions and skill caches are not release
 # source files and may be user-managed or generated outside this repository.
