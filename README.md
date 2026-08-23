@@ -19,7 +19,6 @@ Built for **Into the Scrape-Verse — WeMakeDevs × Bright Data**.
 | Review target                       | Link                                                                                                                                                                                       |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Live operator and developer console | [kevlar-web.vercel.app](https://kevlar-web.vercel.app)                                                                                                                                     |
-| Automated 45.44-second walkthrough  | [MP4](artifacts/demo/kevlar-hackathon-submission-v1.0.1.mp4) · [captions](artifacts/demo/kevlar-hackathon-submission-v1.0.1.en.srt)                                                        |
 | Immutable public release            | [v1.0.1](https://github.com/Avinash1286/kevlar/releases/tag/v1.0.1)                                                                                                                        |
 | Measured results                    | [benchmark report](docs/BENCHMARK.md) · [raw benchmark](benchmarks/results/v1.0.1.json) · [live E2E](benchmarks/results/v1.0.1-e2e.json) · [load run](benchmarks/results/v1.0.1-load.json) |
 
@@ -554,14 +553,6 @@ Five layered baselines show what each verification layer adds: schema-only extra
 
 See [BENCHMARK.md](docs/BENCHMARK.md) for definitions and limitations and [v1.0.1.json](benchmarks/results/v1.0.1.json) for raw cases, hashes, timings, and outputs.
 
-### Demo artifacts
-
-| Artifact                                                                          | Coverage                                                                                     |
-| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| [Hackathon submission MP4](artifacts/demo/kevlar-hackathon-submission-v1.0.1.mp4) | Narrated and captioned 45.44-second, 1440×900 H.264/AAC submission cut                       |
-| [Kevlar Core walkthrough](artifacts/demo/kevlar-core-v1.0.1.webm)                 | Trust kernel, Gauntlet, repair queue, released feed, and evidence                            |
-| [Full-platform walkthrough](artifacts/demo/kevlar-full-platform-v1.0.1.webm)      | Sources, entities, history, events, conflicts, delivery, AI router, operations, and security |
-
 ## Run it locally
 
 ### Requirements
@@ -744,7 +735,7 @@ Read the full [limitations](docs/LIMITATIONS.md), [release scope](docs/RELEASE_S
 - Bright Data and governance: [integration](docs/BRIGHT_DATA.md), [source governance](docs/SOURCE_GOVERNANCE.md), and [pending collector activation](collectors/ai-infrastructure/ACTIVATE_ANTHROPIC_COLLECTORS.md)
 - Developer platform: [REST API](docs/API.md), [TypeScript SDK](docs/SDK.md), and [MCP](docs/MCP.md)
 - Operations: [security](docs/SECURITY.md), [operations](docs/OPERATIONS.md), [recovery](docs/RECOVERY.md), and [runbooks](docs/runbooks/)
-- Release proof: [benchmark](docs/BENCHMARK.md), [verified walkthroughs](docs/DEMO.md), [release notes](docs/RELEASE_NOTES.md), and [release scope](docs/RELEASE_SCOPE.md)
+- Release proof: [benchmark](docs/BENCHMARK.md), [release notes](docs/RELEASE_NOTES.md), and [release scope](docs/RELEASE_SCOPE.md)
 - Hackathon: [AI coding-tool disclosure](AI_DISCLOSURE.md) and [third-party dependencies/assets](THIRD_PARTY_NOTICES.md)
 
 ## Contributing and license
