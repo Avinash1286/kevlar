@@ -4,9 +4,11 @@ This is the final recording script for a video lasting **1:55–2:00**. The firs
 
 Speak naturally at roughly 130–145 words per minute. Pause briefly when changing tabs so the judge can read the proof on screen.
 
+Tell this as one continuous story, not as a feature list: Nova's price is misunderstood, Kevlar catches the silent mistake, Bright Data repairs the collector, and the Gauntlet proves the repair is safe.
+
 ## Final timed script
 
-### 0:00–0:10 — Core idea
+### 0:00–0:10 — Meet the problem
 
 **Screen:** Open the [production home page](https://kevlar-web.vercel.app). Keep the hero text and the Acquire → Persist → Verify → Release pipeline visible.
 
@@ -14,9 +16,9 @@ Speak naturally at roughly 130–145 words per minute. Pause briefly when changi
 
 **Say:**
 
-> “Kevlar is a verification firewall for web data. Example: the page price is 129 dollars, but a scraper reads 10.75 financing; Kevlar blocks it.”
+> “Kevlar verifies web data before release. Nova costs 129 dollars, but when a scraper reports its 10.75 monthly plan as the price, Kevlar stops it.”
 
-### 0:10–0:25 — The concrete problem
+### 0:10–0:25 — The quiet failure
 
 **Screen:** Show the first flowchart in [`1min.md`](1min.md) using a rendered Markdown preview.
 
@@ -24,9 +26,9 @@ Speak naturally at roughly 130–145 words per minute. Pause briefly when changi
 
 **Say:**
 
-> “Both values are valid numbers in valid JSON, so schema checks see no error. Kevlar compares the field's meaning with visible text, JSON-LD, and the public API before release.”
+> “Nothing crashes; the JSON is valid. But a false price-drop alert is ready to ship. Kevlar sits in the middle and asks: does this number still mean purchase price?”
 
-### 0:25–0:42 — Bright Data and Kevlar
+### 0:25–0:42 — Follow the evidence
 
 **Screen:** Keep the main flowchart visible.
 
@@ -34,9 +36,9 @@ Speak naturally at roughly 130–145 words per minute. Pause briefly when changi
 
 **Say:**
 
-> “Bright Data Scraper Studio Browser workers navigate, extract typed data, capture evidence, and propose repairs. Kevlar treats every row as untrusted, checks meaning, quarantines unsafe observations, and keeps the labelled 129-dollar last-known-good fact available.”
+> “Bright Data's custom Browser worker collects the page and brings back typed fields, visible text, JSON-LD, API data, and a screenshot. Kevlar treats that bundle as evidence, not truth, and releases only verified facts to apps and AI.”
 
-### 0:42–1:00 — Safe repair and delivery
+### 0:42–1:00 — Build the safety net
 
 **Screen:** Scroll once to the repair-certification flowchart in [`1min.md`](1min.md).
 
@@ -44,9 +46,9 @@ Speak naturally at roughly 130–145 words per minute. Pause briefly when changi
 
 **Say:**
 
-> “A repair cannot ship immediately. It faces Tribunal checks, human approval, held-out tests, negative controls, and a digest-bound certificate. Verified facts and events then reach REST, signed webhooks, the TypeScript SDK, read-only MCP, and a reviewed AI router.”
+> “When those signals disagree, Kevlar quarantines 10.75 and keeps the last trusted 129 available. Bright Data proposes a repair, but it still faces human review, held-out tests, negative controls, and a certificate before anything ships.”
 
-### 1:00–1:12 — Prove the custom Bright Data collector
+### 1:00–1:12 — Start Nova's journey
 
 **Screen:** Bright Data → **Scrapers** → **kevlar-nova-product-pricing** → **Code** → **Interaction code**.
 
@@ -54,9 +56,9 @@ Speak naturally at roughly 130–145 words per minute. Pause briefly when changi
 
 **Say:**
 
-> “This is our custom Bright Data Browser worker, collector `c_mt3utzwt29hbznvax9`. Its interaction and parser code control navigation, typed extraction, and evidence capture.”
+> “Let's follow Nova's journey. It begins inside our custom Bright Data Browser worker. The interaction code opens the page and tags the evidence; the parser turns it into a typed record.”
 
-### 1:12–1:24 — Show structured output and evidence
+### 1:12–1:24 — See the healthy truth
 
 **Screen:** Switch to the already-prepared Bright Data **Output** result. Do not start a new run during the recording.
 
@@ -64,9 +66,9 @@ Speak naturally at roughly 130–145 words per minute. Pause briefly when changi
 
 **Say:**
 
-> “The output separates the 129-dollar purchase price from 10.75 monthly financing and retains visible text, JSON-LD, the public API response, and a screenshot reference.”
+> “On a healthy run, the story is clear: 129 dollars to buy, 10.75 per month. Visible text, JSON-LD, the public API, and the screenshot all travel with the result.”
 
-### 1:24–1:41 — Show silent corruption being blocked
+### 1:24–1:41 — Watch the page change
 
 **Screen:** Open the live [Trust Feed](https://kevlar-web.vercel.app/feed).
 
@@ -74,9 +76,9 @@ Speak naturally at roughly 130–145 words per minute. Pause briefly when changi
 
 **Say:**
 
-> “In the trust feed, the controlled redesign produces 10.75 as the purchase price. The row is schema-valid, but Kevlar quarantines it, blocks the false price-drop alert, and keeps 129 as last-known-good.”
+> “Now the page changes. The collector brings back 10.75 as purchase price, yet nothing crashes. Kevlar spots the financing meaning, blocks the false alert, and keeps 129 clearly labelled as last-known-good.”
 
-### 1:41–1:53 — Show repair certification
+### 1:41–1:53 — Prove the repair learned
 
 **Screen:** Open the live [Held-Out Gauntlet](https://kevlar-web.vercel.app/gauntlet).
 
@@ -84,9 +86,9 @@ Speak naturally at roughly 130–145 words per minute. Pause briefly when changi
 
 **Say:**
 
-> “The repair passes all eight visible, held-out, and no-heal cases: 100-percent held-out, zero false heals, and zero false releases.”
+> “Bright Data proposes the fix, but Kevlar asks: did it learn, or just memorize one page? Eight Gauntlet cases answer that—all pass, with zero false releases.”
 
-### 1:53–2:00 — End on measured proof
+### 1:53–2:00 — Finish the story
 
 **Screen:** Open the live [Release Evidence](https://kevlar-web.vercel.app/release).
 
@@ -94,7 +96,7 @@ Speak naturally at roughly 130–145 words per minute. Pause briefly when changi
 
 **Say:**
 
-> “Our controlled release passed 24 of 24 checks. Bright Data keeps collectors alive; Kevlar keeps released facts honest.”
+> “Twenty-four controlled checks prove the path. Bright Data keeps collectors alive; Kevlar keeps released facts honest.”
 
 ## Prepare the demo before recording
 

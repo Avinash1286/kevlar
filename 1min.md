@@ -50,21 +50,21 @@ flowchart TB
 
 ## One-minute narration
 
-### 0:00–0:10 — Core idea
+### 0:00–0:10 — Meet the problem
 
-> “Kevlar is a verification firewall for web data. Example: the page price is 129 dollars, but a scraper reads 10.75 financing; Kevlar blocks it.”
+> “Kevlar verifies web data before release. Nova costs 129 dollars, but when a scraper reports its 10.75 monthly plan as the price, Kevlar stops it.”
 
-### 0:10–0:25 — Concrete failure
+### 0:10–0:25 — The quiet failure
 
-> “Both values are valid numbers in valid JSON, so schema checks see no error. Kevlar compares the field's meaning with visible text, JSON-LD, and the public API before release.”
+> “Nothing crashes; the JSON is valid. But a false price-drop alert is ready to ship. Kevlar sits in the middle and asks: does this number still mean purchase price?”
 
-### 0:25–0:42 — Bright Data and the release gate
+### 0:25–0:42 — Follow the evidence
 
-> “Bright Data Scraper Studio Browser workers navigate, extract typed data, capture evidence, and propose repairs. Kevlar treats every row as untrusted, checks meaning, quarantines unsafe observations, and keeps the labelled 129-dollar last-known-good fact available.”
+> “Bright Data's custom Browser worker collects the page and brings back typed fields, visible text, JSON-LD, API data, and a screenshot. Kevlar treats that bundle as evidence, not truth, and releases only verified facts to apps and AI.”
 
-### 0:42–1:00 — Repair and delivery
+### 0:42–1:00 — Build the safety net
 
-> “A repair cannot ship immediately. It faces Tribunal checks, human approval, held-out tests, negative controls, and a digest-bound certificate. Verified facts and events then reach REST, signed webhooks, the TypeScript SDK, read-only MCP, and a reviewed AI router.”
+> “When those signals disagree, Kevlar quarantines 10.75 and keeps the last trusted 129 available. Bright Data proposes a repair, but it still faces human review, held-out tests, negative controls, and a certificate before anything ships.”
 
 ## Three ideas the judge should remember
 
