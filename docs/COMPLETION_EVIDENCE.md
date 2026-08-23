@@ -13,7 +13,7 @@ Evidence snapshot:
 - [`benchmarks/results/v1.0.1.json`](../benchmarks/results/v1.0.1.json) records
   24/24 controlled checks and zero false releases.
 - [`benchmarks/results/v1.0.1-e2e.json`](../benchmarks/results/v1.0.1-e2e.json)
-  records seven passing full-flow assertions and 17/17 healthy production pages.
+  records seven passing full-flow assertions and 18/18 healthy production pages.
 - [`benchmarks/results/v1.0.1-load.json`](../benchmarks/results/v1.0.1-load.json)
   records 80/80 successful production requests.
 - The release workspace passed `pnpm test`, `pnpm typecheck`, and `pnpm build`.

@@ -99,7 +99,7 @@ Kevlar turns those questions into deterministic, testable release gates rather t
 | **Facts, not snapshots**                    | Deterministic mappings, canonical identity, predicate authority, bitemporal history, and semantic CDC convert source observations into auditable intelligence.                                                                                |
 | **Evidence travels with the result**        | Source contexts, hashes, mappings, decisions, fact versions, events, and repair certificates remain connected.                                                                                                                                |
 | **Production-shaped delivery**              | Released intelligence is available through REST, HMAC-signed webhooks, an in-repository TypeScript SDK, read-only MCP, and a reviewed AI-router consumer.                                                                                     |
-| **Measured and honestly scoped**            | v1.0.1 records 24/24 controlled checks, zero false releases in labelled certification cases, 17/17 healthy deployed pages, and 80/80 load requests without presenting fixture results as population accuracy.                                 |
+| **Measured and honestly scoped**            | v1.0.1 records 24/24 controlled checks, zero false releases in labelled certification cases, 18/18 healthy deployed pages, and 80/80 load requests without presenting fixture results as population accuracy.                                 |
 
 ## System architecture
 
@@ -546,7 +546,7 @@ The release measurements are committed artifacts, not placeholders.
 | Last-known-good availability   |                              **1/1** | Controlled semantic-misbinding continuity case                                           |
 | Entity-resolution accuracy     |                              **3/3** | Exact, ambiguous, and AI-suggestion labels                                               |
 | Delivery success               |                              **2/2** | First-attempt and dead-letter replay paths                                               |
-| Live full-flow assertions      |                              **7/7** | Across **17/17** healthy deployed pages                                                  |
+| Live full-flow assertions      |                              **7/7** | Across **18/18** healthy deployed pages                                                  |
 | Production request success     |                            **80/80** | Ten concurrent requests across eight pages                                               |
 | Production HTTP latency        | **302.80 ms median; 1193.86 ms p95** | Fresh 80-request batch against the final Vercel alias                                    |
 | Controlled proof workload cost |                            **$0.01** | Phase 11 proof estimate, not a cost forecast                                             |

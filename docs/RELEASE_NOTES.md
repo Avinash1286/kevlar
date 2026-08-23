@@ -14,7 +14,7 @@ Release evidence:
 - five measured benchmark baselines and 24/24 labeled checks with zero false
   releases;
 - explicit 3/3 semantic-event precision and 3/3 recall;
-- 7/7 live full-flow assertions across 17/17 production pages;
+- 7/7 live full-flow assertions across 18/18 production pages;
 - 80/80 successful production load requests;
 - a narrated, captioned, 1440x900 H.264/AAC demo under three minutes;
 - Vercel production deployment `dpl_8vNdRudfWrnmNDf8eau5GGSpZCYc` at

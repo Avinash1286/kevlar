@@ -80,6 +80,9 @@ export default async function Home() {
           <a className="primary-action" href="/feed">
             Open trust feed <span>→</span>
           </a>
+          <Link className="repo-link" href="/architecture">
+            System architecture →
+          </Link>
           <a className="repo-link" href="/gauntlet">
             Inspect Gauntlet →
           </a>

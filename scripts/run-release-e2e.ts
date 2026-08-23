@@ -32,6 +32,7 @@ async function main() {
     throw new Error("CONVEX_URL is required for the release E2E proof");
   const paths = [
     "/",
+    "/architecture",
     "/gauntlet",
     "/fleet/repairs",
     "/feed",
