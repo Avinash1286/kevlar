@@ -34,3 +34,10 @@ gauntlet/results/*.json
 # Next.js may regenerate repository-local agent guidance during development.
 # Keep those generated files out of the judge-facing source tree.
 apps/*/AGENTS.md
+
+# Local AI-assistant skills and workspace instructions.
+/.agents/
+/.claude/
+/AGENTS.md
+/CLAUDE.md
+/skills-lock.json
