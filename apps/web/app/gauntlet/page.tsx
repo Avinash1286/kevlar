@@ -21,12 +21,15 @@ export default async function GauntletPage({
   const falseReleases = results.filter((item) => item.falseRelease).length;
 
   return (
-    <main className="console-page gauntlet-page">
-      <header className="console-header">
-        <Link className="console-brand" href="/">
-          <span>K</span> Kevlar
+    <main className="console-shell gauntlet-page">
+      <header className="console-nav">
+        <Link className="brand" href="/">
+          <span className="brand-mark">K</span>
+          <span>Kevlar</span>
         </Link>
-        <span className="phase-tag">GATE D · METAMORPHIC CERTIFICATION</span>
+        <span className="phase-pill">
+          <span /> Gate D · Metamorphic certification
+        </span>
       </header>
 
       <section className="gauntlet-heading">
@@ -78,17 +81,24 @@ export default async function GauntletPage({
           const code = "code" in item ? item.code : item.caseId;
           return (
             <article className="gauntlet-row" key={item._id}>
-              <strong>{code}</strong>
-              <span>{item.visibility.replaceAll("_", " ")}</span>
-              <span>{item.expectedRelation.replaceAll("_", " ")}</span>
+              <strong data-label="Case">{code}</strong>
+              <span data-label="Visibility">
+                {item.visibility.replaceAll("_", " ")}
+              </span>
+              <span data-label="Relation">
+                {item.expectedRelation.replaceAll("_", " ")}
+              </span>
               <span
+                data-label="Outcome"
                 className={
                   result?.outcome === "pass" ? "text-good" : "text-warn"
                 }
               >
                 {result?.outcome ?? "not run"}
               </span>
-              <code>{result?.evidenceHash.slice(0, 18) ?? "pending"}</code>
+              <code data-label="Evidence">
+                {result?.evidenceHash.slice(0, 18) ?? "pending"}
+              </code>
               {result ? <p>{result.reason}</p> : null}
             </article>
           );

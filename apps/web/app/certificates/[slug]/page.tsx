@@ -15,12 +15,15 @@ export default async function CertificatePage({
   const certificate = data.parsedPayload;
 
   return (
-    <main className="console-page certificate-page">
-      <header className="console-header">
-        <Link className="console-brand" href="/">
-          <span>K</span> Kevlar
+    <main className="console-shell certificate-page">
+      <header className="console-nav">
+        <Link className="brand" href="/">
+          <span className="brand-mark">K</span>
+          <span>Kevlar</span>
         </Link>
-        <span className="phase-tag">METAMORPHIC REPAIR CERTIFICATE</span>
+        <span className="phase-pill">
+          <span /> Metamorphic repair certificate
+        </span>
       </header>
 
       <section className="certificate-heading">

@@ -994,6 +994,12 @@ footer strong {
 }
 
 @media (max-width: 760px) {
+  .gauntlet-heading,
+  .certificate-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .metric-grid,
   .certificate-proof-grid,
   .certificate-sections {
@@ -1008,16 +1014,37 @@ footer strong {
   }
 
   .gauntlet-row {
-    grid-template-columns: 56px 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 18px 20px;
   }
 
   .gauntlet-row-head {
     display: none;
   }
 
-  .gauntlet-row p,
-  .gauntlet-row code {
+  .gauntlet-row > [data-label] {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .gauntlet-row > [data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 7px;
+    color: var(--muted);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .gauntlet-row > [data-label="Relation"],
+  .gauntlet-row p {
     grid-column: 1 / -1;
+  }
+
+  .gauntlet-row p {
+    margin-top: 0;
   }
 }
 
