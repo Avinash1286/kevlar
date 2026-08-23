@@ -1,238 +1,416 @@
-# Kevlar — 2:25 live hackathon demo
+# Kevlar — understand-first live demo guide
 
-This is a **single continuous live presentation**, not a voiceover. Speak while moving through the real product. The whole explanation follows one practical story, so do not pause between sections or announce page names.
+This guide is designed to help you **understand the project once and then explain it in your own language**. Do not memorize every sentence. Remember the story, the role of each system, and the one key message on each page.
 
-The final recording is **2 minutes 25 seconds**, leaving a five-second safety margin below 2:30.
+The live demo is **2 minutes 25 seconds**, leaving five seconds below your 2:30 target.
 
-It covers the form without breaking the story: the first 27 seconds introduce the project and architecture, the middle is the live demo, and the final screen gives the learning and measured result.
+It covers the submission requirements naturally:
 
-## The one practical scenario
+- **0:00–0:27:** what the project does, the practical problem, the stack, and the architecture;
+- **0:27–2:11:** the working Bright Data and Kevlar demo;
+- **2:11–2:25:** the measured result and what you learned.
 
-Nova headphones cost **$129 once** or **$10.75 per month**. After a page redesign, a schema-valid scraper mistakes the monthly payment for the purchase price and could trigger a fake **nearly 92% price-drop alert**.
+## First understand the project in one sentence
 
-Kevlar prevents that value from reaching an application, keeps the labelled $129 last-known-good fact available, and allows a repaired Bright Data collector to return only after review, held-out testing, and certification.
+> **Kevlar is a fact-checker and safety gate between a web scraper and the application that uses its data.**
 
-## The architecture through that scenario
+Bright Data collects information from the web. Kevlar checks whether that information has the **correct meaning** before allowing an application or AI agent to use it.
 
-Use this diagram to understand the story before recording. You do not need to show it in the final video.
+## Understand the Nova example in simple language
+
+The Nova headphones page contains two correct numbers:
+
+- **$129** is the complete price of the headphones.
+- **$10.75** is only the amount someone can pay each month.
+
+These numbers are both valid, but they do not mean the same thing.
+
+The relationship is easy to see: `$10.75 × 12 months = $129`. The monthly payment is the same total price divided into twelve smaller payments.
+
+Now imagine the website changes its layout. The scraper continues working and returns valid JSON, but it accidentally puts `$10.75` inside the `purchase_price` field.
+
+The data looks technically correct:
+
+```json
+{
+  "purchase_price": 10.75
+}
+```
+
+But the meaning is wrong. The headphones did not become $10.75. That number is only the monthly installment.
+
+Without Kevlar, a shopping agent could believe the price fell from $129 to $10.75 and send users a fake, nearly **92% price-drop alert**.
+
+In reality, nothing became cheaper. The scraper only confused **how much to pay each month** with **how much the product costs in total**.
+
+That quiet mistake is the entire problem Kevlar solves.
+
+## Why Bright Data does not make the final decision
+
+Bright Data is not broken or generally incapable. It is doing the job we gave it:
+
+- open and interact with the website;
+- read the page;
+- extract structured fields;
+- capture visible text, JSON-LD, API data, and a screenshot;
+- propose a repair when page structure changes.
+
+Bright Data can successfully collect `$10.75`. However, collection alone does not answer the business question:
+
+> “Does this number mean the full purchase price or a monthly payment?”
+
+Bright Data can be given extraction rules and validation, but in this architecture we intentionally do not allow the collector to declare its own output as truth. The application needs a separate release gate that understands its business meaning and remembers previously verified facts.
+
+That separate layer is Kevlar.
+
+| Responsibility                                | Bright Data's role                 | Kevlar's role                             |
+| --------------------------------------------- | ---------------------------------- | ----------------------------------------- |
+| Open and interact with the page               | Does this                          | Uses the result                           |
+| Extract `$129` and `$10.75`                   | Does this                          | Receives both as claims                   |
+| Capture context, JSON-LD, API, and screenshot | Does this                          | Compares the evidence                     |
+| Decide whether `$10.75` means purchase price  | Provides the clues                 | Enforces the meaning rule                 |
+| Prevent an unsafe value from reaching users   | Not the collector's responsibility | Quarantines and blocks it                 |
+| Keep the last verified `$129` available       | Not the collector's responsibility | Releases it as labelled last-known-good   |
+| Repair a changed extractor                    | Proposes a candidate               | Requires review, tests, and certification |
+
+The simplest analogy is:
+
+- **Bright Data is the eyes:** it sees and collects what is on the page.
+- **Kevlar is the fact-checker:** it checks what the number means and decides whether it is safe to release.
+- **Convex is the memory:** it stores observations, decisions, and the last verified fact.
+- **Next.js on Vercel is the window:** it shows the decision to people and applications.
+
+## How Kevlar solves the mistake
+
+When Kevlar receives `purchase_price: 10.75`, it does not immediately release it.
+
+1. It sees nearby language such as **per month** or **financing**.
+2. It notices that the field says `purchase_price`, but the surrounding words describe a monthly payment.
+3. It compares the value with the page's JSON-LD and public API, which still report `129`.
+4. It marks `$10.75` as suspicious and quarantines that observation.
+5. It blocks the false price-drop alert.
+6. It continues serving the previously verified `$129`, clearly marked **last-known-good** and **stale**.
+7. Bright Data may propose a repaired collector, but Kevlar treats it only as a candidate.
+8. A human reviews it, held-out and no-heal cases test it, and a certificate records the result before canary activation.
+
+The visible text, JSON-LD, and API are different evidence channels from the same controlled source. They help expose disagreement; they are not three independent shops or market authorities.
+
+## Remember this seven-step story
+
+If you remember only these seven lines, you can explain the project without a script:
+
+1. **The page contains two prices with different meanings.**
+2. **A redesign makes the scraper confuse monthly payment with full price.**
+3. **Bright Data collects the value and the evidence around it.**
+4. **Kevlar checks meaning instead of trusting valid JSON.**
+5. **Kevlar blocks `$10.75` and keeps verified `$129` available.**
+6. **The repair must pass human review, unseen cases, and negative controls.**
+7. **The final release remains measurable and explainable.**
+
+## The architecture using the same example
 
 ```mermaid
 flowchart LR
-  PAGE["Nova product page<br/>$129 once · $10.75 monthly"] --> BD["Bright Data Scraper Studio<br/>Custom Browser collector"]
-  BD --> OBS["Untrusted typed observation<br/>Visible text · JSON-LD · API · screenshot"]
-  OBS --> GATE{"Kevlar TypeScript gate<br/>Structure · meaning · evidence · policy"}
+  PAGE["Nova page<br/>$129 once · $10.75 monthly"] --> EYES["Bright Data = eyes<br/>Collect page + evidence"]
+  EYES --> CLAIM["Untrusted claim<br/>purchase_price: $10.75"]
+  CLAIM --> CHECK{"Kevlar = fact-checker<br/>What does the number mean?"}
 
-  GATE -->|"Pass"| CONVEX["Convex reactive backend<br/>Append-only observations · release history"]
-  CONVEX --> PRODUCT["Next.js on Vercel<br/>Safe facts for applications and agents"]
+  CHECK -->|"Meaning is correct"| MEMORY["Convex = memory<br/>Store verified fact + history"]
+  MEMORY --> WINDOW["Next.js on Vercel = window<br/>Show safe result"]
 
-  GATE -->|"Fail: $10.75 is financing"| QUARANTINE["Quarantine observation<br/>Block false alert"]
-  QUARANTINE --> LKG["Keep $129<br/>labelled last-known-good"]
-  QUARANTINE --> REPAIR["Bright Data repair candidate"]
-  REPAIR --> REVIEW["Tribunal + human approval"]
-  REVIEW --> TEST["Visible + held-out + no-heal cases"]
-  TEST --> CERT["Digest-bound certificate<br/>Canary activation"]
-  CERT --> GATE
+  CHECK -->|"It actually means monthly"| BLOCK["Quarantine $10.75<br/>Block false alert"]
+  BLOCK --> SAFE["Keep verified $129<br/>labelled last-known-good"]
+  BLOCK --> CANDIDATE["Bright Data repair candidate"]
+  CANDIDATE --> HUMAN["Human approval"]
+  HUMAN --> TESTS["Visible + held-out + no-heal tests"]
+  TESTS --> CERT["Certificate + canary activation"]
+  CERT --> CHECK
 ```
 
-The architectural rule is simple:
+The rule behind the diagram is:
 
 ```text
-successful scrape != verified observation != released fact
+a successful scrape is a claim, not automatically a fact
 ```
 
-## Prepare everything before recording
+## Prepare the live demo
 
 ### Recording setup
 
 1. Record at 1920×1080 or 1440×900.
-2. Use one continuous screen-and-microphone recording. Do one silent navigation rehearsal before the real take.
-3. Turn on Do Not Disturb. If the bookmarks bar is visible, hide it with `Ctrl+Shift+B`.
+2. Record your screen and microphone together in one continuous take.
+3. Turn on Do Not Disturb.
 4. Open only the seven tabs below, in the exact order shown.
-5. Load every page at least 30 seconds before recording. Do not refresh any page during the take.
-6. Enter browser full screen with `F11`, then use `Ctrl+Tab` for every transition.
-7. Keep the cursor in an empty margin until the script asks you to point at something.
-8. Never display an API key, `.env` file, Convex deploy key, Bright Data credential, personal email, or browser profile menu.
+5. Load every page at least 30 seconds before recording. Do not refresh during the take.
+6. Enter browser full screen with `F11`.
+7. Use `Ctrl+Tab` for every page transition.
+8. Complete one silent navigation rehearsal before recording with your voice.
+9. Never show API keys, `.env` files, Convex deploy keys, Bright Data credentials, personal email, or the browser profile menu.
 
-### Open these seven tabs from left to right
+### Open these tabs from left to right
 
-| Tab | Page                                                                                           | Starting position                                                                   |
-| --: | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-|   1 | [Kevlar home](https://kevlar-web.vercel.app)                                                   | Top of the page with **Trust the fact. Question the repair.** visible.              |
-|   2 | Bright Data collector Output                                                                   | Successful Output modal for `kevlar-nova-product-pricing`, positioned at `product`. |
-|   3 | [Trust Feed](https://kevlar-web.vercel.app/feed)                                               | Comparison showing observed $10.75 and released $129.                               |
-|   4 | [Held-Out Gauntlet](https://kevlar-web.vercel.app/gauntlet)                                    | Top of the page with 8/8, 100%, 0, and 0 visible.                                   |
-|   5 | [Nova Repair Certificate](https://kevlar-web.vercel.app/certificates/nova-core-20260822075230) | Top of the certificate with the collector and case totals visible.                  |
-|   6 | [Evidence Graph](https://kevlar-web.vercel.app/evidence)                                       | Top of the graph with its summary metrics visible.                                  |
-|   7 | [Release Evidence](https://kevlar-web.vercel.app/release)                                      | Top of the page with `LABELED CHECKS 24/24` and `FALSE RELEASES 0`.                 |
+| Tab | Page                                                                                           | Starting position                                                              |
+| --: | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+|   1 | [Kevlar home](https://kevlar-web.vercel.app)                                                   | Top with **Trust the fact. Question the repair.** visible.                     |
+|   2 | Bright Data Output                                                                             | Successful preview for `kevlar-nova-product-pricing`, positioned at `product`. |
+|   3 | [Trust Feed](https://kevlar-web.vercel.app/feed)                                               | Observed $10.75 and released $129 visible.                                     |
+|   4 | [Held-Out Gauntlet](https://kevlar-web.vercel.app/gauntlet)                                    | Top with 8/8, 100%, 0, and 0 visible.                                          |
+|   5 | [Nova Repair Certificate](https://kevlar-web.vercel.app/certificates/nova-core-20260822075230) | Collector identity and case totals visible.                                    |
+|   6 | [Evidence Graph](https://kevlar-web.vercel.app/evidence)                                       | Graph summary metrics visible.                                                 |
+|   7 | [Release Evidence](https://kevlar-web.vercel.app/release)                                      | `LABELED CHECKS 24/24` and `FALSE RELEASES 0` visible.                         |
 
-### Prepare the Bright Data Output tab
+### Prepare Bright Data before recording
 
-Do all of this before recording:
-
-1. Sign in to Bright Data, then click **Scrapers** in the left sidebar.
+1. In Bright Data, click **Scrapers**.
 2. Open **kevlar-nova-product-pricing**.
-3. Click **Code**, then **Interaction code**.
-4. In the lower panel, click **Input** and enter this required `url`:
+3. Click **Code → Interaction code**.
+4. In the lower panel, click **Input**.
+5. Enter this required URL:
 
    ```text
    https://kevlar-fixture-lab.vercel.app/product-pricing/nova
    ```
 
-5. Click the triangular Play button beside **Click play to test your code**.
-6. Wait for a successful result. If the log says `navigate(undefined)` or `url is required`, return to **Input**, enter the URL again, and rerun it.
-7. Click **Output**. If the large Output modal opens, stop clicking. Otherwise, click the single collected result once.
-8. Confirm the output contains:
-   - `page_state: ok`;
+6. Click the triangular Play button beside **Click play to test your code**.
+7. Wait for a successful preview.
+8. Click **Output**. If the large Output window does not open automatically, click the single collected result once.
+9. Confirm it contains:
    - purchase price `129`;
    - monthly payment `10.75`;
    - JSON-LD price `129`;
    - public API price `129`;
-   - a screenshot reference.
-9. Set Bright Data browser zoom to 80% or 90% if needed so `129` and `10.75` both wrap into view.
-10. Leave the modal open at the `product` row and switch back to Tab 1.
+   - screenshot evidence.
+10. Leave the Output window open at `product` and return to Tab 1.
 
-Crop the Bright Data capture so it does not show the credit balance, profile initial, Billing navigation, address-bar draft ID, Run log, peer IP, or account email. During the take, never click **Active scraper**, **Finish editing**, **Start**, a download button, or the three-dot menu.
+If the preview says `navigate(undefined)` or `url is required`, return to **Input**, enter the URL again, and rerun it.
 
-## The continuous live script
+Configure the safe Bright Data crop or privacy mask **before recording**, or apply it later during editing. Do not resize or crop the capture during the live walkthrough. The final video must not show the credit balance, profile initial, Billing section, address-bar draft ID, Run log, peer IP, or account email. Never click **Active scraper**, **Finish editing**, **Start**, or a download button during the presentation.
 
-The quoted passages form one story. Speak through every `Ctrl+Tab` transition; do not stop and restart your tone.
+## Live walkthrough in your own words
 
-The complete script is about **302 written words**, averaging roughly **125 words per minute**. Spoken number phrases bring the natural delivery slightly higher while still leaving room to point, scroll, and breathe.
+The sections below tell you the **idea to communicate**, not sentences you must memorize.
 
-### 0:00–0:27 — Introduce the problem and architecture
+### 0:00–0:27 — Explain the problem and architecture
 
-**Screen:** Tab 1, Kevlar home.
+**Page:** Kevlar home.
 
-**What to do:**
+**What the audience is seeing:** the product headline and the **Acquire → Persist → Verify → Release** pipeline.
 
-- From 0:00–0:12, hold on **Trust the fact. Question the repair.**
-- At 0:12, slowly scroll down about one screen until **Acquire → Persist → Verify → Release** is visible.
-- Point across that pipeline while naming Bright Data, TypeScript, Convex, Next.js, and Vercel.
-- At 0:27, press `Ctrl+Tab` once.
+**What you need to understand:**
 
-**Say continuously:**
-
-> “Imagine a shopping agent tracking Nova headphones: 129 to buy, or 10.75 a month. After a redesign, the JSON stays valid but calls 10.75 the full price. That fake, nearly 92-percent price drop is what Kevlar stops. Bright Data gathers the evidence. TypeScript checks meaning, Convex keeps history, and Next.js on Vercel shows the decision.”
-
-### 0:27–0:45 — Establish the healthy Bright Data evidence
-
-**Screen:** Tab 2, successful Bright Data Output modal.
+- The headphones have a full price and a monthly payment.
+- The page redesign does not break the JSON; it changes which number the scraper selects.
+- Bright Data performs **Acquire**.
+- Convex provides memory and persistence.
+- Kevlar performs semantic verification before release.
+- Next.js on Vercel shows the result.
 
 **What to do:**
 
-- Point first to purchase price `129`, then monthly payment `10.75`.
-- Scroll only inside the modal to show JSON-LD `129`, public API `129`, and the evidence or screenshot reference.
-- At 0:45, press `Ctrl+Tab` once.
+1. Hold the hero section for about 12 seconds while introducing the Nova example.
+2. Slowly scroll to **Acquire → Persist → Verify → Release**.
+3. Point across the pipeline while explaining the roles above.
+4. At 0:27, press `Ctrl+Tab`.
 
-**Continue the story:**
+**Explain it naturally:**
 
-> “This is a healthy Bright Data preview. Its custom Browser collector does more than fetch HTML: it keeps 129 as the purchase price, 10.75 as monthly financing, and attaches visible context, JSON-LD, the API response, and a screenshot.”
+> Nova costs 129 dollars, or 10.75 each month. A redesign makes the scraper put the monthly amount where the full price should be. The JSON still looks valid, but the meaning is wrong. Bright Data collects the page, Convex remembers the history, Kevlar checks the meaning, and the Next.js application shows the safe decision.
 
-### 0:45–1:12 — Show the quiet corruption being blocked
+**Memory sentence:** valid format does not guarantee correct meaning.
 
-**Screen:** Tab 3, Trust Feed.
+**Natural transition:** “First, let me show what Bright Data actually collected.”
 
-**What to do:**
+### 0:27–0:45 — Show Bright Data doing its job
 
-- Point to **Observed by collector — $10.75**.
-- Move to the corroborating JSON-LD and public API values of `129`.
-- Point to **3 violations**, then **Alert consumer — blocked**.
-- Finish on **Released fact — $129.00** and **Last-known-good · stale**.
-- At 1:12, press `Ctrl+Tab` once.
+**Page:** Bright Data Output.
 
-**Continue the story:**
+**What the audience is seeing:** the healthy structured preview with `129`, `10.75`, JSON-LD, API data, and screenshot evidence.
 
-> “Now the redesigned page fools the same collector. It reports 10.75 as the purchase price. The row is shaped correctly, so ordinary validation would pass. Kevlar sees that financing language conflicts with the field, while JSON-LD and the API still say 129. It quarantines the observation, blocks the false alert, and keeps 129 clearly labelled last-known-good.”
-
-### 1:12–1:34 — Prove that the repair generalized
-
-**Screen:** Tab 4, Held-Out Gauntlet.
+**What you need to understand:** Bright Data is working correctly here. It is the acquisition and evidence layer, not the final truth authority.
 
 **What to do:**
 
-- Point across **8/8**, **100% held-out pass**, **0 false heals**, and **0 false releases**.
-- At about 1:22, scroll down smoothly through held-out cases H1/H2 and negative controls N1/N2.
-- Do not scroll back upward if you overshoot; restart the take instead.
-- At 1:34, press `Ctrl+Tab` once.
+1. Point to purchase price `129`.
+2. Point to monthly payment `10.75`.
+3. Scroll inside the Output window to JSON-LD `129`, API `129`, and the screenshot reference.
+4. At 0:45, press `Ctrl+Tab`.
 
-**Continue the story:**
+**Explain it naturally:**
 
-> “So how do we trust a repair? Bright Data can propose a candidate, but Kevlar asks whether it learned the meaning or memorized one page. The certification suite runs four visible cases, two held-out pages, and two no-heal controls. All eight pass, with no false heals or releases.”
+> Bright Data's custom Browser collector opens the controlled Nova page and keeps both values separate. It captures their context, JSON-LD, the API response, and a screenshot. Kevlar uses that evidence to check the meaning.
 
-### 1:34–1:55 — Show why passing tests is not enough
+**Memory sentence:** Bright Data gathers the claim and the evidence.
 
-**Screen:** Tab 5, Nova Repair Certificate.
+**Natural transition:** “Now let us see what happens after the redesigned page confuses the collector.”
 
-**What to do:**
+### 0:45–1:12 — Show Kevlar blocking the wrong meaning
 
-- Point to the collector identity and the **4/4 visible**, **2/2 held-out**, and **2/2 negative-control** totals.
-- At about 1:45, scroll down once to show human approval and the integrity digest.
-- At 1:55, press `Ctrl+Tab` once.
+**Page:** Trust Feed.
 
-**Continue the story:**
+**What the audience is seeing:** observed `$10.75`, released `$129`, three violations, and a blocked alert.
 
-> “Those passing results still do not release data by themselves. This certificate records the same collector identity, the earlier human approval, four visible, two held-out, and two negative-control outcomes, plus an integrity digest. Only the certified repair can enter canary activation.”
+**What you need to understand:**
 
-### 1:55–2:11 — Keep the decision explainable
-
-**Screen:** Tab 6, Evidence Graph.
-
-**What to do:**
-
-- Point across **14 nodes**, **13 edges**, **10 artifacts**, and **4 archived evidence**.
-- Point at **Open downloadable evidence bundle**, but do not click it during the take.
-- Make one slow ledger scroll past `change_event`, `fact_version`, `repair_certificate`, `observation`, `collector`, and `evidence`.
-- At 2:11, press `Ctrl+Tab` once.
-
-**Continue the story:**
-
-> “The same evidence discipline continues after release. A reviewer can download the bundle instead of trusting a green badge. This graph links a released event to its fact, verified observation, collector, evidence, and certificate.”
-
-### 2:11–2:25 — End with measured proof and the lesson
-
-**Screen:** Tab 7, Release Evidence.
+- `$10.75` is not rejected because it is an invalid number.
+- It is rejected because nearby words show that it means monthly financing.
+- JSON-LD and the API still say `$129`.
+- Kevlar does not delete history or pretend nothing happened.
+- It quarantines the new observation and continues serving `$129` as labelled last-known-good and stale.
 
 **What to do:**
 
-- Point to **LABELED CHECKS — 24/24**.
-- Move once to **FALSE RELEASES — 0**.
-- Stop moving the cursor and finish the final sentence on this screen.
+1. Point to **Observed by collector — $10.75**.
+2. Point to JSON-LD and public API `129`.
+3. Point to **3 violations** and **Alert consumer — blocked**.
+4. Finish on **Released fact — $129.00** and **Last-known-good · stale**.
+5. At 1:12, press `Ctrl+Tab`.
 
-**Finish the same story:**
+**Explain it naturally:**
 
-> “The controlled benchmark passes 24 of 24 checks with zero false releases. My biggest lesson: valid JSON is not truth. Bright Data keeps collectors alive; Kevlar keeps released facts honest.”
+> The redesigned page fools the collector into reporting 10.75 as the full price. Kevlar notices the financing language and the disagreement with the other evidence. It blocks the false alert, quarantines 10.75, and keeps the verified 129-dollar price available without pretending it is fresh.
 
-## Uninterrupted rehearsal script
+**Memory sentence:** Kevlar blocks the bad claim without taking the product offline.
 
-Read this version when practising your delivery. The paragraph breaks are breaths, not separate sections. Say `129` as **“one twenty-nine”** and `10.75` as **“ten seventy-five.”**
+**Natural transition:** “Blocking one bad value is useful, but how do we know a repair will work on other pages?”
 
-> “Imagine a shopping agent tracking Nova headphones: 129 to buy, or 10.75 a month. After a redesign, the JSON stays valid but calls 10.75 the full price. That fake, nearly 92-percent price drop is what Kevlar stops. Bright Data gathers the evidence. TypeScript checks meaning, Convex keeps history, and Next.js on Vercel shows the decision.
->
-> This is a healthy Bright Data preview. Its custom Browser collector does more than fetch HTML: it keeps 129 as the purchase price, 10.75 as monthly financing, and attaches visible context, JSON-LD, the API response, and a screenshot.
->
-> Now the redesigned page fools the same collector. It reports 10.75 as the purchase price. The row is shaped correctly, so ordinary validation would pass. Kevlar sees that financing language conflicts with the field, while JSON-LD and the API still say 129. It quarantines the observation, blocks the false alert, and keeps 129 clearly labelled last-known-good.
->
-> So how do we trust a repair? Bright Data can propose a candidate, but Kevlar asks whether it learned the meaning or memorized one page. The certification suite runs four visible cases, two held-out pages, and two no-heal controls. All eight pass, with no false heals or releases.
->
-> Those passing results still do not release data by themselves. This certificate records the same collector identity, the earlier human approval, four visible, two held-out, and two negative-control outcomes, plus an integrity digest. Only the certified repair can enter canary activation.
->
-> The same evidence discipline continues after release. A reviewer can download the bundle instead of trusting a green badge. This graph links a released event to its fact, verified observation, collector, evidence, and certificate.
->
-> The controlled benchmark passes 24 of 24 checks with zero false releases. My biggest lesson: valid JSON is not truth. Bright Data keeps collectors alive; Kevlar keeps released facts honest.”
+### 1:12–1:34 — Show that the repair generalized
 
-## Final rehearsal checks
+**Page:** Held-Out Gauntlet.
 
-Before the real take, confirm:
+**What the audience is seeing:** 8/8 cases passed, 100% held-out pass, zero false heals, and zero false releases.
 
-- the home page pipeline is reachable with one slow scroll;
-- Bright Data Output shows 129, 10.75, JSON-LD 129, API 129, and evidence;
-- Trust Feed shows observed $10.75, released $129, three violations, and blocked alert;
+**What you need to understand:**
+
+- Bright Data may propose a repair candidate.
+- Kevlar does not accept it only because it works on Nova.
+- Four visible cases test known changes.
+- Two held-out layouts test DOM relationships the repair did not see while being developed.
+- Two no-heal controls make sure the repair refuses to invent data when it should not heal.
+
+**What to do:**
+
+1. Point across the four headline metrics.
+2. At about 1:22, scroll through H1/H2 and N1/N2.
+3. At 1:34, press `Ctrl+Tab`.
+
+**Explain it naturally:**
+
+> Bright Data can propose a repair, but Kevlar asks whether it really learned the meaning or only memorized this one layout. The repair must pass known cases, unseen layouts, and cases where doing nothing is the correct choice. All eight pass without a false heal or release.
+
+**Memory sentence:** a repair is a candidate until it proves it can generalize.
+
+**Natural transition:** “Even passing tests does not give the repair permission to enter production.”
+
+### 1:34–1:55 — Show approval and certification
+
+**Page:** Nova Repair Certificate.
+
+**What the audience is seeing:** the same collector identity, 4/4 visible, 2/2 held-out, 2/2 negative controls, human approval, and an integrity digest.
+
+**What you need to understand:**
+
+- A human reviewed the repair before certification.
+- The certificate records which collector was tested and the measured results.
+- The integrity digest helps detect whether the certificate's measured payload has changed. It is not a digital signature.
+- Only the certified repair may enter limited canary activation.
+
+**What to do:**
+
+1. Point to the collector identity and case totals.
+2. At about 1:45, scroll once to human approval and the integrity digest.
+3. At 1:55, press `Ctrl+Tab`.
+
+**Explain it naturally:**
+
+> Passing tests alone does not release the repair. This certificate connects the same collector, the earlier human approval, the visible and held-out layout results, and an integrity digest. Only that certified repair can move into a limited canary.
+
+**Memory sentence:** the certificate is the repair's permission slip, not just a green test result.
+
+**Natural transition:** “Now I can also prove why a released result was trusted.”
+
+### 1:55–2:11 — Show the evidence trail
+
+**Page:** Evidence Graph.
+
+**What the audience is seeing:** 14 nodes, 13 edges, 10 artifacts, four archived evidence items, and a downloadable bundle.
+
+**What you need to understand:** this graph describes a verified release chain. It connects a released event to its fact, verified observation, collector, evidence, and repair certificate.
+
+**What to do:**
+
+1. Point across the four summary metrics.
+2. Point at **Open downloadable evidence bundle**, but do not click it.
+3. Slowly scroll through `change_event`, `fact_version`, `repair_certificate`, `observation`, `collector`, and `evidence`.
+4. At 2:11, press `Ctrl+Tab`.
+
+**Explain it naturally:**
+
+> A green badge is not enough. This graph lets a reviewer follow a released event back through the fact, verified observation, collector, evidence, and certificate. The same proof can be downloaded as a bundle.
+
+**Memory sentence:** every released fact keeps its receipt.
+
+**Natural transition:** “Finally, here is the measured result of the complete controlled flow.”
+
+### 2:11–2:25 — Finish with the result and lesson
+
+**Page:** Release Evidence.
+
+**What the audience is seeing:** `LABELED CHECKS 24/24` and `FALSE RELEASES 0`.
+
+**What you need to understand:** this is a controlled, fixture-backed benchmark. It proves this rehearsed workflow; it is not a claim of perfect accuracy across the entire web.
+
+**What to do:**
+
+1. Point to **LABELED CHECKS — 24/24**.
+2. Point to **FALSE RELEASES — 0**.
+3. Stop moving and deliver the final lesson.
+
+**Explain it naturally:**
+
+> All 24 controlled checks pass with zero false releases. The lesson is simple: valid JSON is not always true data. Bright Data keeps collection running; Kevlar keeps released facts honest.
+
+**Memory sentence:** scraper uptime is not the same as data truth.
+
+## Questions a judge may ask
+
+### “Is Bright Data failing here?”
+
+The Bright Data platform is still running successfully, but the collector's old extraction logic is fooled by the redesigned layout. Bright Data captures the evidence and can propose a repair; Kevlar independently decides whether that output is safe to release.
+
+### “Why not use normal schema validation?”
+
+Because both `$129` and `$10.75` are valid numbers. The problem is not the data type; it is the meaning of the number.
+
+### “Why keep $129 instead of showing nothing?”
+
+The last verified value is still useful if it is clearly labelled stale. Kevlar preserves availability without pretending the old value is fresh.
+
+### “Why use held-out and no-heal cases?”
+
+Held-out layouts check that the repair works beyond the DOM pattern it learned from. No-heal controls check that it does not invent data when the safest action is to refuse.
+
+### “What is the technology stack?”
+
+Bright Data handles browser collection and evidence. TypeScript implements the contracts and release rules. Convex stores reactive state and history. Next.js provides the product interface, deployed on Vercel.
+
+### “What is the main innovation?”
+
+Kevlar separates a successfully scraped row from a verified fact. It also treats an automatic repair as untrusted until review, testing, and certification prove it is safe.
+
+## Final rehearsal checklist
+
+Before recording, confirm:
+
+- you can explain the two-price problem without looking at this file;
+- you remember **eyes → fact-checker → memory → window**;
+- Bright Data Output shows 129, 10.75, JSON-LD 129, API 129, and screenshot evidence;
+- Trust Feed shows observed $10.75, released $129, three violations, and a blocked alert;
 - Gauntlet shows 8/8, 100%, zero false heals, and zero false releases;
-- the certificate is certified and shows the same collector plus 4/4, 2/2, and 2/2;
-- Evidence Graph is navigable and shows 14 nodes, 13 edges, 10 artifacts, and 4 archived evidence;
-- Release Evidence shows 24/24 labelled checks and zero false releases;
-- no loading spinner, notification, email, credential, or unrelated tab is visible.
+- the certificate shows the same collector, 4/4, 2/2, 2/2, human approval, and integrity digest;
+- Evidence Graph shows 14 nodes, 13 edges, 10 artifacts, and four archived evidence items;
+- Release Evidence shows 24/24 and zero false releases;
+- no spinner, notification, email, credential, or unrelated tab is visible.
 
-If any live value differs, stop and restart after fixing the page. Do not improvise around contradictory evidence.
+If a live value differs, stop and fix the page instead of explaining around contradictory evidence.
 
-Say **controlled benchmark** or **fixture-backed benchmark**. Do not describe 24/24 as general web accuracy.
+Always say **controlled benchmark** or **fixture-backed benchmark**. Never describe 24/24 as general web accuracy.
