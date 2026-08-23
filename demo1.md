@@ -35,15 +35,15 @@ collect → check meaning → block unsafe claim → keep last-known-good
 
 ## Final timeline
 
-| Clip | Time      | Final length | Raw target | Visual                         |
-| ---: | --------- | -----------: | ---------: | ------------------------------ |
-|    1 | 0:00–0:27 |       27 sec |     31 sec | Home and architecture pipeline |
-|    2 | 0:27–0:45 |       18 sec |     22 sec | Bright Data healthy Output     |
-|    3 | 0:45–1:12 |       27 sec |     31 sec | Trust Feed blocks $10.75       |
-|    4 | 1:12–1:34 |       22 sec |     26 sec | Held-Out Gauntlet              |
-|    5 | 1:34–1:55 |       21 sec |     25 sec | Repair Certificate             |
-|    6 | 1:55–2:11 |       16 sec |     20 sec | Evidence Graph                 |
-|    7 | 2:11–2:25 |       14 sec |     18 sec | Release Evidence and closing   |
+| Clip | Time      | Final length | Raw target | Record on                  | Visual                         |
+| ---: | --------- | -----------: | ---------: | -------------------------- | ------------------------------ |
+|    1 | 0:00–0:27 |       27 sec |     31 sec | Kevlar `/`                 | Home and architecture pipeline |
+|    2 | 0:27–0:45 |       18 sec |     22 sec | Bright Data Scraper Studio | Healthy collector Output       |
+|    3 | 0:45–1:12 |       27 sec |     31 sec | Kevlar `/feed`             | Trust Feed blocks $10.75       |
+|    4 | 1:12–1:34 |       22 sec |     26 sec | Kevlar `/gauntlet`         | Held-Out Gauntlet              |
+|    5 | 1:34–1:55 |       21 sec |     25 sec | Kevlar certificate route   | Repair Certificate             |
+|    6 | 1:55–2:11 |       16 sec |     20 sec | Kevlar `/evidence`         | Evidence Graph                 |
+|    7 | 2:11–2:25 |       14 sec |     18 sec | Kevlar `/release`          | Release Evidence and closing   |
 
 The final clips total exactly **145 seconds (2:25)**. Each raw target contains a two-second opening handle and a two-second closing handle that you remove during editing.
 
@@ -62,6 +62,8 @@ Open these pages before recording:
 |   7 | [Release Evidence](https://kevlar-web.vercel.app/release)                                      | `LABELED CHECKS 24/24` and `FALSE RELEASES 0` visible.                         |
 
 Load every page, confirm its expected values, and then record each clip separately. Page transitions and loading screens do not belong in this voiceover version.
+
+Only Clip 2 is recorded on the Bright Data website. Clips 1 and 3–7 are recorded on the deployed Kevlar website. Do **not** record the fixture-lab product page directly; Bright Data visits that page internally to produce the Clip 2 Output.
 
 ### Prepare the Bright Data Output
 
@@ -102,6 +104,10 @@ For every clip:
 
 ### Clip 1 — Home and architecture
 
+**Record on:** **Kevlar website**, [https://kevlar-web.vercel.app](https://kevlar-web.vercel.app)
+
+**Exact route:** `/`
+
 **Filename:** `01-home-architecture.mp4`
 
 **Keep:** 27 seconds.
@@ -117,6 +123,12 @@ For every clip:
 The narration will explain the practical problem and map Bright Data, Kevlar, Convex, Next.js, and Vercel onto this pipeline.
 
 ### Clip 2 — Healthy Bright Data evidence
+
+**Record on:** **Bright Data website**, inside Scraper Studio—not on a Kevlar route.
+
+**Exact navigation:** Bright Data control panel → **Scrapers** → **kevlar-nova-product-pricing** → **Code** → **Interaction code** → **Input** → Play → **Output**.
+
+Begin recording only after the successful large **Output** window is open. The fixture URL is an input to the collector; it is not the page you record.
 
 **Filename:** `02-brightdata-output.mp4`
 
@@ -135,6 +147,10 @@ This is a healthy Bright Data **preview**, not a production run.
 
 ### Clip 3 — Wrong meaning blocked
 
+**Record on:** **Kevlar website**, [https://kevlar-web.vercel.app/feed](https://kevlar-web.vercel.app/feed)
+
+**Exact route:** `/feed`
+
 **Filename:** `03-trust-feed.mp4`
 
 **Keep:** 27 seconds.
@@ -150,6 +166,10 @@ This is a healthy Bright Data **preview**, not a production run.
 The important visual contrast is `$10.75 observed` versus `$129 released`.
 
 ### Clip 4 — Repair generalization
+
+**Record on:** **Kevlar website**, [https://kevlar-web.vercel.app/gauntlet](https://kevlar-web.vercel.app/gauntlet)
+
+**Exact route:** `/gauntlet`
 
 **Filename:** `04-gauntlet.mp4`
 
@@ -167,6 +187,10 @@ The held-out cases represent unseen DOM layouts, not unrelated commercial websit
 
 ### Clip 5 — Human approval and certificate
 
+**Record on:** **Kevlar website**, [https://kevlar-web.vercel.app/certificates/nova-core-20260822075230](https://kevlar-web.vercel.app/certificates/nova-core-20260822075230)
+
+**Exact route:** `/certificates/nova-core-20260822075230`
+
 **Filename:** `05-certificate.mp4`
 
 **Keep:** 21 seconds.
@@ -182,6 +206,10 @@ The integrity digest helps detect changes to the measured certificate payload. I
 
 ### Clip 6 — Evidence trail
 
+**Record on:** **Kevlar website**, [https://kevlar-web.vercel.app/evidence](https://kevlar-web.vercel.app/evidence)
+
+**Exact route:** `/evidence`
+
 **Filename:** `06-evidence.mp4`
 
 **Keep:** 16 seconds.
@@ -195,6 +223,10 @@ The integrity digest helps detect changes to the measured certificate payload. I
 This graph shows the verified release chain. Do not describe it as the rejected Nova observation.
 
 ### Clip 7 — Measured release result
+
+**Record on:** **Kevlar website**, [https://kevlar-web.vercel.app/release](https://kevlar-web.vercel.app/release)
+
+**Exact route:** `/release`
 
 **Filename:** `07-release.mp4`
 
