@@ -52,11 +52,11 @@ flowchart TB
 
 ### 0:00–0:10 — Core idea
 
-> “Web scrapers can fail silently: valid JSON with the wrong meaning. Kevlar is a verification firewall that stops bad data before production.”
+> “Kevlar is a verification firewall for web data. Example: the page price is 129 dollars, but a scraper reads 10.75 financing; Kevlar blocks it.”
 
 ### 0:10–0:25 — Concrete failure
 
-> “Nova costs 129 dollars once, or 10.75 monthly. A layout change can make a broken collector return financing as the purchase price. The JSON remains valid, so schema checks accept it.”
+> “Both values are valid numbers in valid JSON, so schema checks see no error. Kevlar compares the field's meaning with visible text, JSON-LD, and the public API before release.”
 
 ### 0:25–0:42 — Bright Data and the release gate
 
